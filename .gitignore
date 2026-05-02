@@ -1,0 +1,37 @@
+# Personal Claude overrides
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Secrets
+.env
+.env.local
+*.local.*
+firebase-adminsdk.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Flutter
+.dart_tool/
+build/
+*.g.dart
+*.freezed.dart
+
+# ML
+*.tflite
+*.pt
+*.pth
+data/raw/
+data/processed/
+wandb/
+mlruns/
+
+# OS
+.DS_Store
+Thumbs.db
+
+
+.task
