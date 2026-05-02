@@ -85,7 +85,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/smart-scan',
         pageBuilder: (context, state) => CustomTransitionPage(
-          child: const Scaffold(body: Center(child: Text('Smart Scan Screen'))), // Placeholder
+          child: const Scaffold(
+              body: Center(child: Text('Smart Scan Screen'))), // Placeholder
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },

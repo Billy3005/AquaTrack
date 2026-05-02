@@ -11,7 +11,8 @@ class HiveStorageService {
 
   // Singleton pattern
   static HiveStorageService? _instance;
-  static HiveStorageService get instance => _instance ??= HiveStorageService._();
+  static HiveStorageService get instance =>
+      _instance ??= HiveStorageService._();
   HiveStorageService._();
 
   late Box<DailySummary> _dailySummaryBox;
@@ -62,8 +63,7 @@ class HiveStorageService {
 
     return _intakeLogsBox.values
         .where((log) =>
-            log.loggedAt.isAfter(todayStart) &&
-            log.loggedAt.isBefore(todayEnd))
+            log.loggedAt.isAfter(todayStart) && log.loggedAt.isBefore(todayEnd))
         .toList()
       ..sort((a, b) => a.loggedAt.compareTo(b.loggedAt));
   }
@@ -72,8 +72,7 @@ class HiveStorageService {
   List<IntakeLog> loadLogsInDateRange(DateTime startDate, DateTime endDate) {
     return _intakeLogsBox.values
         .where((log) =>
-            log.loggedAt.isAfter(startDate) &&
-            log.loggedAt.isBefore(endDate))
+            log.loggedAt.isAfter(startDate) && log.loggedAt.isBefore(endDate))
         .toList()
       ..sort((a, b) => a.loggedAt.compareTo(b.loggedAt));
   }

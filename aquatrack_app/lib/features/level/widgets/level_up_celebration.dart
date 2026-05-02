@@ -158,7 +158,8 @@ class _LevelUpCelebrationState extends State<LevelUpCelebration>
                     ),
                   )
                       .animate(
-                        onPlay: (controller) => controller.repeat(reverse: true),
+                        onPlay: (controller) =>
+                            controller.repeat(reverse: true),
                       )
                       .fadeIn(delay: 1.5.seconds, duration: 600.ms)
                       .then()

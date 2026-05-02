@@ -30,7 +30,8 @@ class AmountStepper extends StatelessWidget {
             _StepperButton(
               icon: Icons.remove,
               onTap: () {
-                final newAmount = (currentAmount - stepAmount).clamp(minAmount, maxAmount);
+                final newAmount =
+                    (currentAmount - stepAmount).clamp(minAmount, maxAmount);
                 onAmountChanged(newAmount);
               },
               enabled: currentAmount > minAmount,
@@ -44,7 +45,8 @@ class AmountStepper extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.cyan.withValues(alpha: 0.3)),
+                border:
+                    Border.all(color: AppColors.cyan.withValues(alpha: 0.3)),
               ),
               child: Column(
                 children: [
@@ -70,7 +72,8 @@ class AmountStepper extends StatelessWidget {
             _StepperButton(
               icon: Icons.add,
               onTap: () {
-                final newAmount = (currentAmount + stepAmount).clamp(minAmount, maxAmount);
+                final newAmount =
+                    (currentAmount + stepAmount).clamp(minAmount, maxAmount);
                 onAmountChanged(newAmount);
               },
               enabled: currentAmount < maxAmount,
@@ -126,7 +129,9 @@ class _StepperButton extends StatelessWidget {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: enabled ? AppColors.surface : AppColors.surface.withValues(alpha: 0.5),
+          color: enabled
+              ? AppColors.surface
+              : AppColors.surface.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: enabled ? AppColors.cyan : AppColors.textHint,

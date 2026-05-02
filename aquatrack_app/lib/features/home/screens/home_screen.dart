@@ -37,7 +37,8 @@ class HomeScreen extends ConsumerWidget {
                 Text(error.toString(), style: AppTextStyles.bodyMedium),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: () => ref.read(homeNotifierProvider.notifier).refresh(),
+                  onPressed: () =>
+                      ref.read(homeNotifierProvider.notifier).refresh(),
                   child: const Text('Thử lại'),
                 ),
               ],
@@ -55,7 +56,8 @@ class HomeScreen extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _LocationPill(summary.location, summary.temperatureCelsius),
+                      _LocationPill(
+                          summary.location, summary.temperatureCelsius),
                       _StreakBadge(summary.streakDays),
                     ],
                   ),
@@ -106,7 +108,10 @@ class HomeScreen extends ConsumerWidget {
                         .map((amount) => Expanded(
                               child: Padding(
                                 padding: EdgeInsets.only(
-                                  right: amount == AppConstants.quickLogAmounts.last ? 0 : 12,
+                                  right: amount ==
+                                          AppConstants.quickLogAmounts.last
+                                      ? 0
+                                      : 12,
                                 ),
                                 child: _QuickLogButton(
                                   '${amount}ml',

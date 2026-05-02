@@ -65,7 +65,8 @@ class HomeNotifier extends _$HomeNotifier {
   DailySummary _updateSummaryWithNewLog(DailySummary current, IntakeLog log) {
     final newTotal = current.totalEffectiveMl + log.effectiveVolumeMl;
     final newProgress = (newTotal / current.dailyGoalMl).clamp(0.0, 1.0);
-    final newRemaining = (current.dailyGoalMl - newTotal).clamp(0, current.dailyGoalMl);
+    final newRemaining =
+        (current.dailyGoalMl - newTotal).clamp(0, current.dailyGoalMl);
 
     return current.copyWith(
       totalEffectiveMl: newTotal,
@@ -115,7 +116,8 @@ class HomeNotifier extends _$HomeNotifier {
   }
 
   /// Recalculate summary from stored logs để đảm bảo data consistency
-  DailySummary _recalculateSummaryFromLogs(DailySummary baseSummary, List<IntakeLog> logs) {
+  DailySummary _recalculateSummaryFromLogs(
+      DailySummary baseSummary, List<IntakeLog> logs) {
     int totalEffective = 0;
     int totalXp = 0;
 
@@ -125,7 +127,8 @@ class HomeNotifier extends _$HomeNotifier {
     }
 
     final progress = (totalEffective / baseSummary.dailyGoalMl).clamp(0.0, 1.0);
-    final remaining = (baseSummary.dailyGoalMl - totalEffective).clamp(0, baseSummary.dailyGoalMl);
+    final remaining = (baseSummary.dailyGoalMl - totalEffective)
+        .clamp(0, baseSummary.dailyGoalMl);
 
     return baseSummary.copyWith(
       totalEffectiveMl: totalEffective,
@@ -152,7 +155,8 @@ class HomeNotifier extends _$HomeNotifier {
         achievedGoalToday: summary.progress >= 1.0,
       );
 
-      print('🎮 Updated level system: +${log.xpEarned}XP${hasLeveledUp ? ' (LEVEL UP!)' : ''}');
+      print(
+          '🎮 Updated level system: +${log.xpEarned}XP${hasLeveledUp ? ' (LEVEL UP!)' : ''}');
     } catch (e) {
       print('❌ Error updating level system: $e');
     }

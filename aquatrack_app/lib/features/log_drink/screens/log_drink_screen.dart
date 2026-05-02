@@ -53,7 +53,9 @@ class LogDrinkScreen extends ConsumerWidget {
             DrinkTypeChips(
               selectedType: logState.selectedDrinkType,
               onTypeSelected: (type) {
-                ref.read(logDrinkNotifierProvider.notifier).selectDrinkType(type);
+                ref
+                    .read(logDrinkNotifierProvider.notifier)
+                    .selectDrinkType(type);
               },
             ),
 

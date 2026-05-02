@@ -31,7 +31,8 @@ class LogPreviewCard extends ConsumerWidget {
       data: (summary) {
         final newTotal = summary.totalEffectiveMl + effectiveAmount;
         final newProgress = (newTotal / summary.dailyGoalMl).clamp(0.0, 1.0);
-        final remainingMl = (summary.dailyGoalMl - newTotal).clamp(0, summary.dailyGoalMl);
+        final remainingMl =
+            (summary.dailyGoalMl - newTotal).clamp(0, summary.dailyGoalMl);
         final hydrationCoeff = AppConstants.hydrationCoeff[drinkType] ?? 1.0;
 
         return Container(
@@ -129,7 +130,8 @@ class LogPreviewCard extends ConsumerWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.xpPurple.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
@@ -154,7 +156,9 @@ class LogPreviewCard extends ConsumerWidget {
                           ? 'còn ${remainingMl}ml để đạt goal'
                           : '🎉 Goal đã hoàn thành!',
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: remainingMl > 0 ? AppColors.textSecondary : AppColors.success,
+                        color: remainingMl > 0
+                            ? AppColors.textSecondary
+                            : AppColors.success,
                       ),
                     ),
                   ),

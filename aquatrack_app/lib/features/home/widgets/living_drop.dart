@@ -26,8 +26,7 @@ class LivingDrop extends StatefulWidget {
   State<LivingDrop> createState() => _LivingDropState();
 }
 
-class _LivingDropState extends State<LivingDrop>
-    with TickerProviderStateMixin {
+class _LivingDropState extends State<LivingDrop> with TickerProviderStateMixin {
   late AnimationController _breathingController;
   late AnimationController _fillController;
 
@@ -134,7 +133,9 @@ class _LivingDropState extends State<LivingDrop>
 
   Color _getTextColor() {
     // Text color thay đổi theo fill level để đảm bảo contrast
-    return widget.progress > 0.3 ? AppColors.textPrimary : AppColors.textSecondary;
+    return widget.progress > 0.3
+        ? AppColors.textPrimary
+        : AppColors.textSecondary;
   }
 }
 
@@ -195,7 +196,8 @@ class _DropFillPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DropFillPainter oldDelegate) {
-    return oldDelegate.fillLevel != fillLevel || oldDelegate.fillColor != fillColor;
+    return oldDelegate.fillLevel != fillLevel ||
+        oldDelegate.fillColor != fillColor;
   }
 }
 
@@ -217,19 +219,19 @@ Path _createDropPath(Size size) {
   // Bottom right curve
   path.quadraticBezierTo(
     width * 0.85, height * 0.95, // Control point
-    width * 0.5, height * 0.95,  // Bottom center
+    width * 0.5, height * 0.95, // Bottom center
   );
 
   // Bottom left curve
   path.quadraticBezierTo(
     width * 0.15, height * 0.95, // Control point
-    width * 0.15, height * 0.7,  // End point
+    width * 0.15, height * 0.7, // End point
   );
 
   // Left curve back to top
   path.quadraticBezierTo(
     width * 0.15, height * 0.4, // Control point
-    width * 0.5, height * 0.1,  // Back to top
+    width * 0.5, height * 0.1, // Back to top
   );
 
   path.close();

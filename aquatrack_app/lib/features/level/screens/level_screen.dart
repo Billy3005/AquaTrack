@@ -114,14 +114,18 @@ class LevelScreen extends ConsumerWidget {
           children: [
             Icon(
               achievement.isUnlocked ? achievement.icon : Icons.lock,
-              color: achievement.isUnlocked ? AppColors.xpPurple : AppColors.textHint,
+              color: achievement.isUnlocked
+                  ? AppColors.xpPurple
+                  : AppColors.textHint,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 achievement.title,
                 style: AppTextStyles.headingMedium.copyWith(
-                  color: achievement.isUnlocked ? AppColors.textPrimary : AppColors.textHint,
+                  color: achievement.isUnlocked
+                      ? AppColors.textPrimary
+                      : AppColors.textHint,
                 ),
               ),
             ),
@@ -143,7 +147,9 @@ class LevelScreen extends ConsumerWidget {
                   ? '✅ Đã hoàn thành'
                   : 'Yêu cầu: ${achievement.requiredValue} ${_getRequirementUnit(achievement.type)}',
               style: AppTextStyles.caption.copyWith(
-                color: achievement.isUnlocked ? AppColors.success : AppColors.textHint,
+                color: achievement.isUnlocked
+                    ? AppColors.success
+                    : AppColors.textHint,
               ),
             ),
           ],
@@ -241,14 +247,16 @@ class _StatsSummaryCard extends StatelessWidget {
               Expanded(
                 child: _StatItem(
                   label: 'Tổng nước (L)',
-                  value: '${(levelState.totalVolume / 1000).toStringAsFixed(1)}',
+                  value:
+                      '${(levelState.totalVolume / 1000).toStringAsFixed(1)}',
                   icon: Icons.waves,
                 ),
               ),
               Expanded(
                 child: _StatItem(
                   label: 'Thành tựu',
-                  value: '${levelState.achievements.where((a) => a.isUnlocked).length}/${levelState.achievements.length}',
+                  value:
+                      '${levelState.achievements.where((a) => a.isUnlocked).length}/${levelState.achievements.length}',
                   icon: Icons.military_tech,
                 ),
               ),

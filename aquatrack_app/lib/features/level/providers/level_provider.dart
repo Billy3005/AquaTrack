@@ -78,7 +78,8 @@ class LevelNotifier extends _$LevelNotifier {
     // Load saved data hoặc dùng defaults
     final savedLevel = storage.loadSetting<int>('current_level') ?? 1;
     final savedXP = storage.loadSetting<int>('current_xp') ?? 0;
-    final savedAvatarId = storage.loadSetting<String>('selected_avatar') ?? 'water_drop';
+    final savedAvatarId =
+        storage.loadSetting<String>('selected_avatar') ?? 'water_drop';
     final totalLogsCount = storage.loadSetting<int>('total_logs_count') ?? 0;
     final currentStreak = storage.loadSetting<int>('current_streak') ?? 0;
     final totalVolume = storage.loadSetting<int>('total_volume') ?? 0;
@@ -248,7 +249,9 @@ class LevelNotifier extends _$LevelNotifier {
 
   /// Get unlocked achievements count
   int get unlockedAchievementsCount {
-    return state.achievements.where((achievement) => achievement.isUnlocked).length;
+    return state.achievements
+        .where((achievement) => achievement.isUnlocked)
+        .length;
   }
 
   /// Get progress to next level (0.0 → 1.0)

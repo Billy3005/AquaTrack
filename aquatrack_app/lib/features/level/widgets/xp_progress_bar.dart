@@ -21,7 +21,8 @@ class XPProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = nextLevelXP > 0 ? (currentXP / nextLevelXP).clamp(0.0, 1.0) : 1.0;
+    final progress =
+        nextLevelXP > 0 ? (currentXP / nextLevelXP).clamp(0.0, 1.0) : 1.0;
     final remainingXP = nextLevelXP - currentXP;
 
     return Container(
@@ -38,7 +39,9 @@ class XPProgressBar extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isAnimating ? AppColors.xpPurple : AppColors.xpPurple.withValues(alpha: 0.3),
+          color: isAnimating
+              ? AppColors.xpPurple
+              : AppColors.xpPurple.withValues(alpha: 0.3),
           width: isAnimating ? 2 : 1,
         ),
       ),
@@ -76,9 +79,7 @@ class XPProgressBar extends StatelessWidget {
                 valueColor: AlwaysStoppedAnimation<Color>(
                   isAnimating ? AppColors.xpPurple : AppColors.cyan,
                 ),
-              )
-                  .animate(target: isAnimating ? 1 : 0)
-                  .shimmer(
+              ).animate(target: isAnimating ? 1 : 0).shimmer(
                     duration: 1.5.seconds,
                     color: AppColors.xpPurple.withValues(alpha: 0.5),
                   ),

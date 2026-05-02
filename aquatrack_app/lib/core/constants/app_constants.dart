@@ -11,19 +11,19 @@ class AppConstants {
 
   // XP Events (Gamification system)
   static const xpEvents = {
-    'log_drink': 10,        // mỗi lần log
-    'daily_goal_met': 50,   // đạt 100% mục tiêu
+    'log_drink': 10, // mỗi lần log
+    'daily_goal_met': 50, // đạt 100% mục tiêu
     'streak_7': 100,
     'streak_30': 500,
     'total_100L': 200,
-    'smart_scan_used': 5,   // dùng AI scan
+    'smart_scan_used': 5, // dùng AI scan
   };
 
   // Level thresholds
   static const levels = {
     1: (0, 'Water Newbie'),
     5: (500, 'Water Warrior'),
-    7: (1000, 'Aqua Warrior'),     // current in prototype
+    7: (1000, 'Aqua Warrior'), // current in prototype
     10: (3000, 'Ocean Master'),
     15: (8000, 'Hydration Legend'),
   };

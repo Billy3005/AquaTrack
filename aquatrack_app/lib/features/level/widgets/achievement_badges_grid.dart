@@ -143,7 +143,9 @@ class _AchievementBadge extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: isUnlocked ? AppColors.surface : AppColors.surface.withValues(alpha: 0.5),
+          color: isUnlocked
+              ? AppColors.surface
+              : AppColors.surface.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isUnlocked
@@ -215,9 +217,7 @@ class _AchievementBadge extends StatelessWidget {
           ],
         ),
       ),
-    )
-        .animate(target: isUnlocked ? 1 : 0)
-        .shimmer(
+    ).animate(target: isUnlocked ? 1 : 0).shimmer(
           duration: 2.seconds,
           color: AppColors.xpPurple.withValues(alpha: 0.3),
         );

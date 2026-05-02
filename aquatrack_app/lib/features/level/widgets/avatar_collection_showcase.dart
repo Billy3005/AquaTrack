@@ -212,7 +212,8 @@ class _CurrentAvatarDisplay extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.cyan.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
@@ -254,7 +255,9 @@ class _AvatarGridItem extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: isUnlocked ? AppColors.surface : AppColors.surface.withValues(alpha: 0.3),
+          color: isUnlocked
+              ? AppColors.surface
+              : AppColors.surface.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
@@ -283,7 +286,8 @@ class _AvatarGridItem extends StatelessWidget {
                 avatar.emoji,
                 style: TextStyle(
                   fontSize: 32,
-                  color: isSelected ? null : Colors.white.withValues(alpha: 0.8),
+                  color:
+                      isSelected ? null : Colors.white.withValues(alpha: 0.8),
                 ),
               )
             else
@@ -307,9 +311,7 @@ class _AvatarGridItem extends StatelessWidget {
           ],
         ),
       ),
-    )
-        .animate(target: isSelected ? 1 : 0)
-        .scale(
+    ).animate(target: isSelected ? 1 : 0).scale(
           begin: const Offset(1.0, 1.0),
           end: const Offset(1.1, 1.1),
           duration: 0.2.seconds,
