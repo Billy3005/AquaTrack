@@ -77,6 +77,12 @@ class HiveStorageService {
       ..sort((a, b) => a.loggedAt.compareTo(b.loggedAt));
   }
 
+  /// Load all intake logs (for analytics and stats)
+  List<IntakeLog> loadAllIntakeLogs() {
+    return _intakeLogsBox.values.toList()
+      ..sort((a, b) => a.loggedAt.compareTo(b.loggedAt));
+  }
+
   /// Delete old logs (older than 30 days) to save space
   Future<void> cleanupOldLogs({int daysToKeep = 30}) async {
     final cutoffDate = DateTime.now().subtract(Duration(days: daysToKeep));
@@ -99,6 +105,20 @@ class HiveStorageService {
   /// Load app setting
   T? loadSetting<T>(String key) {
     return _appSettingsBox.get(key) as T?;
+  }
+
+  /// Save coach conversation messages
+  Future<void> saveCoachConversation(
+      List<Map<String, dynamic>> messages) async {
+    await _appSettingsBox.put('coach_conversation', messages);
+  }
+
+  /// Load coach conversation messages
+  List<Map<String, dynamic>>? loadCoachConversation() {
+    final data = _appSettingsBox.get('coach_conversation');
+    if (data == null) return null;
+
+    return List<Map<String, dynamic>>.from(data as List);
   }
 
   /// Clear all data (for testing or reset functionality)
