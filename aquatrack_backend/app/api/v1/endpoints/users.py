@@ -124,8 +124,7 @@ async def delete_user_account(
 
     return {
         "message": (
-            "Account has been deactivated. "
-            "Contact support to permanently delete."
+            "Account has been deactivated. " "Contact support to permanently delete."
         )
     }
 

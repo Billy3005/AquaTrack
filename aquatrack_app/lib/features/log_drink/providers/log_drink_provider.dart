@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/constants/app_constants.dart';
-import '../../home/providers/home_provider.dart';
+import '../../../core/repositories/intake_repository.dart';
 
 part 'log_drink_provider.g.dart';
 
@@ -59,17 +59,21 @@ class LogDrinkNotifier extends _$LogDrinkNotifier {
     state = state.copyWith(amountMl: amount);
   }
 
-  /// Submit log to HomeNotifier
+  /// Submit log directly to IntakeRepository
   Future<void> submitLog() async {
     if (state.amountMl <= 0) return;
 
     state = state.copyWith(isLoading: true);
 
     try {
-      // Delegate to HomeNotifier để xử lý log
-      await ref
-          .read(homeNotifierProvider.notifier)
-          .quickLog(state.amountMl, liquidType: state.selectedDrinkType);
+      final intakeRepository = IntakeRepository();
+
+      // Create intake log with drink type
+      await intakeRepository.createIntakeLog(
+        volumeMl: state.amountMl,
+        liquidType: state.selectedDrinkType,
+        source: 'manual_log',
+      );
 
       // Reset form sau khi log thành công
       state = const LogDrinkState();

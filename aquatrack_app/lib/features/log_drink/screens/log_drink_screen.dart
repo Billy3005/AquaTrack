@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_text_styles.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../providers/log_drink_provider.dart';
 import '../widgets/drink_type_chips.dart';
 import '../widgets/amount_stepper.dart';
@@ -19,104 +19,143 @@ class LogDrinkScreen extends ConsumerWidget {
     final logState = ref.watch(logDrinkNotifierProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: TextButton(
-          onPressed: () => context.pop(),
-          child: Text(
-            '← Huỷ',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppColors.backgroundGradient,
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Custom app bar
+              _buildAppBar(context),
+
+              // Content
+              Expanded(
+                child: _buildContent(context, logState, ref),
+              ),
+            ],
           ),
         ),
-        leadingWidth: 80,
-        title: const Text(
-          'Log thức uống',
-          style: AppTextStyles.headingMedium,
-        ),
-        centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Drink Type Selection
-            const Text(
-              'Loại thức uống',
-              style: AppTextStyles.headingMedium,
-            ),
-            const SizedBox(height: 16),
-            DrinkTypeChips(
-              selectedType: logState.selectedDrinkType,
-              onTypeSelected: (type) {
-                ref
-                    .read(logDrinkNotifierProvider.notifier)
-                    .selectDrinkType(type);
-              },
-            ),
+    );
+  }
 
-            const SizedBox(height: 32),
-
-            // Amount Selection
-            const Text(
-              'Lượng nước',
-              style: AppTextStyles.headingMedium,
-            ),
-            const SizedBox(height: 16),
-            AmountStepper(
-              currentAmount: logState.amountMl,
-              onAmountChanged: (amount) {
-                ref.read(logDrinkNotifierProvider.notifier).setAmount(amount);
-              },
-            ),
-
-            const SizedBox(height: 32),
-
-            // Preview Card
-            LogPreviewCard(
-              amountMl: logState.amountMl,
-              drinkType: logState.selectedDrinkType,
-              effectiveAmount: logState.effectiveAmountMl,
-              xpGained: logState.xpGained,
-            ),
-
-            const Spacer(),
-
-            // CTA Button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: logState.amountMl > 0
-                    ? () => _logDrink(context, ref)
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.cyan,
-                  foregroundColor: AppColors.textPrimary,
-                  disabledBackgroundColor: AppColors.surface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: Text(
-                  'Log ${logState.amountMl}ml',
-                  style: AppTextStyles.headingMedium.copyWith(
-                    color: logState.amountMl > 0
-                        ? AppColors.textPrimary
-                        : AppColors.textSecondary,
-                  ),
-                ),
+  Widget _buildAppBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => context.pop(),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceColor.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios,
+                color: AppColors.textSecondary,
+                size: 20,
               ),
             ),
+          ),
+          const SizedBox(width: 16),
+          Text(
+            'Ghi nhận thức uống',
+            style: AppTextStyles.headlineMedium,
+          ),
+        ],
+      ),
+    );
+  }
 
-            // Bottom padding
-            const SizedBox(height: 24),
-          ],
-        ),
+  Widget _buildContent(
+      BuildContext context, LogDrinkState logState, WidgetRef ref) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Drink Type Selection
+          Text(
+            'Loại thức uống',
+            style: AppTextStyles.headlineMedium,
+          ),
+          const SizedBox(height: 16),
+          DrinkTypeChips(
+            selectedType: logState.selectedDrinkType,
+            onTypeSelected: (type) {
+              ref.read(logDrinkNotifierProvider.notifier).selectDrinkType(type);
+            },
+          ),
+
+          const SizedBox(height: 32),
+
+          // Amount Selection
+          Text(
+            'Lượng nước',
+            style: AppTextStyles.headlineMedium,
+          ),
+          const SizedBox(height: 16),
+          AmountStepper(
+            currentAmount: logState.amountMl,
+            onAmountChanged: (amount) {
+              ref.read(logDrinkNotifierProvider.notifier).setAmount(amount);
+            },
+          ),
+
+          const SizedBox(height: 32),
+
+          // Preview Card
+          LogPreviewCard(
+            amountMl: logState.amountMl,
+            drinkType: logState.selectedDrinkType,
+            effectiveAmount: logState.effectiveAmountMl,
+            xpGained: logState.xpGained,
+          ),
+
+          const SizedBox(height: 40),
+
+          // CTA Button
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: logState.amountMl > 0 && !logState.isLoading
+                  ? () => _logDrink(context, ref)
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.cyanAccent,
+                foregroundColor: AppColors.textPrimary,
+                disabledBackgroundColor: AppColors.surfaceColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: logState.isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: AppColors.textPrimary,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(
+                      'Ghi nhận ${logState.amountMl}ml',
+                      style: AppTextStyles.buttonTextLarge.copyWith(
+                        color: logState.amountMl > 0
+                            ? AppColors.textPrimary
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+            ),
+          ),
+
+          // Bottom padding
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }
@@ -129,7 +168,7 @@ class LogDrinkScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('✅ Đã log thành công!'),
+            content: const Text('✅ Đã ghi nhận thành công!'),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(

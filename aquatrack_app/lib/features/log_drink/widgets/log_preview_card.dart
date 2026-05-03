@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_text_styles.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../home/providers/home_provider.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/models/drink_type.dart';
 
 /// Preview card "SAU KHI LOG" theo design spec
-class LogPreviewCard extends ConsumerWidget {
+class LogPreviewCard extends StatelessWidget {
   final int amountMl;
   final String drinkType;
   final int effectiveAmount;
@@ -22,209 +20,166 @@ class LogPreviewCard extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final summaryAsync = ref.watch(homeNotifierProvider);
+  Widget build(BuildContext context) {
+    final drinkTypeEnum = DrinkType.fromId(drinkType);
 
-    return summaryAsync.when(
-      loading: () => const _LoadingCard(),
-      error: (_, __) => const _ErrorCard(),
-      data: (summary) {
-        final newTotal = summary.totalEffectiveMl + effectiveAmount;
-        final newProgress = (newTotal / summary.dailyGoalMl).clamp(0.0, 1.0);
-        final remainingMl =
-            (summary.dailyGoalMl - newTotal).clamp(0, summary.dailyGoalMl);
-        final hydrationCoeff = AppConstants.hydrationCoeff[drinkType] ?? 1.0;
-
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.cyan.withValues(alpha: 0.3),
-            ),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.cyanAccent.withValues(alpha: 0.3),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cyanAccent.withValues(alpha: 0.1),
+            blurRadius: 8,
+            spreadRadius: 2,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
             children: [
-              // Header
+              Icon(
+                Icons.preview,
+                color: AppColors.cyanAccent,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
               Text(
-                'SAU KHI LOG',
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.cyan,
+                'PREVIEW',
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.cyanAccent,
+                  fontWeight: FontWeight.w600,
                 ),
-              ),
-              const SizedBox(height: 16),
-
-              // Effective amount info (if hydration coeff != 1.0)
-              if (hydrationCoeff != 1.0) ...[
-                Row(
-                  children: [
-                    Text(
-                      '${amountMl}ml ${_getDrinkLabel(drinkType)}',
-                      style: AppTextStyles.bodyMedium,
-                    ),
-                    const Spacer(),
-                    Text(
-                      '→ ${effectiveAmount}ml hiệu quả',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.cyan,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              // New total
-              Row(
-                children: [
-                  const Text(
-                    'Tổng mới:',
-                    style: AppTextStyles.bodyMedium,
-                  ),
-                  const Spacer(),
-                  Text(
-                    '$newTotal / ${summary.dailyGoalMl}ml',
-                    style: AppTextStyles.headingMedium.copyWith(
-                      color: AppColors.cyan,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Progress bar
-              Container(
-                height: 8,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: newProgress,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.cyan,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Progress percentage
-              Text(
-                '${(newProgress * 100).round()}% hoàn thành',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.cyan,
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // XP gained and remaining
-              Row(
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.xpPurple.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '+$xpGained XP',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.xpPurple,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    '·',
-                    style: AppTextStyles.bodyMedium,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      remainingMl > 0
-                          ? 'còn ${remainingMl}ml để đạt goal'
-                          : '🎉 Goal đã hoàn thành!',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: remainingMl > 0
-                            ? AppColors.textSecondary
-                            : AppColors.success,
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
-        );
-      },
-    );
-  }
+          const SizedBox(height: 16),
 
-  String _getDrinkLabel(String drinkType) {
-    const labels = {
-      'water': 'nước lọc',
-      'tea': 'trà',
-      'coffee': 'cà phê',
-      'juice': 'nước trái cây',
-      'smoothie': 'sinh tố',
-    };
-    return labels[drinkType] ?? drinkType;
-  }
-}
+          // Drink info
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.borderColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppColors.cyanAccent.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    drinkTypeEnum.icon,
+                    color: AppColors.cyanAccent,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${amountMl}ml ${drinkTypeEnum.displayName}',
+                        style: AppTextStyles.titleMedium,
+                      ),
+                      if (drinkTypeEnum.hydrationCoeff != 1.0)
+                        Text(
+                          '→ ${effectiveAmount}ml hiệu quả (${(drinkTypeEnum.hydrationCoeff * 100).round()}%)',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.cyanAccent,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-class _LoadingCard extends StatelessWidget {
-  const _LoadingCard();
+          const SizedBox(height: 16),
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 120,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: const Center(
-        child: CircularProgressIndicator(
-          color: AppColors.cyan,
-          strokeWidth: 2,
-        ),
-      ),
-    );
-  }
-}
+          // XP and rewards
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.purpleXP.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.purpleXP.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.purpleXP.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '+$xpGained XP',
+                    style: AppTextStyles.labelMedium.copyWith(
+                      color: AppColors.purpleXP,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Tích lũy điểm kinh nghiệm',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.emoji_events,
+                  color: AppColors.purpleXP,
+                  size: 18,
+                ),
+              ],
+            ),
+          ),
 
-class _ErrorCard extends StatelessWidget {
-  const _ErrorCard();
+          const SizedBox(height: 16),
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, color: AppColors.error),
-          const SizedBox(width: 12),
-          Text(
-            'Không thể load preview',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.error,
+          // Motivation message
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.water_drop,
+                  color: AppColors.success,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Tuyệt vời! Bạn đang duy trì thói quen hydration tốt.',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.success,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

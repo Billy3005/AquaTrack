@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_text_styles.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
 
 /// Amount stepper với [−] ML [+] + presets
 class AmountStepper extends StatelessWidget {
@@ -14,7 +15,7 @@ class AmountStepper extends StatelessWidget {
     required this.onAmountChanged,
   });
 
-  static const presets = [100, 250, 500, 750];
+  static const presets = [150, 250, 350, 500];
   static const stepAmount = 50;
   static const minAmount = 50;
   static const maxAmount = 2000;
@@ -30,6 +31,7 @@ class AmountStepper extends StatelessWidget {
             _StepperButton(
               icon: Icons.remove,
               onTap: () {
+                HapticFeedback.lightImpact();
                 final newAmount =
                     (currentAmount - stepAmount).clamp(minAmount, maxAmount);
                 onAmountChanged(newAmount);
@@ -43,24 +45,32 @@ class AmountStepper extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: AppColors.surfaceColor,
                 borderRadius: BorderRadius.circular(16),
-                border:
-                    Border.all(color: AppColors.cyan.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: AppColors.cyanAccent.withValues(alpha: 0.3),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.cyanAccent.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
               child: Column(
                 children: [
                   Text(
                     '$currentAmount',
-                    style: AppTextStyles.displayMedium.copyWith(
-                      color: AppColors.cyan,
+                    style: AppTextStyles.waterAmount.copyWith(
+                      fontSize: 32,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
                   Text(
                     'ML',
-                    style: AppTextStyles.label.copyWith(
-                      color: AppColors.cyan,
+                    style: AppTextStyles.labelMedium.copyWith(
+                      color: AppColors.cyanAccent,
                     ),
                   ),
                 ],
@@ -72,6 +82,7 @@ class AmountStepper extends StatelessWidget {
             _StepperButton(
               icon: Icons.add,
               onTap: () {
+                HapticFeedback.lightImpact();
                 final newAmount =
                     (currentAmount + stepAmount).clamp(minAmount, maxAmount);
                 onAmountChanged(newAmount);
@@ -85,23 +96,23 @@ class AmountStepper extends StatelessWidget {
 
         // Quick presets
         Text(
-          'Presets',
+          'Lượng thường dùng',
           style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.textSecondary,
           ),
         ),
         const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        Wrap(
+          spacing: 12,
           children: presets.map((preset) {
             final isSelected = currentAmount == preset;
-            return Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: _PresetButton(
-                amount: preset,
-                isSelected: isSelected,
-                onTap: () => onAmountChanged(preset),
-              ),
+            return _PresetButton(
+              amount: preset,
+              isSelected: isSelected,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onAmountChanged(preset);
+              },
             );
           }).toList(),
         ),
@@ -130,16 +141,27 @@ class _StepperButton extends StatelessWidget {
         height: 48,
         decoration: BoxDecoration(
           color: enabled
-              ? AppColors.surface
-              : AppColors.surface.withValues(alpha: 0.5),
+              ? AppColors.surfaceColor
+              : AppColors.surfaceColor.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: enabled ? AppColors.cyan : AppColors.textHint,
+            color: enabled
+                ? AppColors.cyanAccent
+                : AppColors.borderColor.withValues(alpha: 0.3),
           ),
+          boxShadow: enabled
+              ? [
+                  BoxShadow(
+                    color: AppColors.cyanAccent.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : null,
         ),
         child: Icon(
           icon,
-          color: enabled ? AppColors.cyan : AppColors.textHint,
+          color: enabled ? AppColors.cyanAccent : AppColors.textTertiary,
           size: 24,
         ),
       ),
@@ -162,19 +184,31 @@ class _PresetButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.cyan : AppColors.surface,
+          color: isSelected ? AppColors.cyanAccent : AppColors.surfaceColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.cyan : AppColors.surfaceLight,
+            color: isSelected
+                ? AppColors.cyanAccent
+                : AppColors.borderColor.withValues(alpha: 0.3),
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.cyanAccent.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           '${amount}ml',
           style: AppTextStyles.bodyMedium.copyWith(
-            color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+            color: isSelected ? AppColors.textPrimary : AppColors.textPrimary,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),

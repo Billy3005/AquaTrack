@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'core/constants/app_colors.dart';
-import 'features/home/screens/home_screen.dart';
+import 'core/theme/app_theme.dart';
+import 'core/config/app_config.dart';
+import 'features/splash/splash_screen.dart';
+import 'features/auth/login_screen.dart';
+import 'features/auth/register_screen.dart';
+import 'features/home/home_screen_v2.dart';
+import 'features/profile/profile_screen_v2.dart';
 import 'features/coach/screens/coach_screen.dart';
 import 'features/body_map/screens/body_map_screen.dart';
 import 'features/stats/screens/stats_screen.dart';
 import 'features/level/screens/level_screen.dart';
-import 'features/profile/screens/profile_screen.dart';
 import 'features/log_drink/screens/log_drink_screen.dart';
 import 'shared/widgets/bottom_nav.dart';
 
@@ -19,8 +23,42 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/',
+    initialLocation: '/splash',
     routes: [
+      // Splash screen
+      GoRoute(
+        path: '/splash',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: SplashScreen(),
+        ),
+      ),
+
+      // Login screen
+      GoRoute(
+        path: '/login',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const LoginScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      ),
+
+      // Register screen
+      GoRoute(
+        path: '/register',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const RegisterScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(1.0, 0.0), end: Offset.zero),
+              ),
+              child: child,
+            );
+          },
+        ),
+      ),
       // Shell route cho bottom navigation
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
@@ -31,7 +69,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: HomeScreen(),
+              child: HomeScreenV2(),
             ),
           ),
           GoRoute(
@@ -61,7 +99,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/profile',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: ProfileScreen(),
+              child: ProfileScreenV2(),
             ),
           ),
         ],
@@ -105,17 +143,16 @@ class AquaTrackApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'AquaTrack',
-      theme: ThemeData(
-        colorScheme: const ColorScheme.dark(
-          primary: AppColors.cyan,
-          surface: AppColors.surface,
-        ),
-        scaffoldBackgroundColor: AppColors.background,
-        useMaterial3: true,
-      ),
+      title: AppConfig.appName,
+      theme: AppTheme.darkTheme,
+      themeMode: ThemeMode.dark,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+      locale: const Locale('vi', 'VN'),
+      supportedLocales: const [
+        Locale('vi', 'VN'),
+        Locale('en', 'US'),
+      ],
     );
   }
 }

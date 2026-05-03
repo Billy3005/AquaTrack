@@ -34,8 +34,8 @@ class UserUpdate(BaseModel):
     avatar_id: Optional[str] = Field(None, max_length=20)
     daily_goal_ml: Optional[int] = Field(None, ge=1000, le=5000)
     notifications_enabled: Optional[bool] = None
-    theme_preference: Optional[str] = Field(None, regex="^(light|dark|auto)$")
-    language_preference: Optional[str] = Field(None, regex="^(vi|en)$")
+    theme_preference: Optional[str] = Field(None, pattern="^(light|dark|auto)$")
+    language_preference: Optional[str] = Field(None, pattern="^(vi|en)$")
     sound_enabled: Optional[bool] = None
     timezone: Optional[str] = Field(None, max_length=50)
 

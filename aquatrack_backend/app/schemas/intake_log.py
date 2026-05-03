@@ -9,7 +9,7 @@ class IntakeLogCreate(BaseModel):
 
     volume_ml: int = Field(..., ge=1, le=2000)
     liquid_type: str = Field("water", max_length=20)
-    temperature: Optional[str] = Field(None, regex="^(cold|room|warm|hot)$")
+    temperature: Optional[str] = Field(None, pattern="^(cold|room|warm|hot)$")
     location: Optional[str] = Field(None, max_length=50)
     mood_before: Optional[str] = Field(None, max_length=20)
     source: str = Field("manual", max_length=20)
@@ -27,7 +27,7 @@ class IntakeLogUpdate(BaseModel):
 
     volume_ml: Optional[int] = Field(None, ge=1, le=2000)
     liquid_type: Optional[str] = Field(None, max_length=20)
-    temperature: Optional[str] = Field(None, regex="^(cold|room|warm|hot)$")
+    temperature: Optional[str] = Field(None, pattern="^(cold|room|warm|hot)$")
     location: Optional[str] = Field(None, max_length=50)
     mood_after: Optional[str] = Field(None, max_length=20)
 

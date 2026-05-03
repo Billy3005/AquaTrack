@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_text_styles.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/models/drink_type.dart';
 
 /// Drink type selection chips với icons theo design spec
 class DrinkTypeChips extends StatelessWidget {
@@ -14,26 +15,17 @@ class DrinkTypeChips extends StatelessWidget {
     required this.onTypeSelected,
   });
 
-  static const drinkTypes = [
-    {'id': 'water', 'emoji': '💧', 'label': 'Nước lọc'},
-    {'id': 'tea', 'emoji': '🍵', 'label': 'Trà'},
-    {'id': 'coffee', 'emoji': '☕', 'label': 'Cà phê'},
-    {'id': 'juice', 'emoji': '🍊', 'label': 'Trái cây'},
-    {'id': 'smoothie', 'emoji': '🥤', 'label': 'Sinh tố'},
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Wrap(
       spacing: 12,
       runSpacing: 12,
-      children: drinkTypes.map((drink) {
-        final isSelected = selectedType == drink['id'];
+      children: DrinkType.values.map((drinkType) {
+        final isSelected = selectedType == drinkType.id;
         return _DrinkChip(
-          emoji: drink['emoji']!,
-          label: drink['label']!,
+          drinkType: drinkType,
           isSelected: isSelected,
-          onTap: () => onTypeSelected(drink['id']!),
+          onTap: () => onTypeSelected(drinkType.id),
         );
       }).toList(),
     );
@@ -41,14 +33,12 @@ class DrinkTypeChips extends StatelessWidget {
 }
 
 class _DrinkChip extends StatelessWidget {
-  final String emoji;
-  final String label;
+  final DrinkType drinkType;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _DrinkChip({
-    required this.emoji,
-    required this.label,
+    required this.drinkType,
     required this.isSelected,
     required this.onTap,
   });
@@ -61,30 +51,64 @@ class _DrinkChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.cyan : AppColors.surface,
+          color: isSelected ? AppColors.cyanAccent : AppColors.surfaceColor,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? AppColors.cyan : AppColors.surfaceLight,
+            color: isSelected
+                ? AppColors.cyanAccent
+                : AppColors.borderColor.withValues(alpha: 0.5),
             width: isSelected ? 2 : 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.cyanAccent.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              emoji,
-              style: const TextStyle(fontSize: 18),
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.textPrimary.withValues(alpha: 0.2)
+                    : AppColors.cyanAccent.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Icon(
+                drinkType.icon,
+                size: 16,
+                color:
+                    isSelected ? AppColors.textPrimary : AppColors.cyanAccent,
+              ),
             ),
             const SizedBox(width: 8),
             Text(
-              label,
+              drinkType.displayName,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: isSelected
-                    ? AppColors.textPrimary
-                    : AppColors.textSecondary,
+                color:
+                    isSelected ? AppColors.textPrimary : AppColors.textPrimary,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
+            // Hydration coefficient indicator
+            if (drinkType.hydrationCoeff < 1.0) ...[
+              const SizedBox(width: 4),
+              Text(
+                '${(drinkType.hydrationCoeff * 100).round()}%',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: isSelected
+                      ? AppColors.textSecondary
+                      : AppColors.textTertiary,
+                ),
+              ),
+            ],
           ],
         ),
       ),
