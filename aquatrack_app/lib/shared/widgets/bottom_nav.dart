@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -49,7 +50,7 @@ class BottomNavigationWrapper extends StatelessWidget {
 
       // Bottom Navigation Bar
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.surface,
           border: Border(
             top: BorderSide(
@@ -71,7 +72,10 @@ class BottomNavigationWrapper extends StatelessWidget {
                   icon: tab.icon,
                   label: tab.label,
                   isSelected: isSelected,
-                  onTap: () => context.go(tab.route),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    context.go(tab.route);
+                  },
                 );
               }),
             ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
@@ -23,16 +25,15 @@ class HomeScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: summaryAsync.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.cyan),
-          ),
+          loading: () => const _HomeLoadingSkeleton(),
           error: (error, _) => Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.error_outline, color: AppColors.error, size: 48),
+                const Icon(Icons.error_outline,
+                    color: AppColors.error, size: 48),
                 const SizedBox(height: 16),
-                Text('Có lỗi xảy ra', style: AppTextStyles.headingMedium),
+                const Text('Có lỗi xảy ra', style: AppTextStyles.headingMedium),
                 const SizedBox(height: 8),
                 Text(error.toString(), style: AppTextStyles.bodyMedium),
                 const SizedBox(height: 16),
@@ -98,7 +99,7 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: 32),
 
                   // Quick log buttons
-                  Text(
+                  const Text(
                     'Quick Log',
                     style: AppTextStyles.headingMedium,
                   ),
@@ -165,7 +166,11 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Future<void> _quickLog(WidgetRef ref, int amount) async {
+    HapticFeedback.mediumImpact();
     await ref.read(homeNotifierProvider.notifier).quickLog(amount);
+
+    // Success feedback
+    HapticFeedback.lightImpact();
   }
 }
 
@@ -318,14 +323,14 @@ class _AquaAiCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Expanded(
+          const Expanded(
             child: Text(
               'Tiến độ tốt! Nhớ uống thêm vào buổi chiều nhé.',
               style: AppTextStyles.bodyMedium,
             ),
           ),
           const SizedBox(width: 8),
-          Icon(
+          const Icon(
             Icons.arrow_forward_ios,
             color: AppColors.textSecondary,
             size: 16,
@@ -333,5 +338,116 @@ class _AquaAiCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Skeleton loading state for home screen
+class _HomeLoadingSkeleton extends StatelessWidget {
+  const _HomeLoadingSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header skeleton
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _SkeletonBox(width: 120, height: 30),
+              _SkeletonBox(width: 100, height: 30),
+            ],
+          ),
+
+          const SizedBox(height: 32),
+
+          // Greeting skeleton
+          const _SkeletonBox(width: 200, height: 16),
+          const SizedBox(height: 8),
+          const _SkeletonBox(width: 250, height: 28),
+
+          const SizedBox(height: 40),
+
+          // Drop skeleton (circular)
+          const Center(
+            child: _SkeletonCircle(radius: 120),
+          ),
+
+          const SizedBox(height: 40),
+
+          // XP bar skeleton
+          const _SkeletonBox(width: double.infinity, height: 20),
+
+          const SizedBox(height: 32),
+
+          // Quick log skeleton
+          const _SkeletonBox(width: 120, height: 20),
+          const SizedBox(height: 16),
+          Row(
+            children: List.generate(
+              4,
+              (index) => Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: index == 3 ? 0 : 12),
+                  child: const _SkeletonBox(width: double.infinity, height: 48),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // AI card skeleton
+          const _SkeletonBox(width: double.infinity, height: 80),
+        ],
+      ),
+    );
+  }
+}
+
+/// Skeleton box widget
+class _SkeletonBox extends StatelessWidget {
+  final double width;
+  final double height;
+
+  const _SkeletonBox({required this.width, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+    ).animate(onPlay: (controller) => controller.repeat()).shimmer(
+          duration: 1200.ms,
+          color: AppColors.cyan.withValues(alpha: 0.1),
+        );
+  }
+}
+
+/// Skeleton circle widget
+class _SkeletonCircle extends StatelessWidget {
+  final double radius;
+
+  const _SkeletonCircle({required this.radius});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: radius,
+      height: radius,
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.3),
+        shape: BoxShape.circle,
+      ),
+    ).animate(onPlay: (controller) => controller.repeat()).shimmer(
+          duration: 1200.ms,
+          color: AppColors.cyan.withValues(alpha: 0.1),
+        );
   }
 }

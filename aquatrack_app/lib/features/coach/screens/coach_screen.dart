@@ -400,7 +400,7 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
         ),
       ),
     )
-        .animate(delay: Duration(milliseconds: 200))
+        .animate(delay: const Duration(milliseconds: 200))
         .fadeIn(duration: 400.ms)
         .slideY(begin: 0.2, end: 0.0);
   }

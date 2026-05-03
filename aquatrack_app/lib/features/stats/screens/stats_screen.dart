@@ -20,7 +20,7 @@ class StatsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('THỐNG KÊ', style: AppTextStyles.headingMedium),
+        title: const Text('THỐNG KÊ', style: AppTextStyles.headingMedium),
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: false,

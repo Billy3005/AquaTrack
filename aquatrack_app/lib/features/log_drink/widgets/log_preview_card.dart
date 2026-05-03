@@ -79,7 +79,7 @@ class LogPreviewCard extends ConsumerWidget {
               // New total
               Row(
                 children: [
-                  Text(
+                  const Text(
                     'Tổng mới:',
                     style: AppTextStyles.bodyMedium,
                   ),
@@ -145,7 +145,7 @@ class LogPreviewCard extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
+                  const Text(
                     '·',
                     style: AppTextStyles.bodyMedium,
                   ),
@@ -219,7 +219,7 @@ class _ErrorCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, color: AppColors.error),
+          const Icon(Icons.error_outline, color: AppColors.error),
           const SizedBox(width: 12),
           Text(
             'Không thể load preview',

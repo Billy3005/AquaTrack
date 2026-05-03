@@ -36,7 +36,7 @@ class LevelScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'CẤP ĐỘ & THÀNH TỰU',
           style: AppTextStyles.headingMedium,
         ),
@@ -49,7 +49,7 @@ class LevelScreen extends ConsumerWidget {
               onPressed: () async {
                 await levelNotifier.addXP(50);
               },
-              icon: Icon(
+              icon: const Icon(
                 Icons.add,
                 color: AppColors.textSecondary,
               ),
@@ -208,7 +208,7 @@ class _StatsSummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.analytics,
                 color: AppColors.cyan,
                 size: 20,
@@ -247,8 +247,7 @@ class _StatsSummaryCard extends StatelessWidget {
               Expanded(
                 child: _StatItem(
                   label: 'Tổng nước (L)',
-                  value:
-                      '${(levelState.totalVolume / 1000).toStringAsFixed(1)}',
+                  value: (levelState.totalVolume / 1000).toStringAsFixed(1),
                   icon: Icons.waves,
                 ),
               ),

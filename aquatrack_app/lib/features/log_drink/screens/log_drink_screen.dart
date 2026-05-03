@@ -33,7 +33,7 @@ class LogDrinkScreen extends ConsumerWidget {
           ),
         ),
         leadingWidth: 80,
-        title: Text(
+        title: const Text(
           'Log thức uống',
           style: AppTextStyles.headingMedium,
         ),
@@ -45,7 +45,7 @@ class LogDrinkScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Drink Type Selection
-            Text(
+            const Text(
               'Loại thức uống',
               style: AppTextStyles.headingMedium,
             ),
@@ -62,7 +62,7 @@ class LogDrinkScreen extends ConsumerWidget {
             const SizedBox(height: 32),
 
             // Amount Selection
-            Text(
+            const Text(
               'Lượng nước',
               style: AppTextStyles.headingMedium,
             ),

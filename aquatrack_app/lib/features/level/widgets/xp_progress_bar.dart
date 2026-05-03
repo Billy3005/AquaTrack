@@ -161,7 +161,7 @@ class _LevelBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             Icons.stars,
             color: AppColors.textPrimary,
             size: 18,

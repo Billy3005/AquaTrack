@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -92,7 +93,7 @@ class HomeNotifier extends _$HomeNotifier {
 
       return null;
     } catch (e) {
-      print('❌ Error loading from local storage: $e');
+      debugPrint('❌ HomeProvider: Error loading from local storage: $e');
       return null;
     }
   }
@@ -109,9 +110,10 @@ class HomeNotifier extends _$HomeNotifier {
       final updatedSummary = _updateSummaryWithNewLog(currentSummary, log);
       await storage.saveDailySummary(updatedSummary);
 
-      print('💾 Saved log: ${log.volumeMl}ml ${log.liquidType}');
+      debugPrint(
+          '💾 HomeProvider: Saved log: ${log.volumeMl}ml ${log.liquidType}');
     } catch (e) {
-      print('❌ Error saving to local storage: $e');
+      debugPrint('❌ HomeProvider: Error saving to local storage: $e');
     }
   }
 
@@ -155,16 +157,16 @@ class HomeNotifier extends _$HomeNotifier {
         achievedGoalToday: summary.progress >= 1.0,
       );
 
-      print(
-          '🎮 Updated level system: +${log.xpEarned}XP${hasLeveledUp ? ' (LEVEL UP!)' : ''}');
+      debugPrint(
+          '🎮 HomeProvider: Updated level system: +${log.xpEarned}XP${hasLeveledUp ? ' (LEVEL UP!)' : ''}');
     } catch (e) {
-      print('❌ Error updating level system: $e');
+      debugPrint('❌ HomeProvider: Error updating level system: $e');
     }
   }
 
   void _syncToServerInBackground(IntakeLog log) {
     // TODO: Implement API sync
-    print('🌐 Background sync: ${log.id}');
+    debugPrint('🌐 HomeProvider: Background sync: ${log.id}');
   }
 
   /// Force refresh từ server

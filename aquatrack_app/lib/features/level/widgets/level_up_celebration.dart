@@ -226,7 +226,7 @@ class _LevelBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [AppColors.xpPurple, AppColors.cyan],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -243,7 +243,7 @@ class _LevelBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             Icons.stars,
             color: AppColors.textPrimary,
             size: 32,

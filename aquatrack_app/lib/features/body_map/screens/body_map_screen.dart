@@ -20,7 +20,7 @@ class BodyMapScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('CƠ THỂ', style: AppTextStyles.headingMedium),
+        title: const Text('CƠ THỂ', style: AppTextStyles.headingMedium),
         backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: false,

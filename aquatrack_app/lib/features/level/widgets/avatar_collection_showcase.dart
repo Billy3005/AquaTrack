@@ -73,7 +73,7 @@ class AvatarCollectionShowcase extends StatelessWidget {
           // Header với current avatar
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.face_retouching_natural,
                 color: AppColors.cyan,
                 size: 24,
@@ -291,7 +291,7 @@ class _AvatarGridItem extends StatelessWidget {
                 ),
               )
             else
-              Icon(
+              const Icon(
                 Icons.lock,
                 color: AppColors.textHint,
                 size: 24,

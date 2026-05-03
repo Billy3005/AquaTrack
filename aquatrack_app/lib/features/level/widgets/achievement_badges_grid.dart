@@ -55,7 +55,7 @@ class AchievementBadgesGrid extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.military_tech,
                 color: AppColors.xpPurple,
                 size: 24,
