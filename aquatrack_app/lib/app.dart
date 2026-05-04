@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/theme/app_theme.dart';
@@ -19,21 +20,19 @@ import 'shared/widgets/bottom_nav.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
-/// GoRouter configuration với 6 bottom tabs
+/// GoRouter configuration with authentication flow
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/splash',
+    initialLocation: '/splash', // Start with splash screen
     routes: [
-      // Splash screen
+      // Authentication routes (no bottom nav)
       GoRoute(
         path: '/splash',
         pageBuilder: (context, state) => const NoTransitionPage(
           child: SplashScreen(),
         ),
       ),
-
-      // Login screen
       GoRoute(
         path: '/login',
         pageBuilder: (context, state) => CustomTransitionPage(
@@ -43,8 +42,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           },
         ),
       ),
-
-      // Register screen
       GoRoute(
         path: '/register',
         pageBuilder: (context, state) => CustomTransitionPage(
@@ -59,7 +56,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           },
         ),
       ),
-      // Shell route cho bottom navigation
+
+      // Shell route cho bottom navigation (authenticated users)
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) {
@@ -152,6 +150,11 @@ class AquaTrackApp extends ConsumerWidget {
       supportedLocales: const [
         Locale('vi', 'VN'),
         Locale('en', 'US'),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
       ],
     );
   }

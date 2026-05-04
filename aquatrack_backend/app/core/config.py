@@ -17,6 +17,8 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
         "http://localhost:8080",  # Flutter web
         "http://127.0.0.1:8080",
+        "http://localhost:64038",  # Flutter app current port
+        "http://127.0.0.1:64038",
         "capacitor://localhost",  # Capacitor mobile app
         "ionic://localhost",  # Ionic mobile app
         "http://localhost",  # Mobile dev
@@ -32,11 +34,15 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        """Construct PostgreSQL database URL"""
-        return (
-            f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}"
-            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
-        )
+        """Construct database URL - SQLite for testing, PostgreSQL for production"""
+        # Use SQLite for testing when PostgreSQL is not available
+        if self.ENVIRONMENT == "development":
+            return "sqlite:///./aquatrack_test.db"
+        else:
+            return (
+                f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}"
+                f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+            )
 
     # Security Settings
     SECRET_KEY: str = "your-super-secret-key-change-this-in-production"

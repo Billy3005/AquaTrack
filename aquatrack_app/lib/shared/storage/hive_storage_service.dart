@@ -118,7 +118,11 @@ class HiveStorageService {
     final data = _appSettingsBox.get('coach_conversation');
     if (data == null) return null;
 
-    return List<Map<String, dynamic>>.from(data as List);
+    return (data as List)
+        .map<Map<String, dynamic>>(
+          (item) => Map<String, dynamic>.from(item as Map),
+        )
+        .toList();
   }
 
   /// Clear all data (for testing or reset functionality)

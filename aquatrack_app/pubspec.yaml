@@ -11,6 +11,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   flutter_riverpod: ^2.5.1
   riverpod_annotation: ^2.3.5
   go_router: ^13.0.0
@@ -19,9 +22,9 @@ dependencies:
   hive: ^2.2.3
   tflite_flutter: ^0.10.4
   camera: ^0.10.5
-  firebase_core: ^2.27.0
-  firebase_auth: ^4.17.0
-  firebase_messaging: ^14.7.0
+  # firebase_core: ^2.27.0
+  # firebase_auth: ^4.17.0
+  # firebase_messaging: ^14.7.0
   fl_chart: ^0.67.0
   flutter_animate: ^4.5.0
 

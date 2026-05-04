@@ -44,11 +44,13 @@ class IntakeLogResponse(BaseModel):
     xp_earned: int
     bonus_xp: int
     logged_at: datetime
+    created_at: datetime
     temperature: Optional[str]
     location: Optional[str]
     mood_before: Optional[str]
     mood_after: Optional[str]
     source: str
+    device_info: Optional[str]
     is_validated: bool
     confidence_score: Optional[float]
 

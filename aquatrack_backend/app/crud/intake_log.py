@@ -12,6 +12,43 @@ from app.schemas.intake_log import IntakeLogCreate, IntakeLogUpdate
 class CRUDIntakeLog(CRUDBase[IntakeLog, IntakeLogCreate, IntakeLogUpdate]):
     """CRUD operations for IntakeLog model"""
 
+    def create(self, db: Session, *, obj_in: IntakeLogCreate, user_id: str) -> IntakeLog:
+        """Create new intake log with server-side calculations"""
+        # Calculate hydration factor based on liquid type
+        hydration_factors = {
+            "water": 1.0,
+            "tea": 0.85,
+            "coffee": 0.8,
+            "juice": 0.7,
+            "sports_drink": 0.9,
+            "other": 0.75,
+        }
+
+        hydration_factor = hydration_factors.get(obj_in.liquid_type, 0.75)
+        effective_volume = int(obj_in.volume_ml * hydration_factor)
+
+        # Calculate XP based on volume (base: 1 XP per 100ml)
+        base_xp = max(1, obj_in.volume_ml // 100)
+
+        # Create database object
+        db_obj = IntakeLog(
+            user_id=user_id,
+            volume_ml=obj_in.volume_ml,
+            liquid_type=obj_in.liquid_type,
+            hydration_factor=hydration_factor,
+            effective_volume_ml=effective_volume,
+            xp_earned=base_xp,
+            temperature=obj_in.temperature,
+            location=obj_in.location,
+            mood_before=obj_in.mood_before,
+            source=obj_in.source,
+        )
+
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
+
     def get_by_user_and_date(
         self,
         db: Session,

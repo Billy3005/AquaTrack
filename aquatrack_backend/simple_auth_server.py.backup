@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""
+Simple FastAPI server for authentication testing
+"""
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+app = FastAPI(title="Simple Auth Server")
+
+# CORS settings
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:8080",
+        "http://localhost:64038",
+        "http://127.0.0.1:64038",
+        "*"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    username: str = None
+    full_name: str = None
+
+@app.get("/api/v1/ping")
+async def ping():
+    return {"message": "pong", "status": "Simple auth server working"}
+
+@app.post("/api/v1/auth/login")
+async def login(request: LoginRequest):
+    """Simple login endpoint"""
+    print(f"Login request: {request.email}")
+
+    if request.email == "demo@aquatrack.com" and request.password == "demo123":
+        return {
+            "access_token": "mock_access_token_for_testing",
+            "refresh_token": "mock_refresh_token_for_testing",
+            "token_type": "bearer",
+            "expires_in": 1800,
+        }
+    else:
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect email or password"
+        )
+
+@app.post("/api/v1/auth/register")
+async def register(request: RegisterRequest):
+    """Simple register endpoint"""
+    print(f"Register request: {request.email}")
+
+    if request.email and request.password:
+        return {
+            "message": "Registration successful! Please login.",
+            "email": request.email
+        }
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Email and password required"
+        )
+
+if __name__ == "__main__":
+    import uvicorn
+    print("Starting simple auth server on port 8001...")
+    print("Demo credentials: demo@aquatrack.com / demo123")
+    uvicorn.run(app, host="0.0.0.0", port=8001, log_level="info")

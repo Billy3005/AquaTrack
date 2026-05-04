@@ -1,0 +1,15 @@
+{
+  "dart.flutterSdkPath": null,
+  "dart.devToolsLocation": "external",
+  "dart.openDevTools": "flutter",
+  "flutter.emulators": {
+    "Medium_Phone_API_36.1": {
+      "name": "Medium Phone API 36.1",
+      "id": "Medium_Phone_API_36.1"
+    },
+    "flutter_api30": {
+      "name": "Flutter API 30",
+      "id": "flutter_api30"
+    }
+  }
+}

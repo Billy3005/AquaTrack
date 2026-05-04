@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1 import api_router
 from app.core.config import settings
+from app.core.database import init_db
 
 # FastAPI app instance
 app = FastAPI(
@@ -20,12 +21,27 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=[
+        "Accept",
+        "Accept-Language",
+        "Content-Language",
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+    ],
+    expose_headers=["*"],
 )
 
 # API routes
 app.include_router(api_router, prefix="/api/v1")
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup"""
+    init_db()
+    print("Database initialized successfully")
 
 
 @app.get("/", response_class=JSONResponse)
@@ -50,10 +66,43 @@ async def health_check():
     }
 
 
+@app.get("/cors-test", response_class=JSONResponse)
+async def cors_test():
+    """CORS test endpoint"""
+    return {
+        "message": "CORS working! Frontend can call backend APIs",
+        "allowed_origins": settings.ALLOWED_ORIGINS,
+        "timestamp": "2026-05-04",
+    }
+
+
+@app.post("/simple-login", response_class=JSONResponse)
+async def simple_login(request: dict):
+    """Simple login endpoint for CORS testing"""
+    email = request.get("email", "")
+    password = request.get("password", "")
+
+    if email == "demo@aquatrack.com" and password == "demo123":
+        return {
+            "success": True,
+            "message": "Login successful!",
+            "access_token": "demo_token_123",
+            "user": {
+                "email": email,
+                "name": "Demo User"
+            }
+        }
+    else:
+        return {
+            "success": False,
+            "message": "Invalid credentials"
+        }
+
+
 if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8000,
+        port=8001,
         reload=settings.ENVIRONMENT == "development",
     )
