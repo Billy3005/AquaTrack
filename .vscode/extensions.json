@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "dart-code.flutter",
+    "dart-code.dart-code",
+    "diemasmichels.emulate",
+    "ms-vscode.vscode-flutter-widget-inspector",
+    "alexisvt.flutter-snippets",
+    "nash.awesome-flutter-snippets",
+    "pixelsnap-web.device-preview"
+  ]
+}

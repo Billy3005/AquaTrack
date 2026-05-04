@@ -24,37 +24,8 @@ async def create_intake_log(
     """
     Create new intake log entry
     """
-    # Calculate hydration factor based on liquid type
-    hydration_factors = {
-        "water": 1.0,
-        "tea": 0.85,
-        "coffee": 0.8,
-        "juice": 0.7,
-        "sports_drink": 0.9,
-        "other": 0.75,
-    }
-
-    hydration_factor = hydration_factors.get(intake_log_data.liquid_type, 0.75)
-    effective_volume = int(intake_log_data.volume_ml * hydration_factor)
-
-    # Calculate XP based on volume (base: 1 XP per 100ml)
-    base_xp = max(1, intake_log_data.volume_ml // 100)
-
-    # Create intake log
-    intake_log = IntakeLog(
-        user_id=current_user_id,
-        volume_ml=intake_log_data.volume_ml,
-        liquid_type=intake_log_data.liquid_type,
-        hydration_factor=hydration_factor,
-        effective_volume_ml=effective_volume,
-        xp_earned=base_xp,
-        temperature=intake_log_data.temperature,
-        location=intake_log_data.location,
-        mood_before=intake_log_data.mood_before,
-        source=intake_log_data.source,
-    )
-
-    db_intake_log = intake_log_crud.create(db=db, obj_in=intake_log)
+    # Create intake log using CRUD with server-side calculations
+    db_intake_log = intake_log_crud.create(db=db, obj_in=intake_log_data, user_id=current_user_id)
     return db_intake_log
 
 

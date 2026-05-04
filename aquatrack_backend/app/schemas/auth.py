@@ -2,6 +2,8 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from app.schemas.user import UserResponse
+
 
 class Token(BaseModel):
     """JWT token response schema"""
@@ -10,6 +12,7 @@ class Token(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int  # seconds until expiration
+    user: Optional[UserResponse] = None
 
 
 class TokenData(BaseModel):
