@@ -11,10 +11,12 @@ app_dir = Path(__file__).parent / "app"
 sys.path.append(str(app_dir))
 
 from sqlalchemy.orm import Session
+
 from app.core.database import SessionLocal
-from app.crud.user import user_crud
 from app.core.security import create_access_token, verify_password
+from app.crud.user import user_crud
 from app.schemas.user import UserLogin
+
 
 def test_authentication():
     """Test authentication logic directly"""
@@ -53,9 +55,11 @@ def test_authentication():
     except Exception as e:
         print(f"ERROR: Authentication test failed: {e}")
         import traceback
+
         traceback.print_exc()
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     test_authentication()
