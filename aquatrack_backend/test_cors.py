@@ -5,6 +5,7 @@ Test CORS configuration
 
 import requests
 
+
 def test_cors():
     """Test CORS with proper headers"""
 
@@ -26,8 +27,9 @@ def test_cors():
             "Access-Control-Request-Method": "POST",
             "Access-Control-Request-Headers": "Content-Type,Authorization",
         }
-        response = requests.options("http://localhost:8001/api/v1/auth/login",
-                                  headers=headers, timeout=10)
+        response = requests.options(
+            "http://localhost:8001/api/v1/auth/login", headers=headers, timeout=10
+        )
         print(f"OPTIONS Status: {response.status_code}")
         print(f"CORS Headers: {dict(response.headers)}")
     except Exception as e:
@@ -40,17 +42,19 @@ def test_cors():
             "Origin": "http://localhost:3000",
             "Content-Type": "application/json",
         }
-        data = {
-            "email": "demo@aquatrack.com",
-            "password": "demo123"
-        }
-        response = requests.post("http://localhost:8001/api/v1/auth/login",
-                               json=data, headers=headers, timeout=10)
+        data = {"email": "demo@aquatrack.com", "password": "demo123"}
+        response = requests.post(
+            "http://localhost:8001/api/v1/auth/login",
+            json=data,
+            headers=headers,
+            timeout=10,
+        )
         print(f"POST Status: {response.status_code}")
         print(f"Response: {response.text[:200]}...")
         print(f"CORS Headers: {dict(response.headers)}")
     except Exception as e:
         print(f"POST failed: {e}")
+
 
 if __name__ == "__main__":
     test_cors()

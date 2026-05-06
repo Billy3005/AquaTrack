@@ -5,15 +5,13 @@ Test authentication on port 8001
 
 import requests
 
+
 def test_auth_8001():
     """Test on port 8001"""
 
     # Test login
     url = "http://localhost:8001/api/v1/auth/login"
-    data = {
-        "email": "demo@aquatrack.com",
-        "password": "demo123"
-    }
+    data = {"email": "demo@aquatrack.com", "password": "demo123"}
 
     print(f"Testing: {url}")
 
@@ -31,6 +29,7 @@ def test_auth_8001():
 
     except Exception as e:
         print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     test_auth_8001()

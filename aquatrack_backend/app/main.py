@@ -87,16 +87,10 @@ async def simple_login(request: dict):
             "success": True,
             "message": "Login successful!",
             "access_token": "demo_token_123",
-            "user": {
-                "email": email,
-                "name": "Demo User"
-            }
+            "user": {"email": email, "name": "Demo User"},
         }
     else:
-        return {
-            "success": False,
-            "message": "Invalid credentials"
-        }
+        return {"success": False, "message": "Invalid credentials"}
 
 
 if __name__ == "__main__":

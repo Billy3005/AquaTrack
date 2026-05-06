@@ -3,17 +3,16 @@
 Test API endpoint directly
 """
 
-import requests
 import json
+
+import requests
+
 
 def test_login_api():
     """Test login API endpoint"""
     url = "http://localhost:8000/api/v1/auth/login"
     headers = {"Content-Type": "application/json"}
-    data = {
-        "email": "demo@aquatrack.com",
-        "password": "demo123"
-    }
+    data = {"email": "demo@aquatrack.com", "password": "demo123"}
 
     print(f"Testing POST {url}")
     print(f"Headers: {headers}")
@@ -31,6 +30,7 @@ def test_login_api():
 
     except requests.exceptions.RequestException as e:
         print(f"Request failed: {e}")
+
 
 if __name__ == "__main__":
     test_login_api()

@@ -25,7 +25,9 @@ async def create_intake_log(
     Create new intake log entry
     """
     # Create intake log using CRUD with server-side calculations
-    db_intake_log = intake_log_crud.create(db=db, obj_in=intake_log_data, user_id=current_user_id)
+    db_intake_log = intake_log_crud.create(
+        db=db, obj_in=intake_log_data, user_id=current_user_id
+    )
     return db_intake_log
 
 

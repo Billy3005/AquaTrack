@@ -3,8 +3,10 @@
 Final test with fresh session
 """
 
-import requests
 import time
+
+import requests
+
 
 def test_final_auth():
     """Test authentication with fresh session"""
@@ -27,12 +29,9 @@ def test_final_auth():
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
-        "User-Agent": "FinalTest/1.0"
+        "User-Agent": "FinalTest/1.0",
     }
-    data = {
-        "email": "demo@aquatrack.com",
-        "password": "demo123"
-    }
+    data = {"email": "demo@aquatrack.com", "password": "demo123"}
 
     print(f"\nTesting: {url}")
     print(f"Data: {data}")
@@ -56,6 +55,7 @@ def test_final_auth():
 
     except Exception as e:
         print(f"Request failed: {e}")
+
 
 if __name__ == "__main__":
     test_final_auth()

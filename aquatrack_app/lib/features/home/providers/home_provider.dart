@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/home_state.dart';
+import '../../../core/repositories/intake_repository.dart';
 import '../../../shared/models/daily_summary.dart';
 import '../../../shared/models/intake_log.dart';
 import '../../../shared/storage/hive_storage_service.dart';
@@ -45,20 +46,85 @@ class HomeNotifier extends _$HomeNotifier {
     _syncToServerInBackground(intakeLog);
   }
 
-  /// Load today's summary (local → server fallback)
+  /// Load today's summary (server first → local fallback)
   Future<DailySummary> _loadTodaySummary() async {
     try {
-      // Try loading from local storage first
-      final localSummary = await _loadFromLocalStorage();
-      if (localSummary != null) {
-        return localSummary;
-      }
+      final intakeRepository = IntakeRepository();
 
-      // Fallback to mock data for development
-      return DailySummary.mock();
+      // Try to get fresh data from server first
+      final serverSummary = await intakeRepository.getTodaySummary();
+
+      // Calculate additional fields needed for DailySummary
+      const dailyGoalMl = 2000; // Default goal, should come from user settings
+      final remainingMl =
+          (dailyGoalMl - serverSummary.totalEffectiveMl).clamp(0, dailyGoalMl);
+      final progress =
+          (serverSummary.totalEffectiveMl / dailyGoalMl).clamp(0.0, 1.0);
+
+      // Convert server response to DailySummary
+      final summary = DailySummary(
+        dailyGoalMl: dailyGoalMl,
+        totalEffectiveMl: serverSummary.totalEffectiveMl,
+        logCount: serverSummary.logCount,
+        progress: progress,
+        remainingMl: remainingMl,
+        streakDays: 1, // TODO: Get from server or calculate
+        xpToday: serverSummary.totalXpEarned,
+        currentLevel: 1, // TODO: Get from level provider
+        location: 'Home', // Default location
+        temperatureCelsius: 25.0, // Default temperature
+        lastUpdated: DateTime.now(),
+      );
+
+      // Save to local storage as cache
+      await HiveStorageService.instance.saveDailySummary(summary);
+
+      debugPrint('🏠 HomeProvider: Loaded fresh data from server');
+      return summary;
     } catch (e) {
-      // Return mock data if everything fails
-      return DailySummary.mock();
+      debugPrint('🏠 HomeProvider: Server error, falling back to local: $e');
+
+      // Fallback to local storage if server fails
+      try {
+        final localSummary = HiveStorageService.instance.loadTodaysSummary();
+        if (localSummary != null) {
+          debugPrint('🏠 HomeProvider: Loaded from local storage');
+          return localSummary;
+        }
+
+        // If no local data, create default summary
+        const dailyGoalMl = 2000;
+        return DailySummary(
+          dailyGoalMl: dailyGoalMl,
+          totalEffectiveMl: 0,
+          logCount: 0,
+          progress: 0.0,
+          remainingMl: dailyGoalMl,
+          streakDays: 0,
+          xpToday: 0,
+          currentLevel: 1,
+          location: 'Home',
+          temperatureCelsius: 25.0,
+          lastUpdated: DateTime.now(),
+        );
+      } catch (localError) {
+        debugPrint('🏠 HomeProvider: Local storage error: $localError');
+        // Return default summary if everything fails
+        const dailyGoalMl = 2000;
+        return DailySummary(
+          dailyGoalMl: dailyGoalMl,
+          totalEffectiveMl: 0,
+          logCount: 0,
+          progress: 0.0,
+          remainingMl: dailyGoalMl,
+          streakDays: 0,
+          xpToday: 0,
+          currentLevel: 1,
+          location: 'Home',
+          temperatureCelsius: 25.0,
+          lastUpdated: DateTime.now(),
+        );
+      }
     }
   }
 
@@ -164,9 +230,25 @@ class HomeNotifier extends _$HomeNotifier {
     }
   }
 
-  void _syncToServerInBackground(IntakeLog log) {
-    // TODO: Implement API sync
-    debugPrint('🌐 HomeProvider: Background sync: ${log.id}');
+  void _syncToServerInBackground(IntakeLog log) async {
+    try {
+      final intakeRepository = IntakeRepository();
+
+      // Sync this intake log to server
+      await intakeRepository.createIntakeLog(
+        volumeMl: log.volumeMl,
+        liquidType: log.liquidType,
+        temperature: null, // IntakeLog model doesn't have this field
+        location: null, // IntakeLog model doesn't have this field
+        moodBefore: null, // IntakeLog model doesn't have this field
+        source: log.source,
+      );
+
+      debugPrint('🌐 HomeProvider: Successfully synced to server: ${log.id}');
+    } catch (e) {
+      debugPrint('🌐 HomeProvider: Failed to sync to server: $e');
+      // Log will remain in local storage and can be synced later
+    }
   }
 
   /// Force refresh từ server

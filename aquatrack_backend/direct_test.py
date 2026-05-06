@@ -7,6 +7,7 @@ from app.core.database import SessionLocal, init_db
 from app.crud.user import user_crud
 from app.schemas.user import UserCreate
 
+
 def test_direct_auth():
     """Test authentication directly via database"""
 
@@ -26,7 +27,9 @@ def test_direct_auth():
             print(f"Demo user active: {demo_user.is_active}")
 
         # Test 2: Try authentication
-        authenticated_user = user_crud.authenticate(db, email="demo@aquatrack.com", password="demo123")
+        authenticated_user = user_crud.authenticate(
+            db, email="demo@aquatrack.com", password="demo123"
+        )
         print(f"\nAuthentication result: {authenticated_user is not None}")
         if authenticated_user:
             print(f"Authenticated user ID: {authenticated_user.id}")
@@ -38,7 +41,7 @@ def test_direct_auth():
             email="direct_test@aquatrack.com",
             password="test123",
             username="directtest",
-            full_name="Direct Test User"
+            full_name="Direct Test User",
         )
 
         # Check if test user already exists
@@ -52,9 +55,11 @@ def test_direct_auth():
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     test_direct_auth()

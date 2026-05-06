@@ -12,7 +12,9 @@ from app.schemas.intake_log import IntakeLogCreate, IntakeLogUpdate
 class CRUDIntakeLog(CRUDBase[IntakeLog, IntakeLogCreate, IntakeLogUpdate]):
     """CRUD operations for IntakeLog model"""
 
-    def create(self, db: Session, *, obj_in: IntakeLogCreate, user_id: str) -> IntakeLog:
+    def create(
+        self, db: Session, *, obj_in: IntakeLogCreate, user_id: str
+    ) -> IntakeLog:
         """Create new intake log with server-side calculations"""
         # Calculate hydration factor based on liquid type
         hydration_factors = {

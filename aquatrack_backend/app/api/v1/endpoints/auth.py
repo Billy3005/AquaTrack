@@ -25,8 +25,7 @@ async def register_user(user_create: UserCreate, db: Session = Depends(get_db)):
     existing_user = user_crud.get_by_email(db, email=user_create.email)
     if existing_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
         )
 
     # Check username if provided
@@ -34,8 +33,7 @@ async def register_user(user_create: UserCreate, db: Session = Depends(get_db)):
         existing_username = user_crud.get_by_username(db, username=user_create.username)
         if existing_username:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username already taken"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken"
             )
 
     try:
@@ -45,7 +43,7 @@ async def register_user(user_create: UserCreate, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Registration failed: {str(e)}"
+            detail=f"Registration failed: {str(e)}",
         )
 
 
@@ -61,7 +59,7 @@ async def login(request: dict):
     if not email or not password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email and password required"
+            detail="Email and password required",
         )
 
     # Mock authentication for demo user
@@ -92,13 +90,12 @@ async def login(request: dict):
                 "timezone": "Asia/Ho_Chi_Minh",
                 "created_at": "2026-05-04T15:00:00Z",
                 "last_active_at": None,
-                "is_active": True
-            }
+                "is_active": True,
+            },
         }
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password"
         )
 
 

@@ -3,8 +3,10 @@
 Test register endpoint
 """
 
-import requests
 import json
+
+import requests
+
 
 def test_register_api():
     """Test register API endpoint"""
@@ -14,7 +16,7 @@ def test_register_api():
         "email": "test@aquatrack.com",
         "password": "test123",
         "username": "testuser",
-        "full_name": "Test User"
+        "full_name": "Test User",
     }
 
     print(f"Testing POST {url}")
@@ -31,6 +33,7 @@ def test_register_api():
 
     except requests.exceptions.RequestException as e:
         print(f"Request failed: {e}")
+
 
 if __name__ == "__main__":
     test_register_api()
