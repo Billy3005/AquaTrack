@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 // import '../../features/level/presentation/pages/level_page.dart';
 // import '../../features/profile/presentation/pages/profile_page.dart';
 // import '../../features/log/presentation/pages/log_drink_page.dart';
-// import '../../features/scan/presentation/pages/smart_scan_page.dart';
+import '../../features/smart_scan/screens/smart_scan_screen.dart';
 import 'main_navigation.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -53,8 +53,7 @@ class AppRouter {
             const _PlaceholderPage(title: 'Log Drink'), settings);
 
       case smartScan:
-        return _buildRoute(
-            const _PlaceholderPage(title: 'Smart Scan'), settings);
+        return _buildRoute(const SmartScanScreen(), settings);
 
       default:
         return _buildRoute(const NotFoundPage(), settings);

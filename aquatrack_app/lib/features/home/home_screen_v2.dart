@@ -345,6 +345,27 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
             Expanded(child: _buildQuickLogButton(350)),
           ],
         ),
+        const SizedBox(height: 16),
+        // Smart Scan button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => context.push('/smart-scan'),
+            icon: const Icon(Icons.camera_alt),
+            label: const Text('📸 Smart Scan - Tự động đo thể tích'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: AppColors.purpleXP.withValues(alpha: 0.2),
+              foregroundColor: AppColors.purpleXP,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: AppColors.purpleXP.withValues(alpha: 0.3),
+                ),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
