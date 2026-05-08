@@ -9,10 +9,7 @@ import '../providers/profile_provider.dart';
 class StatsSummary extends StatelessWidget {
   final ProfileStats stats;
 
-  const StatsSummary({
-    super.key,
-    required this.stats,
-  });
+  const StatsSummary({super.key, required this.stats});
 
   @override
   Widget build(BuildContext context) {
@@ -58,10 +55,7 @@ class StatsSummary extends StatelessWidget {
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.xpPurple,
-                      AppColors.cyan,
-                    ],
+                    colors: [AppColors.xpPurple, AppColors.cyan],
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -184,41 +178,34 @@ class StatsSummary extends StatelessWidget {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            color: color,
-            size: 20,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.surface.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
           ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: AppTextStyles.bodyLarge.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(height: 6),
+              Text(
+                value,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    )
+        )
         .animate(delay: const Duration(milliseconds: 100))
         .fadeIn(duration: 300.ms)
         .scale(

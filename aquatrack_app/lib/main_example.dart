@@ -23,11 +23,7 @@ void main() async {
     // Handle initialization failure
   }
 
-  runApp(
-    const ProviderScope(
-      child: AquaTrackApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: AquaTrackApp()));
 }
 
 class AquaTrackApp extends StatelessWidget {
@@ -37,10 +33,7 @@ class AquaTrackApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: AppConfig.appName,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        fontFamily: 'Inter',
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue, fontFamily: 'Inter'),
       home: const AppInitializationWrapper(),
     );
   }
@@ -96,11 +89,7 @@ class _AppInitializationWrapperState
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_error != null) {
@@ -341,19 +330,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('AquaTrack Home'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-          ),
+          IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
         ],
       ),
       body: Padding(
@@ -375,7 +359,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                          'Level ${_currentUser!.level} • ${_currentUser!.totalXp} XP'),
+                        'Level ${_currentUser!.level} • ${_currentUser!.totalXp} XP',
+                      ),
                     ],
                   ),
                 ),
@@ -428,7 +413,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                  '✅ App Initialized: ${health['app_initialized']}'),
+                                '✅ App Initialized: ${health['app_initialized']}',
+                              ),
                               if (health.containsKey('api_connected'))
                                 Text(
                                   health['api_connected']
@@ -437,7 +423,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                               if (health.containsKey('user_authenticated'))
                                 Text(
-                                    '✅ User Authenticated: ${health['user_authenticated']}'),
+                                  '✅ User Authenticated: ${health['user_authenticated']}',
+                                ),
                             ],
                           );
                         }

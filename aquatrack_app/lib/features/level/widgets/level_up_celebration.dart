@@ -91,13 +91,13 @@ class _LevelUpCelebrationState extends State<LevelUpCelebration>
                 children: [
                   // Level up text
                   Text(
-                    'LEVEL UP!',
-                    style: AppTextStyles.displayLarge.copyWith(
-                      color: AppColors.xpPurple,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 48,
-                    ),
-                  )
+                        'LEVEL UP!',
+                        style: AppTextStyles.displayLarge.copyWith(
+                          color: AppColors.xpPurple,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 48,
+                        ),
+                      )
                       .animate(controller: _mainController)
                       .scale(
                         begin: const Offset(0.5, 0.5),
@@ -105,10 +105,7 @@ class _LevelUpCelebrationState extends State<LevelUpCelebration>
                         duration: 600.ms,
                         curve: Curves.elasticOut,
                       )
-                      .shimmer(
-                        duration: 1.5.seconds,
-                        color: AppColors.cyan,
-                      ),
+                      .shimmer(duration: 1.5.seconds, color: AppColors.cyan),
 
                   const SizedBox(height: 20),
 
@@ -130,17 +127,14 @@ class _LevelUpCelebrationState extends State<LevelUpCelebration>
 
                   // Congratulations text
                   Text(
-                    'Chúc mừng! Bạn đã đạt level ${widget.newLevel}',
-                    style: AppTextStyles.headingMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                    textAlign: TextAlign.center,
-                  )
-                      .animate(controller: _mainController)
-                      .fadeIn(
-                        delay: 800.ms,
-                        duration: 600.ms,
+                        'Chúc mừng! Bạn đã đạt level ${widget.newLevel}',
+                        style: AppTextStyles.headingMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
                       )
+                      .animate(controller: _mainController)
+                      .fadeIn(delay: 800.ms, duration: 600.ms)
                       .slideY(
                         begin: 0.5,
                         end: 0.0,
@@ -152,22 +146,18 @@ class _LevelUpCelebrationState extends State<LevelUpCelebration>
 
                   // Tap to continue
                   Text(
-                    'Tap để tiếp tục',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textHint,
-                    ),
-                  )
+                        'Tap để tiếp tục',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textHint,
+                        ),
+                      )
                       .animate(
                         onPlay: (controller) =>
                             controller.repeat(reverse: true),
                       )
                       .fadeIn(delay: 1.5.seconds, duration: 600.ms)
                       .then()
-                      .fade(
-                        begin: 1.0,
-                        end: 0.5,
-                        duration: 1.seconds,
-                      ),
+                      .fade(begin: 1.0, end: 0.5, duration: 1.seconds),
                 ],
               ),
             ),
@@ -216,49 +206,42 @@ class _LevelBadge extends StatelessWidget {
   final int level;
   final AnimationController controller;
 
-  const _LevelBadge({
-    required this.level,
-    required this.controller,
-  });
+  const _LevelBadge({required this.level, required this.controller});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.xpPurple, AppColors.cyan],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.xpPurple.withValues(alpha: 0.5),
-            blurRadius: 30,
-            spreadRadius: 5,
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.stars,
-            color: AppColors.textPrimary,
-            size: 32,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            'LEVEL $level',
-            style: AppTextStyles.headingLarge.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w900,
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [AppColors.xpPurple, AppColors.cyan],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.xpPurple.withValues(alpha: 0.5),
+                blurRadius: 30,
+                spreadRadius: 5,
+              ),
+            ],
           ),
-        ],
-      ),
-    )
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.stars, color: AppColors.textPrimary, size: 32),
+              const SizedBox(width: 12),
+              Text(
+                'LEVEL $level',
+                style: AppTextStyles.headingLarge.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        )
         .animate(controller: controller)
         .scale(
           begin: const Offset(0.3, 0.3),
@@ -267,24 +250,11 @@ class _LevelBadge extends StatelessWidget {
           duration: 800.ms,
           curve: Curves.bounceOut,
         )
-        .rotate(
-          begin: 0.0,
-          end: 0.05,
-          delay: 300.ms,
-          duration: 200.ms,
-        )
+        .rotate(begin: 0.0, end: 0.05, delay: 300.ms, duration: 200.ms)
         .then()
-        .rotate(
-          begin: 0.05,
-          end: -0.05,
-          duration: 400.ms,
-        )
+        .rotate(begin: 0.05, end: -0.05, duration: 400.ms)
         .then()
-        .rotate(
-          begin: -0.05,
-          end: 0.0,
-          duration: 200.ms,
-        );
+        .rotate(begin: -0.05, end: 0.0, duration: 200.ms);
   }
 }
 
@@ -292,33 +262,27 @@ class _AvatarCelebration extends StatelessWidget {
   final String emoji;
   final AnimationController controller;
 
-  const _AvatarCelebration({
-    required this.emoji,
-    required this.controller,
-  });
+  const _AvatarCelebration({required this.emoji, required this.controller});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 120,
-      height: 120,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [
-            AppColors.cyan.withValues(alpha: 0.3),
-            AppColors.xpPurple.withValues(alpha: 0.1),
-            Colors.transparent,
-          ],
-        ),
-      ),
-      child: Center(
-        child: Text(
-          emoji,
-          style: const TextStyle(fontSize: 80),
-        ),
-      ),
-    )
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [
+                AppColors.cyan.withValues(alpha: 0.3),
+                AppColors.xpPurple.withValues(alpha: 0.1),
+                Colors.transparent,
+              ],
+            ),
+          ),
+          child: Center(
+            child: Text(emoji, style: const TextStyle(fontSize: 80)),
+          ),
+        )
         .animate(controller: controller)
         .scale(
           begin: const Offset(0.0, 0.0),
@@ -356,13 +320,10 @@ class _ConfettiPiece extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
-    )
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        )
         .animate(controller: controller)
         .slideY(
           begin: -1.0,
@@ -371,20 +332,10 @@ class _ConfettiPiece extends StatelessWidget {
           duration: 2.seconds,
           curve: Curves.easeInQuad,
         )
-        .rotate(
-          begin: 0.0,
-          end: 6.0,
-          delay: delay,
-          duration: 2.seconds,
-        )
-        .fadeIn(
-          delay: delay,
-          duration: 200.ms,
-        )
+        .rotate(begin: 0.0, end: 6.0, delay: delay, duration: 2.seconds)
+        .fadeIn(delay: delay, duration: 200.ms)
         .then()
-        .fadeOut(
-          duration: 500.ms,
-        );
+        .fadeOut(duration: 500.ms);
   }
 }
 

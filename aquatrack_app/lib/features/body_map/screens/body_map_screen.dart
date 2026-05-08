@@ -15,7 +15,7 @@ class BodyMapScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bodyMapState = ref.watch(bodyMapNotifierProvider);
+    final bodyMapAsyncState = ref.watch(bodyMapNotifierProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -26,61 +26,141 @@ class BodyMapScreen extends ConsumerWidget {
         centerTitle: false,
         actions: [
           // Refresh button
-          IconButton(
-            onPressed: () {
-              ref.read(bodyMapNotifierProvider.notifier).refresh();
-            },
-            icon: const Icon(
-              Icons.refresh_rounded,
-              color: AppColors.textSecondary,
+          bodyMapAsyncState.when(
+            data: (_) => IconButton(
+              onPressed: () {
+                ref.read(bodyMapNotifierProvider.notifier).refresh();
+              },
+              icon: const Icon(
+                Icons.refresh_rounded,
+                color: AppColors.textSecondary,
+              ),
             ),
+            loading: () => const Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+            error: (error, stack) => const SizedBox(),
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          // Main content
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Overall health summary
-                _buildHealthSummary(ref, bodyMapState),
-                const SizedBox(height: 24),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(bodyMapNotifierProvider.notifier).refresh();
+        },
+        color: AppColors.cyan,
+        backgroundColor: AppColors.surface,
+        child: bodyMapAsyncState.when(
+          data: (bodyMapState) =>
+              _buildBodyMapContent(context, ref, bodyMapState),
+          loading: () => _buildLoadingState(),
+          error: (error, stack) => _buildErrorState(error, ref),
+        ),
+      ),
+    );
+  }
 
-                // Interactive body map
-                _buildBodyMapSection(ref, bodyMapState),
-                const SizedBox(height: 24),
+  /// Build the main body map content when data is loaded
+  Widget _buildBodyMapContent(
+    BuildContext context,
+    WidgetRef ref,
+    BodyMapState bodyMapState,
+  ) {
+    return Stack(
+      children: [
+        // Main content
+        SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Overall health summary
+              _buildHealthSummary(ref, bodyMapState),
+              const SizedBox(height: 24),
 
-                // Critical organs alert (if any)
-                _buildCriticalOrgansAlert(ref, bodyMapState),
+              // Interactive body map
+              _buildBodyMapSection(ref, bodyMapState),
+              const SizedBox(height: 24),
 
-                // Organ grid summary
-                _buildOrganGridSummary(bodyMapState),
+              // Critical organs alert (if any)
+              _buildCriticalOrgansAlert(ref, bodyMapState),
 
-                // Bottom spacing
-                const SizedBox(height: 100),
-              ],
+              // Organ grid summary
+              _buildOrganGridSummary(bodyMapState),
+
+              // Bottom spacing
+              const SizedBox(height: 100),
+            ],
+          ),
+        ),
+
+        // Floating organ info card
+        if (bodyMapState.selectedOrgan != null)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: OrganInfoCards(
+              selectedOrgan: bodyMapState.organHealths
+                  .where((oh) => oh.organ.id == bodyMapState.selectedOrgan?.id)
+                  .firstOrNull,
+              onClose: () {
+                ref.read(bodyMapNotifierProvider.notifier).clearSelection();
+              },
             ),
           ),
+      ],
+    );
+  }
 
-          // Floating organ info card
-          if (bodyMapState.selectedOrgan != null)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: OrganInfoCards(
-                selectedOrgan: bodyMapState.organHealths
-                    .where(
-                        (oh) => oh.organ.id == bodyMapState.selectedOrgan?.id)
-                    .firstOrNull,
-                onClose: () {
-                  ref.read(bodyMapNotifierProvider.notifier).clearSelection();
-                },
-              ),
-            ),
+  /// Build loading state
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('Đang tải dữ liệu cơ thể...', style: AppTextStyles.bodyMedium),
+        ],
+      ),
+    );
+  }
+
+  /// Build error state
+  Widget _buildErrorState(Object error, WidgetRef ref) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+          const SizedBox(height: 16),
+          const Text(
+            'Không thể tải dữ liệu cơ thể',
+            style: AppTextStyles.headingMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error.toString(),
+            style: AppTextStyles.caption,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+              // Retry loading data
+              ref.read(bodyMapNotifierProvider.notifier).refresh();
+            },
+            child: const Text('Thử lại'),
+          ),
         ],
       ),
     );
@@ -238,8 +318,9 @@ class BodyMapScreen extends ConsumerWidget {
 
   /// Build critical organs alert
   Widget _buildCriticalOrgansAlert(WidgetRef ref, BodyMapState bodyMapState) {
-    final criticalOrgans =
-        ref.read(bodyMapNotifierProvider.notifier).getCriticalOrgans();
+    final criticalOrgans = ref
+        .read(bodyMapNotifierProvider.notifier)
+        .getCriticalOrgans();
 
     if (criticalOrgans.isEmpty) {
       return const SizedBox.shrink();
@@ -277,15 +358,19 @@ class BodyMapScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          ...criticalOrgans.take(3).map((organHealth) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  '• ${organHealth.organ.name}: ${organHealth.statusMessage}',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
+          ...criticalOrgans
+              .take(3)
+              .map(
+                (organHealth) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    '• ${organHealth.organ.name}: ${organHealth.statusMessage}',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
-              )),
+              ),
         ],
       ),
     );

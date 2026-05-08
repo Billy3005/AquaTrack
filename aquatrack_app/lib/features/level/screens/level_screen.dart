@@ -16,22 +16,8 @@ class LevelScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final levelState = ref.watch(levelNotifierProvider);
+    final levelAsyncState = ref.watch(levelNotifierProvider);
     final levelNotifier = ref.read(levelNotifierProvider.notifier);
-
-    // Show level-up celebration nếu có
-    if (levelState.isLevelingUp) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        LevelUpCelebrationManager.show(
-          context,
-          newLevel: levelState.currentLevel,
-          avatarEmoji: levelNotifier.selectedAvatar.emoji,
-          onComplete: () {
-            levelNotifier.clearLevelUpState();
-          },
-        );
-      });
-    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -49,57 +35,160 @@ class LevelScreen extends ConsumerWidget {
               onPressed: () async {
                 await levelNotifier.addXP(50);
               },
-              icon: const Icon(
-                Icons.add,
-                color: AppColors.textSecondary,
-              ),
+              icon: const Icon(Icons.add, color: AppColors.textSecondary),
               tooltip: 'Add 50 XP (Debug)',
             ),
+          // Refresh button
+          levelAsyncState.when(
+            data: (_) => IconButton(
+              onPressed: () {
+                ref.invalidate(levelNotifierProvider);
+              },
+              icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
+            ),
+            loading: () => const Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+            error: (error, stack) => const SizedBox(),
+          ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-
-            // XP Progress Bar
-            XPProgressBar(
-              currentLevel: levelState.currentLevel,
-              currentXP: levelState.currentXP,
-              nextLevelXP: levelState.nextLevelXP,
-              isAnimating: levelState.isLevelingUp,
-            ),
-
-            const SizedBox(height: 32),
-
-            // Current Avatar Display
-            AvatarCollectionShowcase(
-              avatars: levelState.avatars,
-              currentLevel: levelState.currentLevel,
-              onAvatarSelect: (avatar) {
-                levelNotifier.selectAvatar(avatar.id);
-              },
-            ),
-
-            const SizedBox(height: 32),
-
-            // Achievement Badges Grid
-            AchievementBadgesGrid(
-              achievements: levelState.achievements,
-              onAchievementTap: (achievement) {
-                _showAchievementDetails(context, achievement);
-              },
-            ),
-
-            const SizedBox(height: 32),
-
-            // Stats Summary Card
-            _StatsSummaryCard(levelState: levelState),
-
-            // Bottom padding
-            const SizedBox(height: 24),
-          ],
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(levelNotifierProvider);
+          await ref.read(levelNotifierProvider.future);
+        },
+        color: AppColors.cyan,
+        backgroundColor: AppColors.surface,
+        child: levelAsyncState.when(
+          data: (levelState) =>
+              _buildLevelContent(context, levelState, levelNotifier),
+          loading: () => _buildLoadingState(),
+          error: (error, stack) => _buildErrorState(error, ref),
         ),
+      ),
+    );
+  }
+
+  /// Build loading state
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('Đang tải dữ liệu level...', style: AppTextStyles.bodyMedium),
+        ],
+      ),
+    );
+  }
+
+  /// Build error state
+  Widget _buildErrorState(Object error, WidgetRef ref) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+          const SizedBox(height: 16),
+          const Text(
+            'Không thể tải dữ liệu level',
+            style: AppTextStyles.headingMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error.toString(),
+            style: AppTextStyles.caption,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+              // Retry loading data
+              ref.invalidate(levelNotifierProvider);
+            },
+            child: const Text('Thử lại'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build the main level content when data is loaded
+  Widget _buildLevelContent(
+    BuildContext context,
+    LevelState levelState,
+    dynamic levelNotifier,
+  ) {
+    // Show level-up celebration nếu có
+    if (levelState.isLevelingUp) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final selectedAvatar = await levelNotifier.getSelectedAvatar();
+        if (selectedAvatar != null && context.mounted) {
+          LevelUpCelebrationManager.show(
+            context,
+            newLevel: levelState.currentLevel,
+            avatarEmoji: selectedAvatar.emoji,
+            onComplete: () {
+              levelNotifier.clearLevelUpState();
+            },
+          );
+        }
+      });
+    }
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
+
+          // XP Progress Bar
+          XPProgressBar(
+            currentLevel: levelState.currentLevel,
+            currentXP: levelState.currentXP,
+            nextLevelXP: levelState.nextLevelXP,
+            isAnimating: levelState.isLevelingUp,
+          ),
+
+          const SizedBox(height: 32),
+
+          // Current Avatar Display
+          AvatarCollectionShowcase(
+            avatars: levelState.avatars,
+            currentLevel: levelState.currentLevel,
+            onAvatarSelect: (avatar) {
+              levelNotifier.selectAvatar(avatar.id);
+            },
+          ),
+
+          const SizedBox(height: 32),
+
+          // Achievement Badges Grid
+          AchievementBadgesGrid(
+            achievements: levelState.achievements,
+            onAchievementTap: (achievement) {
+              _showAchievementDetails(context, achievement);
+            },
+          ),
+
+          const SizedBox(height: 32),
+
+          // Stats Summary Card
+          _StatsSummaryCard(levelState: levelState),
+
+          // Bottom padding
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }
@@ -159,9 +248,7 @@ class LevelScreen extends ConsumerWidget {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'Đóng',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.cyan,
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.cyan),
             ),
           ),
         ],
@@ -199,20 +286,14 @@ class _StatsSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.surfaceLight,
-        ),
+        border: Border.all(color: AppColors.surfaceLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.analytics,
-                color: AppColors.cyan,
-                size: 20,
-              ),
+              const Icon(Icons.analytics, color: AppColors.cyan, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Thống kê tổng quan',
@@ -282,11 +363,7 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(
-          icon,
-          color: AppColors.textSecondary,
-          size: 20,
-        ),
+        Icon(icon, color: AppColors.textSecondary, size: 20),
         const SizedBox(height: 4),
         Text(
           value,
@@ -296,9 +373,7 @@ class _StatItem extends StatelessWidget {
         ),
         Text(
           label,
-          style: AppTextStyles.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );

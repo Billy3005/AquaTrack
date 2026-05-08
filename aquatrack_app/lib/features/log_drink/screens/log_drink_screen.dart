@@ -20,9 +20,7 @@ class LogDrinkScreen extends ConsumerWidget {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
         child: SafeArea(
           child: Column(
             children: [
@@ -30,9 +28,7 @@ class LogDrinkScreen extends ConsumerWidget {
               _buildAppBar(context),
 
               // Content
-              Expanded(
-                child: _buildContent(context, logState, ref),
-              ),
+              Expanded(child: _buildContent(context, logState, ref)),
             ],
           ),
         ),
@@ -61,27 +57,24 @@ class LogDrinkScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 16),
-          Text(
-            'Ghi nhận thức uống',
-            style: AppTextStyles.headlineMedium,
-          ),
+          Text('Ghi nhận thức uống', style: AppTextStyles.headlineMedium),
         ],
       ),
     );
   }
 
   Widget _buildContent(
-      BuildContext context, LogDrinkState logState, WidgetRef ref) {
+    BuildContext context,
+    LogDrinkState logState,
+    WidgetRef ref,
+  ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Drink Type Selection
-          Text(
-            'Loại thức uống',
-            style: AppTextStyles.headlineMedium,
-          ),
+          Text('Loại thức uống', style: AppTextStyles.headlineMedium),
           const SizedBox(height: 16),
           DrinkTypeChips(
             selectedType: logState.selectedDrinkType,
@@ -93,10 +86,7 @@ class LogDrinkScreen extends ConsumerWidget {
           const SizedBox(height: 32),
 
           // Amount Selection
-          Text(
-            'Lượng nước',
-            style: AppTextStyles.headlineMedium,
-          ),
+          Text('Lượng nước', style: AppTextStyles.headlineMedium),
           const SizedBox(height: 16),
           AmountStepper(
             currentAmount: logState.amountMl,

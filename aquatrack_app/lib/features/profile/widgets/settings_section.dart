@@ -96,11 +96,7 @@ class SettingsSection extends StatelessWidget {
             icon: Icons.palette_outlined,
             title: 'Giao diện',
             value: selectedTheme,
-            options: const {
-              'dark': 'Tối',
-              'light': 'Sáng',
-              'auto': 'Tự động',
-            },
+            options: const {'dark': 'Tối', 'light': 'Sáng', 'auto': 'Tự động'},
             onChanged: onThemeChanged,
           ),
 
@@ -110,10 +106,7 @@ class SettingsSection extends StatelessWidget {
             icon: Icons.language_outlined,
             title: 'Ngôn ngữ',
             value: language,
-            options: const {
-              'vi': 'Tiếng Việt',
-              'en': 'English',
-            },
+            options: const {'vi': 'Tiếng Việt', 'en': 'English'},
             onChanged: onLanguageChanged,
           ),
         ],
@@ -123,9 +116,7 @@ class SettingsSection extends StatelessWidget {
 
   /// Build daily goal slider setting
   Widget _buildDailyGoalSetting() {
-    return Builder(
-      builder: (context) => _buildDailyGoalContent(),
-    );
+    return Builder(builder: (context) => _buildDailyGoalContent());
   }
 
   /// Build daily goal content with context
@@ -135,11 +126,7 @@ class SettingsSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Icon(
-              Icons.flag_outlined,
-              color: AppColors.cyan,
-              size: 20,
-            ),
+            const Icon(Icons.flag_outlined, color: AppColors.cyan, size: 20),
             const SizedBox(width: 8),
             Text(
               'Mục tiêu hàng ngày',
@@ -201,9 +188,7 @@ class SettingsSection extends StatelessWidget {
         ),
         Text(
           'Lượng nước cần uống mỗi ngày',
-          style: AppTextStyles.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );
@@ -226,11 +211,7 @@ class SettingsSection extends StatelessWidget {
             color: AppColors.surface.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            color: AppColors.cyan,
-            size: 20,
-          ),
+          child: Icon(icon, color: AppColors.cyan, size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -283,11 +264,7 @@ class SettingsSection extends StatelessWidget {
             color: AppColors.surface.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            color: AppColors.cyan,
-            size: 20,
-          ),
+          child: Icon(icon, color: AppColors.cyan, size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(

@@ -6,15 +6,14 @@ import 'package:aquatrack_app/core/theme/app_theme.dart';
 
 void main() {
   group('AquaTrack App Tests', () {
-    testWidgets('App theme configuration works correctly',
-        (WidgetTester tester) async {
+    testWidgets('App theme configuration works correctly', (
+      WidgetTester tester,
+    ) async {
       // Test theme in isolation without navigation
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.darkTheme,
-          home: const Scaffold(
-            body: Center(child: Text('Test')),
-          ),
+          home: const Scaffold(body: Center(child: Text('Test'))),
         ),
       );
 
@@ -26,8 +25,9 @@ void main() {
       expect(materialApp.theme!.brightness, Brightness.dark);
     });
 
-    testWidgets('Riverpod ProviderScope can be initialized',
-        (WidgetTester tester) async {
+    testWidgets('Riverpod ProviderScope can be initialized', (
+      WidgetTester tester,
+    ) async {
       bool providerInitialized = false;
 
       await tester.pumpWidget(

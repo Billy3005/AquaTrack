@@ -171,10 +171,7 @@ class _DropFillPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          fillColor.withValues(alpha: 0.6),
-          fillColor,
-        ],
+        colors: [fillColor.withValues(alpha: 0.6), fillColor],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     final path = _createDropPath(size);
@@ -212,26 +209,34 @@ Path _createDropPath(Size size) {
 
   // Right curve
   path.quadraticBezierTo(
-    width * 0.85, height * 0.4, // Control point
-    width * 0.85, height * 0.7, // End point
+    width * 0.85,
+    height * 0.4, // Control point
+    width * 0.85,
+    height * 0.7, // End point
   );
 
   // Bottom right curve
   path.quadraticBezierTo(
-    width * 0.85, height * 0.95, // Control point
-    width * 0.5, height * 0.95, // Bottom center
+    width * 0.85,
+    height * 0.95, // Control point
+    width * 0.5,
+    height * 0.95, // Bottom center
   );
 
   // Bottom left curve
   path.quadraticBezierTo(
-    width * 0.15, height * 0.95, // Control point
-    width * 0.15, height * 0.7, // End point
+    width * 0.15,
+    height * 0.95, // Control point
+    width * 0.15,
+    height * 0.7, // End point
   );
 
   // Left curve back to top
   path.quadraticBezierTo(
-    width * 0.15, height * 0.4, // Control point
-    width * 0.5, height * 0.1, // Back to top
+    width * 0.15,
+    height * 0.4, // Control point
+    width * 0.5,
+    height * 0.1, // Back to top
   );
 
   path.close();

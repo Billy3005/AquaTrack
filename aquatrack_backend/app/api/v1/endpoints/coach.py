@@ -1,8 +1,9 @@
 import random
+import uuid
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -10,6 +11,12 @@ from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud.intake_log import intake_log_crud
 from app.crud.user import user_crud
+from app.crud.conversation import conversation_crud, conversation_session_crud
+from app.schemas.conversation import (
+    ChatMessageRequest, ChatMessageResponse, ConversationHistoryResponse,
+    ConversationSessionListResponse, QuickReplyActionRequest, ContextUpdateRequest,
+    MessageCreate, MessageResponse, ConversationSessionCreate
+)
 
 router = APIRouter()
 
@@ -355,6 +362,301 @@ async def get_coaching_insights(
         )
 
     return {"insights": insights}
+
+
+@router.post("/conversation/send", response_model=ChatMessageResponse)
+async def send_conversation_message(
+    request: ChatMessageRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """
+    Send a message in conversation and get AI response with full history storage
+    """
+    try:
+        # Get or create session
+        session = conversation_session_crud.get_or_create_session(
+            db, user_id=current_user_id, session_id=request.session_id
+        )
+
+        # Generate unique message IDs
+        user_message_id = str(uuid.uuid4())
+        ai_message_id = str(uuid.uuid4())
+
+        # Get conversation context for AI generation
+        recent_context = conversation_crud.get_conversation_context(
+            db, user_id=current_user_id, session_id=session.session_id, limit=10
+        )
+
+        # Get user stats for context
+        today = date.today()
+        today_stats = intake_log_crud.get_daily_stats(db, current_user_id, today)
+
+        # Generate AI response
+        ai_response = await _generate_coach_response(
+            request.content.lower().strip(),
+            request.context or {},
+            today_stats["total_effective_ml"],
+            today_stats["log_count"],
+            datetime.now().hour,
+            []
+        )
+
+        # Prepare quick replies for storage
+        quick_replies_data = []
+        if hasattr(ai_response, 'action_items') and ai_response.action_items:
+            for action in ai_response.action_items:
+                quick_replies_data.append({
+                    "id": str(uuid.uuid4()),
+                    "text": action,
+                    "action": "log_water"  # Default action
+                })
+
+        # Prepare message data
+        user_message_data = MessageCreate(
+            message_id=user_message_id,
+            content=request.content,
+            message_type="user",
+            context_data=request.context
+        )
+
+        ai_message_data = MessageCreate(
+            message_id=ai_message_id,
+            content=ai_response.response,
+            message_type="ai",
+            ai_message_type=ai_response.coaching_type,
+            quick_replies=quick_replies_data,
+            context_data={
+                "motivation_level": ai_response.motivation_level,
+                "suggestions": ai_response.suggestions,
+                "user_stats": {
+                    "total_today": today_stats["total_effective_ml"],
+                    "log_count": today_stats["log_count"]
+                }
+            }
+        )
+
+        # Save both messages atomically
+        user_message_db, ai_message_db = conversation_crud.create_conversation_pair(
+            db,
+            user_id=current_user_id,
+            session_id=session.session_id,
+            user_message=user_message_data,
+            ai_message=ai_message_data
+        )
+
+        # Convert to response format
+        user_message_response = MessageResponse(
+            id=user_message_db.id,
+            message_id=user_message_db.message_id,
+            session_id=user_message_db.session_id,
+            content=user_message_db.content,
+            message_type=user_message_db.message_type,
+            ai_message_type=user_message_db.ai_message_type,
+            quick_replies=user_message_db.quick_replies,
+            context_data=user_message_db.context_data,
+            created_at=user_message_db.created_at,
+            updated_at=user_message_db.updated_at,
+            is_deleted=user_message_db.is_deleted
+        )
+
+        ai_message_response = MessageResponse(
+            id=ai_message_db.id,
+            message_id=ai_message_db.message_id,
+            session_id=ai_message_db.session_id,
+            content=ai_message_db.content,
+            message_type=ai_message_db.message_type,
+            ai_message_type=ai_message_db.ai_message_type,
+            quick_replies=ai_message_db.quick_replies,
+            context_data=ai_message_db.context_data,
+            created_at=ai_message_db.created_at,
+            updated_at=ai_message_db.updated_at,
+            is_deleted=ai_message_db.is_deleted
+        )
+
+        return ChatMessageResponse(
+            message_id=ai_message_id,
+            session_id=session.session_id,
+            user_message=user_message_response,
+            ai_response=ai_message_response
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to process conversation: {str(e)}")
+
+
+@router.get("/conversation/history", response_model=ConversationHistoryResponse)
+async def get_conversation_history(
+    session_id: str,
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=100),
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """
+    Get conversation history for a specific session
+    """
+    skip = (page - 1) * limit
+
+    messages = conversation_crud.get_messages_by_session(
+        db,
+        user_id=current_user_id,
+        session_id=session_id,
+        skip=skip,
+        limit=limit + 1,  # Get one extra to check if there are more
+        order_desc=False
+    )
+
+    has_more = len(messages) > limit
+    if has_more:
+        messages = messages[:limit]
+
+    message_responses = []
+    for message in messages:
+        message_responses.append(MessageResponse(
+            id=message.id,
+            message_id=message.message_id,
+            session_id=message.session_id,
+            content=message.content,
+            message_type=message.message_type,
+            ai_message_type=message.ai_message_type,
+            quick_replies=message.quick_replies,
+            context_data=message.context_data,
+            created_at=message.created_at,
+            updated_at=message.updated_at,
+            is_deleted=message.is_deleted
+        ))
+
+    return ConversationHistoryResponse(
+        session_id=session_id,
+        total_messages=len(message_responses),
+        messages=message_responses,
+        has_more=has_more,
+        next_page=page + 1 if has_more else None
+    )
+
+
+@router.get("/conversation/sessions", response_model=ConversationSessionListResponse)
+async def get_conversation_sessions(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=50),
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """
+    Get all conversation sessions for the current user
+    """
+    sessions = conversation_session_crud.get_sessions_by_user(
+        db, user_id=current_user_id, skip=skip, limit=limit
+    )
+
+    return ConversationSessionListResponse(
+        sessions=sessions,
+        total_count=len(sessions)
+    )
+
+
+@router.post("/conversation/quick-reply")
+async def handle_quick_reply_action(
+    request: QuickReplyActionRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """
+    Handle quick reply action and potentially trigger follow-up responses
+    """
+    # Validate session exists and belongs to current user
+    session = conversation_session_crud.get_active_session(
+        db, user_id=current_user_id, session_id=request.session_id
+    )
+    if not session:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found or access denied"
+        )
+
+    # For now, just acknowledge the quick reply
+    # In the future, this could trigger specific actions like logging water, etc.
+
+    # Generate a simple acknowledgment message
+    ai_message_id = str(uuid.uuid4())
+
+    acknowledgment = "Đã nhận! Cảm ơn bạn đã tương tác! 👍"
+
+    ai_message_data = MessageCreate(
+        message_id=ai_message_id,
+        content=acknowledgment,
+        message_type="ai",
+        ai_message_type="acknowledgment",
+        context_data={"quick_reply_id": request.quick_reply_id}
+    )
+
+    ai_message_db = conversation_crud.create_message(
+        db,
+        user_id=current_user_id,
+        session_id=request.session_id,
+        message=ai_message_data
+    )
+
+    return {"message": "Quick reply processed", "ai_response": acknowledgment}
+
+
+@router.post("/conversation/context")
+async def update_conversation_context(
+    request: ContextUpdateRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """
+    Update conversation context for better AI responses
+    """
+    # Validate session exists and belongs to current user
+    session = conversation_session_crud.get_active_session(
+        db, user_id=current_user_id, session_id=request.session_id
+    )
+    if not session:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found or access denied"
+        )
+
+    # Store context as a system message
+    context_message_id = str(uuid.uuid4())
+
+    context_message_data = MessageCreate(
+        message_id=context_message_id,
+        content="Context updated",
+        message_type="system",
+        context_data=request.context
+    )
+
+    conversation_crud.create_message(
+        db,
+        user_id=current_user_id,
+        session_id=request.session_id,
+        message=context_message_data
+    )
+
+    return {"message": "Context updated successfully"}
+
+
+@router.delete("/conversation/sessions/{session_id}")
+async def archive_conversation_session(
+    session_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """
+    Archive a conversation session
+    """
+    session = conversation_session_crud.archive_session(
+        db, user_id=current_user_id, session_id=session_id
+    )
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    return {"message": "Session archived successfully"}
 
 
 # Helper functions

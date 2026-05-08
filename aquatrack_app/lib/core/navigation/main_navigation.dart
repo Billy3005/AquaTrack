@@ -6,10 +6,7 @@ import '../theme/app_text_styles.dart';
 class MainNavigation extends StatefulWidget {
   final int initialIndex;
 
-  const MainNavigation({
-    super.key,
-    this.initialIndex = 0,
-  });
+  const MainNavigation({super.key, this.initialIndex = 0});
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
@@ -49,11 +46,7 @@ class _MainNavigationState extends State<MainNavigation> {
       label: 'Body',
       activeColor: AppColors.success,
     ),
-    NavItem(
-      icon: Icons.analytics,
-      label: 'Stats',
-      activeColor: AppColors.info,
-    ),
+    NavItem(icon: Icons.analytics, label: 'Stats', activeColor: AppColors.info),
     NavItem(
       icon: Icons.military_tech,
       label: 'Level',
@@ -216,32 +209,19 @@ class _PlaceholderPage extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _PlaceholderPage({
-    required this.title,
-    required this.subtitle,
-  });
+  const _PlaceholderPage({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        centerTitle: true,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: Text(title), centerTitle: true, elevation: 0),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.construction,
-                size: 64,
-                color: AppColors.cyanAccent,
-              ),
+              Icon(Icons.construction, size: 64, color: AppColors.cyanAccent),
               const SizedBox(height: 24),
               Text(
                 title,

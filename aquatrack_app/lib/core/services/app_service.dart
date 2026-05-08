@@ -42,7 +42,9 @@ class AppService {
         AppLogger.info(_tag, 'API connection successful');
       } else {
         AppLogger.warning(
-            _tag, 'API connection failed - app will work offline');
+          _tag,
+          'API connection failed - app will work offline',
+        );
       }
 
       _isInitialized = true;

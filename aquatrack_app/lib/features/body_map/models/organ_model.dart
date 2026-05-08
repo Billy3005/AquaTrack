@@ -54,8 +54,10 @@ class OrganHealth {
     required OrganInfo organ,
     required double hydrationLevel,
   }) {
-    final adjustedLevel =
-        _calculateAdjustedLevel(hydrationLevel, organ.priority);
+    final adjustedLevel = _calculateAdjustedLevel(
+      hydrationLevel,
+      organ.priority,
+    );
     final state = _calculateState(adjustedLevel);
     final color = _calculateColor(organ, adjustedLevel);
     final message = _getStatusMessage(organ, state);

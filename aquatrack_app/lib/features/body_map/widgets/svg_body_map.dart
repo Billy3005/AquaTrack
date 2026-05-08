@@ -101,10 +101,7 @@ class BodyMapPainter extends CustomPainter {
   final List<OrganHealth> organHealths;
   final Function(OrganInfo)? onOrganTap;
 
-  BodyMapPainter({
-    required this.organHealths,
-    this.onOrganTap,
-  });
+  BodyMapPainter({required this.organHealths, this.onOrganTap});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -134,19 +131,18 @@ class BodyMapPainter extends CustomPainter {
     final headCenter = Offset(centerX, headRadius + 20);
 
     // Body outline path
-    bodyPath.addOval(Rect.fromCenter(
-      center: headCenter,
-      width: headRadius * 2,
-      height: headRadius * 2.2,
-    ));
+    bodyPath.addOval(
+      Rect.fromCenter(
+        center: headCenter,
+        width: headRadius * 2,
+        height: headRadius * 2.2,
+      ),
+    );
 
     // Neck
-    bodyPath.addRect(Rect.fromLTWH(
-      centerX - 15,
-      headCenter.dy + headRadius,
-      30,
-      25,
-    ));
+    bodyPath.addRect(
+      Rect.fromLTWH(centerX - 15, headCenter.dy + headRadius, 30, 25),
+    );
 
     // Torso
     final torsoTop = headCenter.dy + headRadius + 25;
@@ -166,52 +162,60 @@ class BodyMapPainter extends CustomPainter {
     const armLength = 120.0;
 
     // Left arm
-    bodyPath.addRRect(RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        centerX - bodyWidth / 3 - armWidth,
-        torsoTop + 20,
-        armWidth,
-        armLength,
+    bodyPath.addRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          centerX - bodyWidth / 3 - armWidth,
+          torsoTop + 20,
+          armWidth,
+          armLength,
+        ),
+        const Radius.circular(12),
       ),
-      const Radius.circular(12),
-    ));
+    );
 
     // Right arm
-    bodyPath.addRRect(RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        centerX + bodyWidth / 3,
-        torsoTop + 20,
-        armWidth,
-        armLength,
+    bodyPath.addRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          centerX + bodyWidth / 3,
+          torsoTop + 20,
+          armWidth,
+          armLength,
+        ),
+        const Radius.circular(12),
       ),
-      const Radius.circular(12),
-    ));
+    );
 
     // Legs
     const legWidth = 35.0;
     final legHeight = bodyHeight * 0.3;
 
     // Left leg
-    bodyPath.addRRect(RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        centerX - bodyWidth / 6 - legWidth / 2,
-        torsoBottom,
-        legWidth,
-        legHeight,
+    bodyPath.addRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          centerX - bodyWidth / 6 - legWidth / 2,
+          torsoBottom,
+          legWidth,
+          legHeight,
+        ),
+        const Radius.circular(15),
       ),
-      const Radius.circular(15),
-    ));
+    );
 
     // Right leg
-    bodyPath.addRRect(RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        centerX + bodyWidth / 6 - legWidth / 2,
-        torsoBottom,
-        legWidth,
-        legHeight,
+    bodyPath.addRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          centerX + bodyWidth / 6 - legWidth / 2,
+          torsoBottom,
+          legWidth,
+          legHeight,
+        ),
+        const Radius.circular(15),
       ),
-      const Radius.circular(15),
-    ));
+    );
 
     // Combine all paths
     bodyPath.addPath(torsoPath, Offset.zero);
@@ -264,11 +268,9 @@ class BodyMapPainter extends CustomPainter {
   /// Draw brain organ
   void _drawBrain(Canvas canvas, double x, double y, Paint paint) {
     final brainPath = Path();
-    brainPath.addOval(Rect.fromCenter(
-      center: Offset(x, y),
-      width: 60,
-      height: 45,
-    ));
+    brainPath.addOval(
+      Rect.fromCenter(center: Offset(x, y), width: 60, height: 45),
+    );
     canvas.drawPath(brainPath, paint);
   }
 
@@ -312,18 +314,14 @@ class BodyMapPainter extends CustomPainter {
   void _drawKidneys(Canvas canvas, double x, double y, Paint paint) {
     // Left kidney
     final leftKidney = Path();
-    leftKidney.addOval(Rect.fromCenter(
-      center: Offset(x - 40, y),
-      width: 15,
-      height: 35,
-    ));
+    leftKidney.addOval(
+      Rect.fromCenter(center: Offset(x - 40, y), width: 15, height: 35),
+    );
     // Right kidney
     final rightKidney = Path();
-    rightKidney.addOval(Rect.fromCenter(
-      center: Offset(x + 40, y),
-      width: 15,
-      height: 35,
-    ));
+    rightKidney.addOval(
+      Rect.fromCenter(center: Offset(x + 40, y), width: 15, height: 35),
+    );
     canvas.drawPath(leftKidney, paint);
     canvas.drawPath(rightKidney, paint);
   }
@@ -331,11 +329,9 @@ class BodyMapPainter extends CustomPainter {
   /// Draw stomach organ
   void _drawStomach(Canvas canvas, double x, double y, Paint paint) {
     final stomachPath = Path();
-    stomachPath.addOval(Rect.fromCenter(
-      center: Offset(x, y),
-      width: 30,
-      height: 40,
-    ));
+    stomachPath.addOval(
+      Rect.fromCenter(center: Offset(x, y), width: 30, height: 40),
+    );
     canvas.drawPath(stomachPath, paint);
   }
 

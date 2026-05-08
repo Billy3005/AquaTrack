@@ -94,9 +94,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -255,18 +253,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.error_outline,
-            color: AppColors.error,
-            size: 20,
-          ),
+          const Icon(Icons.error_outline, color: AppColors.error, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               _errorMessage!,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.error,
-              ),
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
             ),
           ),
         ],
@@ -289,10 +281,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 strokeWidth: 2,
               ),
             )
-          : Text(
-              'Đăng nhập',
-              style: AppTextStyles.buttonTextLarge,
-            ),
+          : Text('Đăng nhập', style: AppTextStyles.buttonTextLarge),
     );
   }
 

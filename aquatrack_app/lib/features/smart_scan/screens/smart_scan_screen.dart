@@ -2,43 +2,64 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:camera/camera.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/services/vision_service.dart';
+import '../../log_drink/screens/log_drink_screen.dart';
+import '../../log_drink/providers/log_drink_provider.dart';
+import '../providers/scan_history_provider.dart';
 import '../widgets/scan_overlay.dart';
 import '../widgets/scan_controls.dart';
 import '../widgets/scan_result_sheet.dart';
 
 /// Smart Scan screen for automatic volume detection
-class SmartScanScreen extends StatefulWidget {
+class SmartScanScreen extends ConsumerStatefulWidget {
   const SmartScanScreen({super.key});
 
   @override
-  State<SmartScanScreen> createState() => _SmartScanScreenState();
+  ConsumerState<SmartScanScreen> createState() => _SmartScanScreenState();
 }
 
-class _SmartScanScreenState extends State<SmartScanScreen> {
+class _SmartScanScreenState extends ConsumerState<SmartScanScreen>
+    with WidgetsBindingObserver {
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
   bool _isInitialized = false;
   bool _isScanning = false;
   String? _errorMessage;
+  String? _currentScanId; // Track current scan for history
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeCamera();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final CameraController? controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+
+    if (state == AppLifecycleState.inactive) {
+      controller.dispose();
+    } else if (state == AppLifecycleState.resumed) {
+      _initializeCamera();
+    }
   }
 
   Future<void> _initializeCamera() async {
     try {
       _cameras = await availableCameras();
       if (_cameras.isEmpty) {
-        setState(() {
-          _errorMessage = 'Không tìm thấy camera';
-        });
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Không tìm thấy camera';
+          });
+        }
         return;
       }
 
@@ -49,13 +70,17 @@ class _SmartScanScreenState extends State<SmartScanScreen> {
       );
 
       await _controller!.initialize();
-      setState(() {
-        _isInitialized = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Lỗi khởi động camera: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Lỗi khởi động camera: $e';
+        });
+      }
     }
   }
 
@@ -77,9 +102,11 @@ class _SmartScanScreenState extends State<SmartScanScreen> {
     } catch (e) {
       debugPrint('Lỗi chụp ảnh: $e');
     } finally {
-      setState(() {
-        _isScanning = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+        });
+      }
     }
   }
 
@@ -90,6 +117,23 @@ class _SmartScanScreenState extends State<SmartScanScreen> {
       final result = await visionService.estimateVolume(imageFile);
 
       debugPrint('Vision result: $result');
+
+      // Record scan in history
+      final scanHistoryNotifier = ref.read(
+        scanHistoryNotifierProvider.notifier,
+      );
+      await scanHistoryNotifier.addScanRecord(
+        imagePath: imageFile.path,
+        aiResult: result,
+      );
+
+      // Get the most recent scan ID for tracking user confirmation
+      final historyState = ref.read(scanHistoryNotifierProvider);
+      historyState.whenData((records) {
+        if (records.isNotEmpty) {
+          _currentScanId = records.first.id;
+        }
+      });
 
       // Show result bottom sheet
       _showResultSheet(result);
@@ -115,16 +159,46 @@ class _SmartScanScreenState extends State<SmartScanScreen> {
       builder: (context) => ScanResultSheet(result: result),
     ).then((confirmedVolume) {
       if (confirmedVolume != null && mounted) {
-        // TODO: Navigate to Log Drink screen with pre-filled volume
-        debugPrint('User confirmed volume: ${confirmedVolume}ml');
-        // For now, just close the smart scan screen
-        Navigator.of(context).pop(confirmedVolume);
+        // Navigate to Log Drink screen with pre-filled volume
+        _navigateToLogDrink(confirmedVolume, result.liquidType);
       }
     });
   }
 
+  /// Navigate to Log Drink screen with pre-filled volume and liquid type
+  void _navigateToLogDrink(int volumeMl, String liquidType) async {
+    // Record user confirmation in scan history
+    if (_currentScanId != null) {
+      final scanHistoryNotifier = ref.read(
+        scanHistoryNotifierProvider.notifier,
+      );
+      await scanHistoryNotifier.updateScanRecord(
+        recordId: _currentScanId!,
+        userConfirmedVolume: volumeMl,
+        userFeedback: 'confirmed',
+      );
+    }
+
+    if (!mounted) return;
+
+    // Pre-set the amount and liquid type in the provider
+    ref.read(logDrinkNotifierProvider.notifier).setAmount(volumeMl);
+    ref.read(logDrinkNotifierProvider.notifier).selectDrinkType(liquidType);
+
+    // Navigate to Log Drink screen
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (context) => const LogDrinkScreen()))
+        .then((_) {
+          // Close Smart Scan screen when returning from Log Drink
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+        });
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller?.dispose();
     super.dispose();
   }
@@ -152,8 +226,9 @@ class _SmartScanScreenState extends State<SmartScanScreen> {
                   const SizedBox(height: 16),
                   Text(
                     _errorMessage!,
-                    style:
-                        AppTextStyles.bodyLarge.copyWith(color: Colors.white),
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      color: Colors.white,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -186,8 +261,9 @@ class _SmartScanScreenState extends State<SmartScanScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(AppColors.cyanAccent),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.cyanAccent,
+                      ),
                     ),
                     SizedBox(height: 16),
                     Text(

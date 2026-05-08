@@ -28,9 +28,7 @@ class LogPreviewCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.cyanAccent.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: AppColors.cyanAccent.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
             color: AppColors.cyanAccent.withValues(alpha: 0.1),
@@ -45,11 +43,7 @@ class LogPreviewCard extends StatelessWidget {
           // Header
           Row(
             children: [
-              Icon(
-                Icons.preview,
-                color: AppColors.cyanAccent,
-                size: 20,
-              ),
+              Icon(Icons.preview, color: AppColors.cyanAccent, size: 20),
               const SizedBox(width: 8),
               Text(
                 'PREVIEW',
@@ -122,8 +116,10 @@ class LogPreviewCard extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.purpleXP.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),

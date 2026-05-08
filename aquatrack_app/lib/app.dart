@@ -29,9 +29,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Authentication routes (no bottom nav)
       GoRoute(
         path: '/splash',
-        pageBuilder: (context, state) => const NoTransitionPage(
-          child: SplashScreen(),
-        ),
+        pageBuilder: (context, state) =>
+            const NoTransitionPage(child: SplashScreen()),
       ),
       GoRoute(
         path: '/login',
@@ -66,39 +65,33 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: HomeScreenV2(),
-            ),
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: HomeScreenV2()),
           ),
           GoRoute(
             path: '/coach',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: CoachScreen(),
-            ),
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: CoachScreen()),
           ),
           GoRoute(
             path: '/body',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: BodyMapScreen(),
-            ),
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: BodyMapScreen()),
           ),
           GoRoute(
             path: '/stats',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: StatsScreen(),
-            ),
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: StatsScreen()),
           ),
           GoRoute(
             path: '/level',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: LevelScreen(),
-            ),
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: LevelScreen()),
           ),
           GoRoute(
             path: '/profile',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: ProfileScreenV2(),
-            ),
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: ProfileScreenV2()),
           ),
         ],
       ),
@@ -122,7 +115,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/smart-scan',
         pageBuilder: (context, state) => CustomTransitionPage(
           child: const Scaffold(
-              body: Center(child: Text('Smart Scan Screen'))), // Placeholder
+            body: Center(child: Text('Smart Scan Screen')),
+          ), // Placeholder
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
@@ -147,10 +141,7 @@ class AquaTrackApp extends ConsumerWidget {
       routerConfig: router,
       debugShowCheckedModeBanner: false,
       locale: const Locale('vi', 'VN'),
-      supportedLocales: const [
-        Locale('vi', 'VN'),
-        Locale('en', 'US'),
-      ],
+      supportedLocales: const [Locale('vi', 'VN'), Locale('en', 'US')],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

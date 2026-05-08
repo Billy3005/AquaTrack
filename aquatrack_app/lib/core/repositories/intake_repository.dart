@@ -9,7 +9,7 @@ class IntakeRepository {
   final ApiService _apiService;
 
   IntakeRepository({ApiService? apiService})
-      : _apiService = apiService ?? ApiService();
+    : _apiService = apiService ?? ApiService();
 
   /// Create new intake log entry
   Future<IntakeLog> createIntakeLog({
@@ -40,7 +40,9 @@ class IntakeRepository {
 
       if (response.data != null) {
         AppLogger.info(
-            _tag, 'Intake log created successfully: ${response.data!.id}');
+          _tag,
+          'Intake log created successfully: ${response.data!.id}',
+        );
         return response.data!;
       } else {
         throw Exception('Create intake log response data is null');
@@ -81,10 +83,7 @@ class IntakeRepository {
     AppLogger.debug(_tag, 'Fetching intake logs with filters');
 
     try {
-      final queryParams = <String, dynamic>{
-        'skip': skip,
-        'limit': limit,
-      };
+      final queryParams = <String, dynamic>{'skip': skip, 'limit': limit};
 
       if (dateFrom != null) {
         queryParams['date_from'] = dateFrom.toIso8601String().split('T')[0];
@@ -262,8 +261,10 @@ class IntakeRepository {
     required double confidenceScore,
     String? deviceInfo,
   }) async {
-    AppLogger.info(_tag,
-        'Logging water from smart scan: ${volumeMl}ml (confidence: $confidenceScore)');
+    AppLogger.info(
+      _tag,
+      'Logging water from smart scan: ${volumeMl}ml (confidence: $confidenceScore)',
+    );
 
     // For smart scan, we need to handle confidence score and validation
     // This would be extended when smart scan features are implemented

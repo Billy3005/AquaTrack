@@ -38,13 +38,9 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
       vsync: this,
     );
 
-    _breathingAnimation = Tween<double>(
-      begin: 0.95,
-      end: 1.05,
-    ).animate(CurvedAnimation(
-      parent: _breathingController,
-      curve: Curves.easeInOut,
-    ));
+    _breathingAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _breathingController, curve: Curves.easeInOut),
+    );
 
     _breathingController.repeat(reverse: true);
   }
@@ -93,9 +89,7 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
         child: SafeArea(
           child: homeSummaryAsync.when(
             data: (summary) => SingleChildScrollView(
@@ -122,8 +116,11 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline,
-                      size: 64, color: AppColors.error),
+                  const Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: AppColors.error,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Có lỗi xảy ra khi tải dữ liệu',
@@ -133,8 +130,9 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
                   const SizedBox(height: 8),
                   Text(
                     error.toString(),
-                    style: AppTextStyles.bodySmall
-                        .copyWith(color: AppColors.textSecondary),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -160,18 +158,11 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Chào Demo User! 👋',
-              style: AppTextStyles.displayMedium,
-            ),
+            Text('Chào Demo User! 👋', style: AppTextStyles.displayMedium),
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(
-                  Icons.star,
-                  size: 16,
-                  color: AppColors.purpleXP,
-                ),
+                Icon(Icons.star, size: 16, color: AppColors.purpleXP),
                 const SizedBox(width: 4),
                 Text(
                   'Level ${summary?.currentLevel ?? 1} • ${summary?.xpToday ?? 0}XP',
@@ -188,8 +179,9 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
           decoration: BoxDecoration(
             color: AppColors.cyanAccent.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(20),
-            border:
-                Border.all(color: AppColors.cyanAccent.withValues(alpha: 0.3)),
+            border: Border.all(
+              color: AppColors.cyanAccent.withValues(alpha: 0.3),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -282,8 +274,9 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
                               borderRadius: BorderRadius.circular(2),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.cyanAccent
-                                      .withValues(alpha: 0.3),
+                                  color: AppColors.cyanAccent.withValues(
+                                    alpha: 0.3,
+                                  ),
                                   blurRadius: 8,
                                   spreadRadius: 2,
                                 ),
@@ -331,10 +324,7 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Quick Log',
-          style: AppTextStyles.headlineMedium,
-        ),
+        Text('Quick Log', style: AppTextStyles.headlineMedium),
         const SizedBox(height: 16),
         Row(
           children: [
@@ -375,17 +365,11 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
       onPressed: () => _quickLogWater(amountMl),
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.water_drop,
-            color: AppColors.cyanAccent,
-            size: 24,
-          ),
+          Icon(Icons.water_drop, color: AppColors.cyanAccent, size: 24),
           const SizedBox(height: 4),
           Text(
             '${amountMl}ml',
@@ -415,11 +399,7 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
         children: [
           Row(
             children: [
-              Icon(
-                Icons.today_outlined,
-                color: AppColors.cyanAccent,
-                size: 20,
-              ),
+              Icon(Icons.today_outlined, color: AppColors.cyanAccent, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Hôm nay',
@@ -460,7 +440,11 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
   }
 
   Widget _buildStatItem(
-      String label, String value, IconData icon, Color color) {
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Column(
       children: [
         Icon(icon, color: color, size: 24),

@@ -5,16 +5,10 @@ class LoginRequest {
   final String email;
   final String password;
 
-  const LoginRequest({
-    required this.email,
-    required this.password,
-  });
+  const LoginRequest({required this.email, required this.password});
 
   Map<String, dynamic> toJson() {
-    return {
-      'email': email,
-      'password': password,
-    };
+    return {'email': email, 'password': password};
   }
 }
 
@@ -59,14 +53,10 @@ class AuthResponse {
 class RefreshTokenRequest {
   final String refreshToken;
 
-  const RefreshTokenRequest({
-    required this.refreshToken,
-  });
+  const RefreshTokenRequest({required this.refreshToken});
 
   Map<String, dynamic> toJson() {
-    return {
-      'refresh_token': refreshToken,
-    };
+    return {'refresh_token': refreshToken};
   }
 }
 

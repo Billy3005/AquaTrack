@@ -30,21 +30,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
+    );
 
     _startApp();
   }
@@ -120,7 +112,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       builder: (context) => AlertDialog(
         title: const Text('Khởi động thất bại'),
         content: const Text(
-            'Có lỗi xảy ra khi khởi động ứng dụng. Vui lòng thử lại.'),
+          'Có lỗi xảy ra khi khởi động ứng dụng. Vui lòng thử lại.',
+        ),
         actions: [
           TextButton(
             onPressed: () {
@@ -138,9 +131,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
         child: Center(
           child: AnimatedBuilder(
             animation: _animationController,

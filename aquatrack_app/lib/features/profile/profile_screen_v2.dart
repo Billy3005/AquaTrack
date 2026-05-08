@@ -12,9 +12,7 @@ class ProfileScreenV2 extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
         child: SafeArea(
           child: Column(
             children: [
@@ -49,18 +47,12 @@ class ProfileScreenV2 extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Hồ sơ',
-            style: AppTextStyles.displayMedium,
-          ),
+          Text('Hồ sơ', style: AppTextStyles.displayMedium),
           IconButton(
             onPressed: () {
               // Settings navigation (disabled for testing)
             },
-            icon: const Icon(
-              Icons.settings,
-              color: AppColors.textSecondary,
-            ),
+            icon: const Icon(Icons.settings, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -95,10 +87,7 @@ class ProfileScreenV2 extends ConsumerWidget {
           const SizedBox(height: 16),
 
           // Name
-          Text(
-            'Demo User',
-            style: AppTextStyles.headlineMedium,
-          ),
+          Text('Demo User', style: AppTextStyles.headlineMedium),
           const SizedBox(height: 4),
 
           // Email
@@ -116,17 +105,14 @@ class ProfileScreenV2 extends ConsumerWidget {
             decoration: BoxDecoration(
               color: AppColors.purpleXP.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
-              border:
-                  Border.all(color: AppColors.purpleXP.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: AppColors.purpleXP.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.star,
-                  size: 16,
-                  color: AppColors.purpleXP,
-                ),
+                const Icon(Icons.star, size: 16, color: AppColors.purpleXP),
                 const SizedBox(width: 4),
                 Text(
                   'Level 5',
@@ -203,7 +189,11 @@ class ProfileScreenV2 extends ConsumerWidget {
 
   /// Individual stat item
   Widget _buildStatItem(
-      String label, String value, IconData icon, Color color) {
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Column(
       children: [
         Icon(icon, color: color, size: 24),
@@ -240,11 +230,7 @@ class ProfileScreenV2 extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.tune,
-                color: AppColors.cyanAccent,
-                size: 20,
-              ),
+              Icon(Icons.tune, color: AppColors.cyanAccent, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Cài đặt',
@@ -287,14 +273,15 @@ class ProfileScreenV2 extends ConsumerWidget {
 
   /// Individual setting item
   Widget _buildSettingItem(
-      String title, String value, IconData icon, VoidCallback onTap) {
+    String title,
+    String value,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(icon, color: AppColors.textSecondary),
-      title: Text(
-        title,
-        style: AppTextStyles.bodyMedium,
-      ),
+      title: Text(title, style: AppTextStyles.bodyMedium),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -305,11 +292,7 @@ class ProfileScreenV2 extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Icon(
-            Icons.chevron_right,
-            color: AppColors.textTertiary,
-            size: 20,
-          ),
+          Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 20),
         ],
       ),
       onTap: onTap,

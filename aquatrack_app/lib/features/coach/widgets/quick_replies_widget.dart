@@ -10,11 +10,7 @@ class QuickRepliesWidget extends StatelessWidget {
   final List<QuickReply> quickReplies;
   final Function(QuickReply)? onTap;
 
-  const QuickRepliesWidget({
-    super.key,
-    required this.quickReplies,
-    this.onTap,
-  });
+  const QuickRepliesWidget({super.key, required this.quickReplies, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -42,10 +38,7 @@ class QuickRepliesWidget extends StatelessWidget {
           children: quickReplies
               .asMap()
               .entries
-              .map((entry) => _buildQuickReplyButton(
-                    entry.value,
-                    entry.key,
-                  ))
+              .map((entry) => _buildQuickReplyButton(entry.value, entry.key))
               .toList(),
         ),
       ],
@@ -55,50 +48,47 @@ class QuickRepliesWidget extends StatelessWidget {
   /// Build individual quick reply button
   Widget _buildQuickReplyButton(QuickReply quickReply, int index) {
     return GestureDetector(
-      onTap: () => onTap?.call(quickReply),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 8,
-        ),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.cyan.withValues(alpha: 0.1),
-              AppColors.cyan.withValues(alpha: 0.05),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.cyan.withValues(alpha: 0.3),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Extract emoji if present
-            if (_hasEmoji(quickReply.text))
-              Text(
-                _extractEmoji(quickReply.text),
-                style: const TextStyle(fontSize: 14),
+          onTap: () => onTap?.call(quickReply),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.cyan.withValues(alpha: 0.1),
+                  AppColors.cyan.withValues(alpha: 0.05),
+                ],
               ),
-            if (_hasEmoji(quickReply.text)) const SizedBox(width: 4),
-
-            // Button text
-            Text(
-              _getTextWithoutEmoji(quickReply.text),
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.cyan,
-                fontWeight: FontWeight.w600,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.cyan.withValues(alpha: 0.3),
+                width: 1,
               ),
             ),
-          ],
-        ),
-      ),
-    )
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Extract emoji if present
+                if (_hasEmoji(quickReply.text))
+                  Text(
+                    _extractEmoji(quickReply.text),
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                if (_hasEmoji(quickReply.text)) const SizedBox(width: 4),
+
+                // Button text
+                Text(
+                  _getTextWithoutEmoji(quickReply.text),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.cyan,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        )
         .animate(delay: Duration(milliseconds: 200 + (index * 100)))
         .fadeIn(duration: 300.ms)
         .scale(
@@ -137,7 +127,7 @@ class QuickRepliesWidget extends StatelessWidget {
       '📅',
       '🩺',
       '❓',
-      '⚙️'
+      '⚙️',
     ];
     for (final emoji in emojis) {
       if (text.contains(emoji)) return emoji;
@@ -158,7 +148,7 @@ class QuickRepliesWidget extends StatelessWidget {
       '📅',
       '🩺',
       '❓',
-      '⚙️'
+      '⚙️',
     ];
     String result = text;
     for (final emoji in emojis) {
