@@ -48,11 +48,12 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final conversationState = ref.watch(coachNotifierProvider);
+    final conversationAsyncState = ref.watch(coachNotifierProvider);
 
     // Auto scroll when messages change
     ref.listen(coachNotifierProvider, (previous, next) {
-      if (previous?.messages.length != next.messages.length) {
+      // Simple check - scroll when state changes to data
+      if (next.hasValue) {
         _scrollToBottom();
       }
     });
@@ -64,7 +65,12 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
         children: [
           // Chat messages area
           Expanded(
-            child: _buildMessagesArea(conversationState),
+            child: conversationAsyncState.when(
+              data: (conversationState) =>
+                  _buildMessagesArea(conversationState),
+              loading: () => _buildLoadingState(),
+              error: (error, stack) => _buildErrorState(error),
+            ),
           ),
 
           // Chat input
@@ -81,35 +87,34 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
         children: [
           // AI Avatar
           Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.cyan,
-                  AppColors.xpPurple,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cyan.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.cyan, AppColors.xpPurple],
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cyan.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: const Icon(
-              Icons.water_drop,
-              color: Colors.white,
-              size: 20,
-            ),
-          )
+                child: const Icon(
+                  Icons.water_drop,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              )
               .animate(onPlay: (controller) => controller.repeat(reverse: true))
               .shimmer(
-                  duration: 2000.ms, color: Colors.white.withValues(alpha: 0.3))
+                duration: 2000.ms,
+                color: Colors.white.withValues(alpha: 0.3),
+              )
               .scale(
                 begin: const Offset(0.95, 0.95),
                 end: const Offset(1.05, 1.05),
@@ -247,9 +252,7 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
             },
             child: Text(
               'Xóa',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.error,
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
             ),
           ),
         ],
@@ -298,32 +301,29 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.cyan,
-                  AppColors.xpPurple,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(40),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cyan.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 5),
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.cyan, AppColors.xpPurple],
+                  ),
+                  borderRadius: BorderRadius.circular(40),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cyan.withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: const Icon(
-              Icons.chat_bubble_outline_rounded,
-              color: Colors.white,
-              size: 40,
-            ),
-          )
+                child: const Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  color: Colors.white,
+                  size: 40,
+                ),
+              )
               .animate(onPlay: (controller) => controller.repeat(reverse: true))
               .scale(
                 begin: const Offset(0.9, 0.9),
@@ -370,51 +370,106 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
   /// Build quick start chip
   Widget _buildQuickStartChip(String label, String message) {
     return GestureDetector(
-      onTap: () => _sendMessage(message),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 10,
-        ),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.cyan.withValues(alpha: 0.1),
-              AppColors.cyan.withValues(alpha: 0.05),
-            ],
+          onTap: () => _sendMessage(message),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.cyan.withValues(alpha: 0.1),
+                  AppColors.cyan.withValues(alpha: 0.05),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.cyan.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              label,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.cyan,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.cyan.withValues(alpha: 0.3),
-            width: 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.cyan,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    )
+        )
         .animate(delay: const Duration(milliseconds: 200))
         .fadeIn(duration: 400.ms)
         .slideY(begin: 0.2, end: 0.0);
   }
 
+  /// Build loading state
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('Đang tải cuộc trò chuyện...', style: AppTextStyles.bodyMedium),
+        ],
+      ),
+    );
+  }
+
+  /// Build error state
+  Widget _buildErrorState(Object error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+          const SizedBox(height: 16),
+          const Text(
+            'Không thể tải cuộc trò chuyện',
+            style: AppTextStyles.headingMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error.toString(),
+            style: AppTextStyles.caption,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+              // Retry by invalidating the provider
+              ref.invalidate(coachNotifierProvider);
+            },
+            child: const Text('Thử lại'),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Build chat input area
   Widget _buildChatInput() {
-    final conversationState = ref.watch(coachNotifierProvider);
+    final conversationAsyncState = ref.watch(coachNotifierProvider);
 
-    return ChatInput(
-      onSendMessage: _sendMessage,
-      isEnabled: !conversationState.isAiTyping,
-      hintText: conversationState.isAiTyping
-          ? 'AQUA AI đang soạn tin...'
-          : 'Nhắn tin với AQUA AI...',
+    return conversationAsyncState.when(
+      data: (conversationState) => ChatInput(
+        onSendMessage: _sendMessage,
+        isEnabled: !conversationState.isAiTyping,
+        hintText: conversationState.isAiTyping
+            ? 'AQUA AI đang soạn tin...'
+            : 'Nhắn tin với AQUA AI...',
+      ),
+      loading: () => ChatInput(
+        onSendMessage: _sendMessage,
+        isEnabled: false,
+        hintText: 'Đang tải...',
+      ),
+      error: (error, stack) => ChatInput(
+        onSendMessage: _sendMessage,
+        isEnabled: false,
+        hintText: 'Lỗi kết nối...',
+      ),
     );
   }
 

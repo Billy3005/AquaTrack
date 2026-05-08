@@ -46,11 +46,15 @@ class AppRouter {
       case main:
         final initialIndex = (settings.arguments as int?) ?? 0;
         return _buildRoute(
-            MainNavigation(initialIndex: initialIndex), settings);
+          MainNavigation(initialIndex: initialIndex),
+          settings,
+        );
 
       case logDrink:
         return _buildRoute(
-            const _PlaceholderPage(title: 'Log Drink'), settings);
+          const _PlaceholderPage(title: 'Log Drink'),
+          settings,
+        );
 
       case smartScan:
         return _buildRoute(const SmartScanScreen(), settings);
@@ -76,14 +80,12 @@ class AppRouter {
         const end = Offset.zero;
         const curve = Curves.easeInOut;
 
-        final tween = Tween(begin: begin, end: end).chain(
-          CurveTween(curve: curve),
-        );
+        final tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
 
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
+        return SlideTransition(position: animation.drive(tween), child: child);
       },
       transitionDuration: const Duration(milliseconds: 300),
       reverseTransitionDuration: const Duration(milliseconds: 250),
@@ -140,11 +142,7 @@ class SplashPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
 
@@ -159,9 +157,7 @@ class _PlaceholderPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

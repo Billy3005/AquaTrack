@@ -153,14 +153,19 @@ class ProfileNotifier extends _$ProfileNotifier {
 
     return homeState.when(
       data: (summary) {
-        return ProfileStats(
-          currentLevel: levelState.currentLevel,
-          totalXP: levelState.currentXP,
-          currentStreak: levelState.currentStreak,
-          totalDrinks: _calculateTotalDrinks(),
-          averageDaily: _calculateAverageDaily(),
-          achievementsCount:
-              levelState.achievements.where((a) => a.isUnlocked).length,
+        return levelState.when(
+          data: (level) => ProfileStats(
+            currentLevel: level.currentLevel,
+            totalXP: level.currentXP,
+            currentStreak: level.currentStreak,
+            totalDrinks: _calculateTotalDrinks(),
+            averageDaily: _calculateAverageDaily(),
+            achievementsCount: level.achievements
+                .where((a) => a.isUnlocked)
+                .length,
+          ),
+          loading: () => ProfileStats.empty(),
+          error: (_, __) => ProfileStats.empty(),
         );
       },
       loading: () => ProfileStats.empty(),
@@ -202,11 +207,11 @@ class ProfileStats {
   });
 
   factory ProfileStats.empty() => const ProfileStats(
-        currentLevel: 1,
-        totalXP: 0,
-        currentStreak: 0,
-        totalDrinks: 0,
-        averageDaily: 0.0,
-        achievementsCount: 0,
-      );
+    currentLevel: 1,
+    totalXP: 0,
+    currentStreak: 0,
+    totalDrinks: 0,
+    averageDaily: 0.0,
+    achievementsCount: 0,
+  );
 }

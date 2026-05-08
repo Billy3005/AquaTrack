@@ -9,10 +9,7 @@ import '../../core/constants/app_text_styles.dart';
 class BottomNavigationWrapper extends StatelessWidget {
   final Widget child;
 
-  const BottomNavigationWrapper({
-    super.key,
-    required this.child,
-  });
+  const BottomNavigationWrapper({super.key, required this.child});
 
   static const tabs = [
     (icon: Icons.water_drop_outlined, label: 'Drop', route: '/'),
@@ -53,10 +50,7 @@ class BottomNavigationWrapper extends StatelessWidget {
         decoration: const BoxDecoration(
           color: AppColors.surface,
           border: Border(
-            top: BorderSide(
-              color: AppColors.surfaceLight,
-              width: 0.5,
-            ),
+            top: BorderSide(color: AppColors.surfaceLight, width: 0.5),
           ),
         ),
         child: SafeArea(

@@ -56,10 +56,14 @@ class HomeNotifier extends _$HomeNotifier {
 
       // Calculate additional fields needed for DailySummary
       const dailyGoalMl = 2000; // Default goal, should come from user settings
-      final remainingMl =
-          (dailyGoalMl - serverSummary.totalEffectiveMl).clamp(0, dailyGoalMl);
-      final progress =
-          (serverSummary.totalEffectiveMl / dailyGoalMl).clamp(0.0, 1.0);
+      final remainingMl = (dailyGoalMl - serverSummary.totalEffectiveMl).clamp(
+        0,
+        dailyGoalMl,
+      );
+      final progress = (serverSummary.totalEffectiveMl / dailyGoalMl).clamp(
+        0.0,
+        1.0,
+      );
 
       // Convert server response to DailySummary
       final summary = DailySummary(
@@ -132,8 +136,10 @@ class HomeNotifier extends _$HomeNotifier {
   DailySummary _updateSummaryWithNewLog(DailySummary current, IntakeLog log) {
     final newTotal = current.totalEffectiveMl + log.effectiveVolumeMl;
     final newProgress = (newTotal / current.dailyGoalMl).clamp(0.0, 1.0);
-    final newRemaining =
-        (current.dailyGoalMl - newTotal).clamp(0, current.dailyGoalMl);
+    final newRemaining = (current.dailyGoalMl - newTotal).clamp(
+      0,
+      current.dailyGoalMl,
+    );
 
     return current.copyWith(
       totalEffectiveMl: newTotal,
@@ -177,7 +183,8 @@ class HomeNotifier extends _$HomeNotifier {
       await storage.saveDailySummary(updatedSummary);
 
       debugPrint(
-          '💾 HomeProvider: Saved log: ${log.volumeMl}ml ${log.liquidType}');
+        '💾 HomeProvider: Saved log: ${log.volumeMl}ml ${log.liquidType}',
+      );
     } catch (e) {
       debugPrint('❌ HomeProvider: Error saving to local storage: $e');
     }
@@ -185,7 +192,9 @@ class HomeNotifier extends _$HomeNotifier {
 
   /// Recalculate summary from stored logs để đảm bảo data consistency
   DailySummary _recalculateSummaryFromLogs(
-      DailySummary baseSummary, List<IntakeLog> logs) {
+    DailySummary baseSummary,
+    List<IntakeLog> logs,
+  ) {
     int totalEffective = 0;
     int totalXp = 0;
 
@@ -195,8 +204,10 @@ class HomeNotifier extends _$HomeNotifier {
     }
 
     final progress = (totalEffective / baseSummary.dailyGoalMl).clamp(0.0, 1.0);
-    final remaining = (baseSummary.dailyGoalMl - totalEffective)
-        .clamp(0, baseSummary.dailyGoalMl);
+    final remaining = (baseSummary.dailyGoalMl - totalEffective).clamp(
+      0,
+      baseSummary.dailyGoalMl,
+    );
 
     return baseSummary.copyWith(
       totalEffectiveMl: totalEffective,
@@ -224,7 +235,8 @@ class HomeNotifier extends _$HomeNotifier {
       );
 
       debugPrint(
-          '🎮 HomeProvider: Updated level system: +${log.xpEarned}XP${hasLeveledUp ? ' (LEVEL UP!)' : ''}');
+        '🎮 HomeProvider: Updated level system: +${log.xpEarned}XP${hasLeveledUp ? ' (LEVEL UP!)' : ''}',
+      );
     } catch (e) {
       debugPrint('❌ HomeProvider: Error updating level system: $e');
     }

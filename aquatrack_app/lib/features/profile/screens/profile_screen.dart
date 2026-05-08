@@ -42,13 +42,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          // User profile header
-          SliverToBoxAdapter(
-            child: _buildUserHeader(profileState, levelState),
-          ),
+      body: levelState.when(
+        data: (level) => CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            // User profile header
+            SliverToBoxAdapter(child: _buildUserHeader(profileState, level)),
 
           // Stats summary
           SliverToBoxAdapter(
@@ -66,7 +65,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: AvatarSelector(
                 selectedAvatar: profileState.selectedAvatar,
-                unlockedAvatars: _getUnlockedAvatars(levelState.currentLevel),
+                unlockedAvatars: _getUnlockedAvatars(level.currentLevel),
                 onAvatarSelected: (avatar) {
                   ref
                       .read(profileNotifierProvider.notifier)
@@ -122,6 +121,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ],
       ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: Text('Error: $error', style: TextStyle(color: Colors.red)),
+      ),
+    ),
     );
   }
 
@@ -193,116 +197,117 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   /// Build user header section
   Widget _buildUserHeader(ProfileState profileState, LevelState levelState) {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.cyan.withValues(alpha: 0.2),
-            AppColors.xpPurple.withValues(alpha: 0.1),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.cyan.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          // Avatar display
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.cyan,
-                  AppColors.xpPurple,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cyan.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.cyan.withValues(alpha: 0.2),
+                AppColors.xpPurple.withValues(alpha: 0.1),
               ],
             ),
-            child: const Icon(
-              Icons.water_drop,
-              color: Colors.white,
-              size: 40,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppColors.cyan.withValues(alpha: 0.3),
+              width: 1,
             ),
-          )
-              .animate(onPlay: (controller) => controller.repeat(reverse: true))
-              .scale(
-                begin: const Offset(0.95, 0.95),
-                end: const Offset(1.05, 1.05),
-                duration: 2000.ms,
-              ),
-
-          const SizedBox(width: 16),
-
-          // User info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  profileState.userName,
-                  style: AppTextStyles.headingMedium.copyWith(
-                    color: AppColors.textPrimary,
-                    fontSize: 20,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.xpPurple, AppColors.cyan],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              // Avatar display
+              Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [AppColors.cyan, AppColors.xpPurple],
                       ),
-                      child: Text(
-                        'Level ${levelState.currentLevel}',
-                        style: AppTextStyles.caption.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.cyan.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.water_drop,
+                      color: Colors.white,
+                      size: 40,
+                    ),
+                  )
+                  .animate(
+                    onPlay: (controller) => controller.repeat(reverse: true),
+                  )
+                  .scale(
+                    begin: const Offset(0.95, 0.95),
+                    end: const Offset(1.05, 1.05),
+                    duration: 2000.ms,
+                  ),
+
+              const SizedBox(width: 16),
+
+              // User info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profileState.userName,
+                      style: AppTextStyles.headingMedium.copyWith(
+                        color: AppColors.textPrimary,
+                        fontSize: 20,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [AppColors.xpPurple, AppColors.cyan],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Level ${levelState.currentLevel}',
+                            style: AppTextStyles.caption.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${levelState.currentXP} XP',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     Text(
-                      '${levelState.currentXP} XP',
+                      'Mục tiêu: ${profileState.dailyGoalMl}ml/ngày',
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Mục tiêu: ${profileState.dailyGoalMl}ml/ngày',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-    )
+        )
         .animate(delay: const Duration(milliseconds: 200))
         .fadeIn(duration: 500.ms)
         .slideY(begin: -0.2, end: 0.0);
@@ -394,11 +399,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 color: AppColors.surface.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                icon,
-                color: AppColors.cyan,
-                size: 20,
-              ),
+              child: Icon(icon, color: AppColors.cyan, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -510,9 +511,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             },
             child: Text(
               'Lưu',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.cyan,
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.cyan),
             ),
           ),
         ],
@@ -556,9 +555,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'Đóng',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.cyan,
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.cyan),
             ),
           ),
         ],
@@ -589,9 +586,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'Đóng',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.cyan,
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.cyan),
             ),
           ),
         ],
@@ -622,9 +617,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'Đóng',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.cyan,
-              ),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.cyan),
             ),
           ),
         ],

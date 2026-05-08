@@ -38,9 +38,5 @@ Future<void> main() async {
     // Continue with app launch even if some services fail
   }
 
-  runApp(
-    const ProviderScope(
-      child: AquaTrackApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: AquaTrackApp()));
 }

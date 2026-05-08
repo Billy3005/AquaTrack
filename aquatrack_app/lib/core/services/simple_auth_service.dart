@@ -3,14 +3,16 @@ import '../config/app_config.dart';
 
 /// Simple authentication service for CORS testing
 class SimpleAuthService {
-  static final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
-  ));
+  static final Dio _dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    ),
+  );
 
   /// Simple login for CORS testing
   static Future<Map<String, dynamic>> login({
@@ -20,10 +22,7 @@ class SimpleAuthService {
     try {
       final response = await _dio.post(
         AppConfig.simpleLoginUrl,
-        data: {
-          'email': email,
-          'password': password,
-        },
+        data: {'email': email, 'password': password},
       );
 
       if (response.statusCode == 200) {

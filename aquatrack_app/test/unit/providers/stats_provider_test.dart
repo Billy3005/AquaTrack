@@ -44,15 +44,25 @@ void main() {
       // Test data with 2 out of 3 goals met
       final chartData = [
         ChartDataPoint(
-            date: DateTime.now(), value: 2500, goal: 2000), // Goal met
+          date: DateTime.now(),
+          value: 2500,
+          goal: 2000,
+        ), // Goal met
         ChartDataPoint(
-            date: DateTime.now(), value: 1800, goal: 2000), // Goal not met
+          date: DateTime.now(),
+          value: 1800,
+          goal: 2000,
+        ), // Goal not met
         ChartDataPoint(
-            date: DateTime.now(), value: 2200, goal: 2000), // Goal met
+          date: DateTime.now(),
+          value: 2200,
+          goal: 2000,
+        ), // Goal met
       ];
 
-      final completedDays =
-          chartData.where((point) => point.value >= point.goal).length;
+      final completedDays = chartData
+          .where((point) => point.value >= point.goal)
+          .length;
       final completionRate = completedDays / chartData.length;
 
       expect(completionRate, closeTo(0.67, 0.01)); // 2/3 ≈ 0.67

@@ -15,7 +15,7 @@ class StatsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final statsState = ref.watch(statsNotifierProvider);
+    final statsAsyncState = ref.watch(statsNotifierProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -25,49 +25,118 @@ class StatsScreen extends ConsumerWidget {
         elevation: 0,
         centerTitle: false,
         actions: [
-          // Period selector in app bar
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(
-              child: CompactPeriodSelector(
-                selectedPeriod: statsState.period,
-                onPeriodChanged: (period) {
-                  ref.read(statsNotifierProvider.notifier).setPeriod(period);
-                },
+          // Period selector in app bar (only show when we have data)
+          statsAsyncState.when(
+            data: (statsData) => Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Center(
+                child: CompactPeriodSelector(
+                  selectedPeriod: statsData.period,
+                  onPeriodChanged: (period) {
+                    ref.read(statsNotifierProvider.notifier).setPeriod(period);
+                  },
+                ),
               ),
             ),
+            loading: () => const Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+            error: (error, stack) => const SizedBox(),
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          // Refresh stats data
+          // Refresh stats data and wait for completion
           ref.invalidate(statsNotifierProvider);
+          await ref.read(statsNotifierProvider.future);
         },
         color: AppColors.cyan,
         backgroundColor: AppColors.surface,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header section với key metrics
-              _buildHeaderSection(statsState),
-              const SizedBox(height: 24),
-
-              // Wave chart section
-              _buildChartSection(statsState),
-              const SizedBox(height: 24),
-
-              // AI insights section
-              _buildInsightsSection(statsState),
-
-              // Bottom spacing cho scroll
-              const SizedBox(height: 32),
-            ],
-          ),
+        child: statsAsyncState.when(
+          data: (statsData) => _buildStatsContent(statsData),
+          loading: () => _buildLoadingState(),
+          error: (error, stack) => _buildErrorState(error, ref),
         ),
+      ),
+    );
+  }
+
+  /// Build the main stats content when data is loaded
+  Widget _buildStatsContent(StatsData statsData) {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header section với key metrics
+          _buildHeaderSection(statsData),
+          const SizedBox(height: 24),
+
+          // Wave chart section
+          _buildChartSection(statsData),
+          const SizedBox(height: 24),
+
+          // AI insights section
+          _buildInsightsSection(statsData),
+
+          // Bottom spacing cho scroll
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  /// Build loading state
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('Đang tải dữ liệu thống kê...', style: AppTextStyles.bodyMedium),
+        ],
+      ),
+    );
+  }
+
+  /// Build error state
+  Widget _buildErrorState(Object error, WidgetRef ref) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+          const SizedBox(height: 16),
+          const Text(
+            'Không thể tải dữ liệu thống kê',
+            style: AppTextStyles.headingMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error.toString(),
+            style: AppTextStyles.caption,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+              // Retry loading data
+              ref.invalidate(statsNotifierProvider);
+            },
+            child: const Text('Thử lại'),
+          ),
+        ],
       ),
     );
   }
@@ -129,10 +198,7 @@ class StatsScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.2),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,11 +211,7 @@ class StatsScreen extends ConsumerWidget {
                   color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Icon(
-                  icon,
-                  size: 16,
-                  color: color,
-                ),
+                child: Icon(icon, size: 16, color: color),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -210,10 +272,7 @@ class StatsScreen extends ConsumerWidget {
         const SizedBox(height: 16),
 
         // Wave chart
-        WaveChart(
-          data: statsData.chartData,
-          period: statsData.period,
-        ),
+        WaveChart(data: statsData.chartData, period: statsData.period),
       ],
     );
   }
@@ -234,9 +293,7 @@ class StatsScreen extends ConsumerWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: AppTextStyles.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );

@@ -10,11 +10,7 @@ class OrganInfoCards extends StatelessWidget {
   final OrganHealth? selectedOrgan;
   final VoidCallback? onClose;
 
-  const OrganInfoCards({
-    super.key,
-    this.selectedOrgan,
-    this.onClose,
-  });
+  const OrganInfoCards({super.key, this.selectedOrgan, this.onClose});
 
   @override
   Widget build(BuildContext context) {
@@ -31,43 +27,43 @@ class OrganInfoCards extends StatelessWidget {
   /// Build detailed organ information card
   Widget _buildOrganCard(OrganHealth organHealth) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            organHealth.currentColor.withValues(alpha: 0.15),
-            organHealth.currentColor.withValues(alpha: 0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: organHealth.currentColor.withValues(alpha: 0.3),
-          width: 2,
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header với close button
-          _buildCardHeader(organHealth),
-          const SizedBox(height: 16),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                organHealth.currentColor.withValues(alpha: 0.15),
+                organHealth.currentColor.withValues(alpha: 0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: organHealth.currentColor.withValues(alpha: 0.3),
+              width: 2,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header với close button
+              _buildCardHeader(organHealth),
+              const SizedBox(height: 16),
 
-          // Status indicator
-          _buildStatusIndicator(organHealth),
-          const SizedBox(height: 16),
+              // Status indicator
+              _buildStatusIndicator(organHealth),
+              const SizedBox(height: 16),
 
-          // Description và educational content
-          _buildEducationalContent(organHealth),
-          const SizedBox(height: 16),
+              // Description và educational content
+              _buildEducationalContent(organHealth),
+              const SizedBox(height: 16),
 
-          // Action suggestions
-          _buildActionSuggestions(organHealth),
-        ],
-      ),
-    )
+              // Action suggestions
+              _buildActionSuggestions(organHealth),
+            ],
+          ),
+        )
         .animate()
         .fadeIn(duration: 300.ms)
         .slideY(begin: 0.3, end: 0.0, curve: Curves.easeOutQuart);
@@ -259,11 +255,7 @@ class OrganInfoCards extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.water_drop,
-                color: organHealth.currentColor,
-                size: 16,
-              ),
+              Icon(Icons.water_drop, color: organHealth.currentColor, size: 16),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -300,33 +292,35 @@ class OrganInfoCards extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        ...suggestions.map((suggestion) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    margin: const EdgeInsets.only(top: 6),
-                    width: 4,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: organHealth.currentColor,
-                      borderRadius: BorderRadius.circular(2),
+        ...suggestions.map(
+          (suggestion) => Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 6),
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: organHealth.currentColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    suggestion,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.4,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      suggestion,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }

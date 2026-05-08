@@ -9,10 +9,7 @@ import '../../../core/services/vision_service.dart';
 class ScanResultSheet extends ConsumerStatefulWidget {
   final VisionResult result;
 
-  const ScanResultSheet({
-    super.key,
-    required this.result,
-  });
+  const ScanResultSheet({super.key, required this.result});
 
   @override
   ConsumerState<ScanResultSheet> createState() => _ScanResultSheetState();
@@ -90,8 +87,9 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final confidenceCategory =
-        VisionService().getConfidenceCategory(widget.result.confidence);
+    final confidenceCategory = VisionService().getConfidenceCategory(
+      widget.result.confidence,
+    );
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
@@ -147,11 +145,14 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
                 children: [
                   // Confidence indicator
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: _getConfidenceColor(widget.result.confidence)
-                          .withValues(alpha: 0.1),
+                      color: _getConfidenceColor(
+                        widget.result.confidence,
+                      ).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: _getConfidenceColor(widget.result.confidence),
@@ -165,8 +166,8 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
                           confidenceCategory == 'high'
                               ? Icons.check_circle
                               : confidenceCategory == 'medium'
-                                  ? Icons.warning
-                                  : Icons.error,
+                              ? Icons.warning
+                              : Icons.error,
                           color: _getConfidenceColor(widget.result.confidence),
                           size: 16,
                         ),
@@ -174,8 +175,9 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
                         Text(
                           _getConfidenceText(widget.result.confidence),
                           style: AppTextStyles.labelMedium.copyWith(
-                            color:
-                                _getConfidenceColor(widget.result.confidence),
+                            color: _getConfidenceColor(
+                              widget.result.confidence,
+                            ),
                           ),
                         ),
                       ],
@@ -188,8 +190,9 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
                   _buildResultCard(
                     icon: Icons.local_drink,
                     title: 'Loại thùng chứa',
-                    value:
-                        _getContainerDisplayName(widget.result.containerClass),
+                    value: _getContainerDisplayName(
+                      widget.result.containerClass,
+                    ),
                   ),
 
                   const SizedBox(height: 16),
@@ -280,10 +283,7 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
             decoration: const BoxDecoration(
               color: AppColors.surfaceColor,
               border: Border(
-                top: BorderSide(
-                  color: AppColors.borderColor,
-                  width: 1,
-                ),
+                top: BorderSide(color: AppColors.borderColor, width: 1),
               ),
             ),
             child: Row(
@@ -341,10 +341,7 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
       decoration: BoxDecoration(
         color: AppColors.surfaceColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.borderColor,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.borderColor, width: 1),
       ),
       child: Row(
         children: [
@@ -355,11 +352,7 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
               color: AppColors.cyanAccent.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: AppColors.cyanAccent,
-              size: 20,
-            ),
+            child: Icon(icon, color: AppColors.cyanAccent, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(

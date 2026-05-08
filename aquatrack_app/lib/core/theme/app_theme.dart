@@ -83,9 +83,7 @@ class AppTheme {
         color: AppColors.surfaceColor,
         elevation: 2,
         shadowColor: AppColors.overlay,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         clipBehavior: Clip.antiAlias,
       ),
 
@@ -156,8 +154,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.error, width: 2),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
       ),
 
       // Floating Action Button theme
@@ -256,10 +256,7 @@ class AppTheme {
       ),
 
       // Icon theme
-      iconTheme: const IconThemeData(
-        color: AppColors.textSecondary,
-        size: 24,
-      ),
+      iconTheme: const IconThemeData(color: AppColors.textSecondary, size: 24),
 
       // Primary Icon theme
       primaryIconTheme: const IconThemeData(

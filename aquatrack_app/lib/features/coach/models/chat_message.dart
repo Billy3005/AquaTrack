@@ -1,13 +1,7 @@
 import 'dart:math';
 
 /// Types of chat messages in coach conversation
-enum MessageType {
-  text,
-  suggestion,
-  achievement,
-  reminder,
-  welcomeCard,
-}
+enum MessageType { text, suggestion, achievement, reminder, welcomeCard }
 
 /// Quick reply option for user responses
 class QuickReply {
@@ -15,18 +9,10 @@ class QuickReply {
   final String text;
   final String? action;
 
-  const QuickReply({
-    required this.id,
-    required this.text,
-    this.action,
-  });
+  const QuickReply({required this.id, required this.text, this.action});
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'text': text,
-      'action': action,
-    };
+    return {'id': id, 'text': text, 'action': action};
   }
 
   factory QuickReply.fromJson(Map<String, dynamic> json) {
@@ -68,10 +54,7 @@ class ChatMessage {
   });
 
   /// Create user message
-  factory ChatMessage.user({
-    required String content,
-    DateTime? timestamp,
-  }) {
+  factory ChatMessage.user({required String content, DateTime? timestamp}) {
     return ChatMessage(
       id: _generateId(),
       content: content,
@@ -154,7 +137,8 @@ class ChatMessage {
         (e) => e.name == json['type'],
         orElse: () => MessageType.text,
       ),
-      quickReplies: (json['quickReplies'] as List<dynamic>?)
+      quickReplies:
+          (json['quickReplies'] as List<dynamic>?)
               ?.map((qr) => QuickReply.fromJson(qr as Map<String, dynamic>))
               .toList() ??
           [],
@@ -214,10 +198,7 @@ class ConversationState {
     // Add new message
     updatedMessages.add(message);
 
-    return copyWith(
-      messages: updatedMessages,
-      lastUpdated: DateTime.now(),
-    );
+    return copyWith(messages: updatedMessages, lastUpdated: DateTime.now());
   }
 
   /// Start AI typing indicator
@@ -234,10 +215,7 @@ class ConversationState {
   ConversationState stopTyping() {
     final updatedMessages = messages.where((msg) => !msg.isTyping).toList();
 
-    return copyWith(
-      messages: updatedMessages,
-      isAiTyping: false,
-    );
+    return copyWith(messages: updatedMessages, isAiTyping: false);
   }
 
   /// Get messages from today

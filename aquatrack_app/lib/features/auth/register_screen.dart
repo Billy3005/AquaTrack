@@ -59,7 +59,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       );
 
       AppLogger.info(
-          'Register', 'Registration successful: ${authResponse.user.email}');
+        'Register',
+        'Registration successful: ${authResponse.user.email}',
+      );
 
       // Navigate to home
       if (mounted) {
@@ -104,9 +106,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -153,10 +153,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       alignment: Alignment.centerLeft,
       child: IconButton(
         onPressed: _isLoading ? null : _goToLogin,
-        icon: const Icon(
-          Icons.arrow_back_ios,
-          color: AppColors.textSecondary,
-        ),
+        icon: const Icon(Icons.arrow_back_ios, color: AppColors.textSecondary),
       ),
     );
   }
@@ -328,18 +325,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.error_outline,
-            color: AppColors.error,
-            size: 20,
-          ),
+          const Icon(Icons.error_outline, color: AppColors.error, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               _errorMessage!,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.error,
-              ),
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
             ),
           ),
         ],
@@ -362,10 +353,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 strokeWidth: 2,
               ),
             )
-          : Text(
-              'Tạo tài khoản',
-              style: AppTextStyles.buttonTextLarge,
-            ),
+          : Text('Tạo tài khoản', style: AppTextStyles.buttonTextLarge),
     );
   }
 

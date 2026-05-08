@@ -38,7 +38,10 @@ class AppErrorHandler {
 
   /// Handle and log errors in providers/services
   static void handleProviderError(
-      String provider, Object error, StackTrace? stack) {
+    String provider,
+    Object error,
+    StackTrace? stack,
+  ) {
     _logError(error, stack, 'Provider: $provider');
   }
 
@@ -48,8 +51,11 @@ class AppErrorHandler {
   }
 
   /// Show user-friendly error dialog
-  static void showUserError(BuildContext context, String message,
-      {String? action}) {
+  static void showUserError(
+    BuildContext context,
+    String message, {
+    String? action,
+  }) {
     if (!context.mounted) return;
 
     showDialog(
@@ -90,11 +96,7 @@ class ProductionErrorWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              color: Colors.red,
-              size: 64,
-            ),
+            const Icon(Icons.error_outline, color: Colors.red, size: 64),
             const SizedBox(height: 16),
             const Text(
               'Ứng dụng gặp lỗi',

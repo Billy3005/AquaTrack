@@ -108,8 +108,10 @@ class _ComponentTestScreenState extends State<ComponentTestScreen> {
                   LogPreviewCard(
                     amountMl: currentAmount,
                     drinkType: selectedDrinkType,
-                    effectiveAmount:
-                        _getEffectiveAmount(currentAmount, selectedDrinkType),
+                    effectiveAmount: _getEffectiveAmount(
+                      currentAmount,
+                      selectedDrinkType,
+                    ),
                     xpGained: 10,
                   ),
                   const SizedBox(height: 32),
@@ -121,7 +123,8 @@ class _ComponentTestScreenState extends State<ComponentTestScreen> {
                       color: Colors.green.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: Colors.green.withValues(alpha: 0.3)),
+                        color: Colors.green.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: const Column(
                       children: [

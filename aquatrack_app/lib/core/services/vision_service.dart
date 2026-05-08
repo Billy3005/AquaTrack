@@ -4,6 +4,33 @@ import 'package:flutter/foundation.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:image/image.dart' as img;
 
+/// Isolate function for image preprocessing to avoid main thread blocking
+Float32List _preprocessImageInIsolate(Map<String, dynamic> params) {
+  final Uint8List bytes = params['bytes'];
+  final int inputSize = params['inputSize'];
+
+  final image = img.decodeImage(bytes);
+  if (image == null) throw Exception('Failed to decode image');
+
+  // Resize to model input size
+  final resized = img.copyResize(image, width: inputSize, height: inputSize);
+
+  // Convert to Float32List and normalize [0, 1]
+  final inputData = Float32List(inputSize * inputSize * 3);
+  int index = 0;
+
+  for (int y = 0; y < inputSize; y++) {
+    for (int x = 0; x < inputSize; x++) {
+      final pixel = resized.getPixel(x, y);
+      inputData[index++] = pixel.r / 255.0; // R
+      inputData[index++] = pixel.g / 255.0; // G
+      inputData[index++] = pixel.b / 255.0; // B
+    }
+  }
+
+  return inputData;
+}
+
 /// Result from vision inference
 class VisionResult {
   final String containerClass;
@@ -103,9 +130,14 @@ class VisionService {
       debugPrint('✅ VisionService initialized');
     } catch (e) {
       debugPrint('❌ Failed to initialize VisionService: $e');
-      // For development - create mock service if model doesn't exist
-      _isInitialized = true;
-      debugPrint('⚠️ Running in mock mode without TFLite model');
+      // Only allow mock mode in debug builds
+      if (kDebugMode) {
+        _isInitialized = true;
+        debugPrint('⚠️ Running in mock mode without TFLite model');
+      } else {
+        // In production, fail hard if model not available
+        throw Exception('TFLite model not available in production build');
+      }
     }
   }
 
@@ -115,9 +147,13 @@ class VisionService {
       await initialize();
     }
 
-    // If no actual model, return mock result
+    // If no actual model, return mock result only in debug mode
     if (_interpreter == null) {
-      return _createMockResult();
+      if (kDebugMode) {
+        return _createMockResult();
+      } else {
+        throw Exception('TFLite model not available for inference');
+      }
     }
 
     try {
@@ -131,34 +167,23 @@ class VisionService {
       return _parseResults(outputs);
     } catch (e) {
       debugPrint('❌ Vision inference error: $e');
-      return _createMockResult();
+      if (kDebugMode) {
+        return _createMockResult();
+      } else {
+        rethrow; // Let production errors bubble up for proper handling
+      }
     }
   }
 
-  /// Preprocess image to model input format
+  /// Preprocess image to model input format (runs in isolate to avoid main thread blocking)
   Future<Float32List> _preprocessImage(File imageFile) async {
     final bytes = await imageFile.readAsBytes();
-    final image = img.decodeImage(bytes);
-    if (image == null) throw Exception('Failed to decode image');
 
-    // Resize to model input size
-    final resized =
-        img.copyResize(image, width: _inputSize, height: _inputSize);
-
-    // Convert to Float32List and normalize [0, 1]
-    final inputData = Float32List(_inputSize * _inputSize * 3);
-    int index = 0;
-
-    for (int y = 0; y < _inputSize; y++) {
-      for (int x = 0; x < _inputSize; x++) {
-        final pixel = resized.getPixel(x, y);
-        inputData[index++] = pixel.r / 255.0; // R
-        inputData[index++] = pixel.g / 255.0; // G
-        inputData[index++] = pixel.b / 255.0; // B
-      }
-    }
-
-    return inputData;
+    // Run preprocessing in isolate to avoid main thread blocking
+    return await compute(_preprocessImageInIsolate, {
+      'bytes': bytes,
+      'inputSize': _inputSize,
+    });
   }
 
   /// Run TFLite inference
@@ -167,11 +192,13 @@ class VisionService {
     final input = inputData.reshape([1, _inputSize, _inputSize, 3]);
 
     // Prepare output tensors
-    final containerOutput = Float32List(_containerClasses.length)
-        .reshape([1, _containerClasses.length]);
+    final containerOutput = Float32List(
+      _containerClasses.length,
+    ).reshape([1, _containerClasses.length]);
     final fillLevelOutput = Float32List(1).reshape([1, 1]);
-    final liquidTypeOutput =
-        Float32List(_liquidTypes.length).reshape([1, _liquidTypes.length]);
+    final liquidTypeOutput = Float32List(
+      _liquidTypes.length,
+    ).reshape([1, _liquidTypes.length]);
 
     // Run inference
     _interpreter!.runForMultipleInputs(

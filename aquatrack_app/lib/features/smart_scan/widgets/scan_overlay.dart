@@ -58,10 +58,7 @@ class ScanOverlay extends StatelessWidget {
             width: overlayWidth,
             height: overlayHeight,
             decoration: BoxDecoration(
-              border: Border.all(
-                color: AppColors.cyanAccent,
-                width: 2,
-              ),
+              border: Border.all(color: AppColors.cyanAccent, width: 2),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Stack(
@@ -186,10 +183,7 @@ class ScanOverlayPainter extends CustomPainter {
   final double overlayWidth;
   final double overlayHeight;
 
-  ScanOverlayPainter({
-    required this.overlayWidth,
-    required this.overlayHeight,
-  });
+  ScanOverlayPainter({required this.overlayWidth, required this.overlayHeight});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -209,10 +203,7 @@ class ScanOverlayPainter extends CustomPainter {
 
     final cutoutPath = Path()
       ..addRRect(
-        RRect.fromRectAndRadius(
-          cutoutRect,
-          const Radius.circular(16),
-        ),
+        RRect.fromRectAndRadius(cutoutRect, const Radius.circular(16)),
       );
 
     final overlayPath = Path.combine(

@@ -28,10 +28,7 @@ class ScanControls extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.transparent,
-              Colors.black.withValues(alpha: 0.8),
-            ],
+            colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
           ),
         ),
         child: Row(
@@ -48,14 +45,8 @@ class ScanControls extends StatelessWidget {
                 child: Container(
                   width: 48,
                   height: 48,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  decoration: const BoxDecoration(shape: BoxShape.circle),
+                  child: const Icon(Icons.close, color: Colors.white, size: 24),
                 ),
               ),
             ),
@@ -77,10 +68,11 @@ class ScanControls extends StatelessWidget {
                         : AppColors.cyanAccent,
                     boxShadow: [
                       BoxShadow(
-                        color: (isScanning
-                                ? AppColors.textSecondary
-                                : AppColors.cyanAccent)
-                            .withValues(alpha: 0.3),
+                        color:
+                            (isScanning
+                                    ? AppColors.textSecondary
+                                    : AppColors.cyanAccent)
+                                .withValues(alpha: 0.3),
                         blurRadius: 16,
                         spreadRadius: 4,
                       ),
@@ -92,8 +84,9 @@ class ScanControls extends StatelessWidget {
                           height: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Icon(
@@ -117,9 +110,7 @@ class ScanControls extends StatelessWidget {
                 child: Container(
                   width: 48,
                   height: 48,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: const BoxDecoration(shape: BoxShape.circle),
                   child: const Icon(
                     Icons.photo_library,
                     color: Colors.white,

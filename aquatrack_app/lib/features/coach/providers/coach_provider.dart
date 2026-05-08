@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../core/repositories/coach_repository.dart';
 import '../../../shared/storage/hive_storage_service.dart';
 import '../../home/providers/home_provider.dart';
 import '../../level/providers/level_provider.dart';
@@ -7,6 +9,12 @@ import '../../body_map/providers/body_map_provider.dart';
 import '../models/chat_message.dart';
 
 part 'coach_provider.g.dart';
+
+/// Provider for CoachRepository dependency injection
+@riverpod
+CoachRepository coachRepository(ref) {
+  return CoachRepository();
+}
 
 /// Context data for AI responses
 class CoachContext {
@@ -46,18 +54,138 @@ class CoachContext {
   }
 }
 
-/// Coach notifier với AI conversation management
+/// Coach notifier với AI conversation management từ backend
 @riverpod
 class CoachNotifier extends _$CoachNotifier {
   late Timer? _autoSuggestionTimer;
+  late final CoachRepository _coachRepository;
+  String? _currentSessionId;
 
   @override
-  ConversationState build() {
+  Future<ConversationState> build() async {
+    // Initialize repository via dependency injection
+    _coachRepository = ref.read(coachRepositoryProvider);
+
     // Cancel timer when provider is disposed
     ref.onDispose(() {
       _autoSuggestionTimer?.cancel();
     });
 
+    return _loadConversationFromApi();
+  }
+
+  /// Load conversation từ backend API với fallback
+  Future<ConversationState> _loadConversationFromApi() async {
+    try {
+      // Try to get recent conversation session
+      final sessionsResponse = await _coachRepository.getConversationSessions(
+        limit: 1,
+      );
+
+      if (!sessionsResponse.isSuccess) {
+        throw Exception(sessionsResponse.error ?? 'Failed to load sessions');
+      }
+
+      final sessions = sessionsResponse.data?.sessions ?? [];
+
+      if (sessions.isNotEmpty) {
+        final recentSession = sessions.first;
+        _currentSessionId = recentSession.sessionId;
+
+        // Load conversation history for this session
+        final historyResponse = await _coachRepository.getConversationHistory(
+          sessionId: recentSession.sessionId,
+        );
+
+        if (historyResponse.isSuccess && historyResponse.data != null) {
+          final conversationHistory = historyResponse.data!;
+
+          // Convert backend messages to local ChatMessage format
+          final messages = conversationHistory.messages.map((msg) {
+            return _convertApiMessageToChatMessage(msg);
+          }).toList();
+
+          return ConversationState(
+            messages: messages,
+            lastUpdated: DateTime.now(),
+          );
+        }
+      }
+
+      // No existing conversation, create welcome conversation
+      return _createWelcomeConversation();
+    } catch (e) {
+      debugPrint('❌ Failed to load conversation from API: $e');
+
+      // Only fallback to local storage for genuine connectivity issues
+      final isConnectivityError =
+          e.toString().contains('SocketException') ||
+          e.toString().contains('HttpException') ||
+          e.toString().contains('TimeoutException') ||
+          e.toString().contains('Connection refused') ||
+          e.toString().contains('No route to host');
+
+      if (isConnectivityError) {
+        debugPrint(
+          '🌐 Network connectivity issue detected, falling back to local storage',
+        );
+        return _loadConversationFromLocal();
+      } else {
+        // For API errors, create a fresh welcome conversation
+        debugPrint('🚨 API error, creating new conversation: $e');
+        return _createWelcomeConversation();
+      }
+    }
+  }
+
+  /// Convert API message to local ChatMessage format
+  ChatMessage _convertApiMessageToChatMessage(ConversationMessage apiMessage) {
+    // Convert quick replies if present
+    List<QuickReply>? quickReplies;
+    if (apiMessage.quickReplies != null) {
+      quickReplies = apiMessage.quickReplies!.map((qr) {
+        return QuickReply(id: qr.id, text: qr.text, action: qr.action);
+      }).toList();
+    }
+
+    // Determine message type
+    MessageType messageType = MessageType.text;
+    if (apiMessage.aiMessageType != null) {
+      switch (apiMessage.aiMessageType!) {
+        case 'welcomeCard':
+          messageType = MessageType.welcomeCard;
+          break;
+        case 'suggestion':
+          messageType = MessageType.suggestion;
+          break;
+        case 'achievement':
+          messageType = MessageType.achievement;
+          break;
+        case 'reminder':
+          messageType = MessageType.reminder;
+          break;
+        default:
+          messageType = MessageType.text;
+      }
+    }
+
+    if (apiMessage.messageType == 'user') {
+      return ChatMessage.user(
+        content: apiMessage.content,
+        timestamp: apiMessage.createdAt,
+      );
+    } else {
+      return ChatMessage.ai(
+        content: apiMessage.content,
+        type: messageType,
+        quickReplies: quickReplies ?? [],
+        timestamp: apiMessage.createdAt,
+      );
+    }
+  }
+
+  /// Fallback to local storage if API fails
+  ConversationState _loadConversationFromLocal() {
     return _loadConversation();
   }
 
@@ -68,13 +196,11 @@ class CoachNotifier extends _$CoachNotifier {
     // Try to load existing conversation
     final savedConversation = storage.loadCoachConversation();
     if (savedConversation != null && savedConversation.isNotEmpty) {
-      final messages =
-          savedConversation.map((json) => ChatMessage.fromJson(json)).toList();
+      final messages = savedConversation
+          .map((json) => ChatMessage.fromJson(json))
+          .toList();
 
-      return ConversationState(
-        messages: messages,
-        lastUpdated: DateTime.now(),
-      );
+      return ConversationState(messages: messages, lastUpdated: DateTime.now());
     }
 
     // Create welcome conversation
@@ -104,59 +230,172 @@ class CoachNotifier extends _$CoachNotifier {
       error: (_, __) => null,
     );
 
-    // Get recent achievements (simplified for now)
-    final recentAchievements = levelState.achievements
-        .where((achievement) => achievement.isUnlocked)
-        .take(3)
-        .map((achievement) => achievement.title)
-        .toList();
+    // Get recent achievements from level state AsyncValue
+    final recentAchievements = levelState.when(
+      data: (level) => level.achievements
+          .where((achievement) => achievement.isUnlocked)
+          .take(3)
+          .map((achievement) => achievement.title)
+          .toList(),
+      loading: () => <String>[],
+      error: (_, __) => <String>[],
+    );
+
+    // Get level data from AsyncValue
+    final currentLevel = levelState.when(
+      data: (level) => level.currentLevel,
+      loading: () => 1,
+      error: (_, __) => 1,
+    );
+
+    final currentStreak = levelState.when(
+      data: (level) => level.currentStreak,
+      loading: () => 0,
+      error: (_, __) => 0,
+    );
 
     return CoachContext(
       hydrationLevel: todaysSummary?.progress ?? 0.0,
-      currentLevel: levelState.currentLevel,
-      streak: levelState.currentStreak,
+      currentLevel: currentLevel,
+      streak: currentStreak,
       todayIntake: todaysSummary?.totalEffectiveMl ?? 0,
       dailyGoal: todaysSummary?.dailyGoalMl ?? 2000,
       recentAchievements: recentAchievements,
-      overallHealthStatus:
-          ref.read(bodyMapNotifierProvider.notifier).overallHealthMessage,
+      overallHealthStatus: ref
+          .read(bodyMapNotifierProvider.notifier)
+          .overallHealthMessage,
     );
   }
 
-  /// Send user message and get AI response
+  /// Send user message and get AI response from backend
   Future<void> sendMessage(String content) async {
-    final userMessage = ChatMessage.user(content: content);
+    state.whenData((currentState) async {
+      final userMessage = ChatMessage.user(content: content);
 
-    // Add user message
-    state = state.addMessage(userMessage);
+      // Add user message and start typing
+      state = AsyncValue.data(
+        currentState.addMessage(userMessage).startTyping(),
+      );
 
-    // Start AI typing indicator
-    state = state.startTyping();
+      try {
+        // Get context for API call
+        final context = _getContext();
+        final contextMap = {
+          'hydration_level': context.hydrationLevel,
+          'current_level': context.currentLevel,
+          'streak': context.streak,
+          'today_intake': context.todayIntake,
+          'daily_goal': context.dailyGoal,
+          'recent_achievements': context.recentAchievements,
+          'overall_health_status': context.overallHealthStatus,
+        };
 
-    // Save conversation
-    await _saveConversation();
+        // Send message to backend
+        final response = await _coachRepository.sendMessage(
+          content: content,
+          sessionId: _currentSessionId,
+          context: contextMap,
+        );
 
-    // Generate AI response with delay for natural feel
-    await Future.delayed(const Duration(milliseconds: 1500));
+        if (!response.isSuccess) {
+          throw Exception(response.error ?? 'Failed to send message');
+        }
 
-    // Get context and generate response
-    final context = _getContext();
-    final aiResponse = _generateAIResponse(content, context);
+        final chatResponse = response.data!;
+        _currentSessionId = chatResponse.sessionId;
 
-    // Stop typing and add AI response
-    state = state.stopTyping();
-    state = state.addMessage(aiResponse);
+        // Convert AI response to local format
+        final aiMessage = _convertApiMessageToChatMessage(
+          chatResponse.aiResponse,
+        );
 
-    // Save updated conversation
-    await _saveConversation();
+        // Update state with AI response
+        state.whenData((stateAfterSend) {
+          state = AsyncValue.data(
+            stateAfterSend.stopTyping().addMessage(aiMessage),
+          );
+        });
 
-    // Schedule next auto suggestion if needed
-    _scheduleAutoSuggestion();
+        // Schedule next auto suggestion if needed
+        _scheduleAutoSuggestion();
+      } catch (e) {
+        debugPrint('❌ Failed to send message to backend: $e');
+
+        // On error, fall back to local AI generation
+        await _handleSendMessageFallback(content);
+      }
+    });
+  }
+
+  /// Fallback to local AI generation if backend fails
+  Future<void> _handleSendMessageFallback(String content) async {
+    try {
+      // Generate AI response with delay for natural feel
+      await Future.delayed(const Duration(milliseconds: 1500));
+
+      // Get context and generate response locally
+      final context = _getContext();
+      final aiResponse = _generateAIResponse(content, context);
+
+      // Stop typing and add AI response
+      state.whenData((currentState) {
+        state = AsyncValue.data(
+          currentState.stopTyping().addMessage(aiResponse),
+        );
+      });
+
+      // Save conversation locally
+      await _saveConversationLocal();
+    } catch (e) {
+      // If everything fails, at least stop the typing indicator
+      state.whenData((currentState) {
+        state = AsyncValue.data(currentState.stopTyping());
+      });
+    }
+  }
+
+  /// Save conversation to local storage (fallback)
+  Future<void> _saveConversationLocal() async {
+    state.whenData((currentState) async {
+      final storage = HiveStorageService.instance;
+      final messagesJson = currentState.messages
+          .map((msg) => msg.toJson())
+          .toList();
+      await storage.saveCoachConversation(messagesJson);
+    });
   }
 
   /// Send quick reply
   Future<void> sendQuickReply(QuickReply quickReply) async {
-    await sendMessage(quickReply.text);
+    // If we have a session ID, send via backend
+    if (_currentSessionId != null) {
+      try {
+        final response = await _coachRepository.handleQuickReply(
+          quickReplyId: quickReply.id,
+          sessionId: _currentSessionId!,
+        );
+
+        if (response.isSuccess) {
+          // Add the AI response to conversation
+          final aiMessage = ChatMessage.ai(
+            content: response.data!.aiResponse,
+            type: MessageType.text,
+          );
+
+          state.whenData((currentState) {
+            state = AsyncValue.data(currentState.addMessage(aiMessage));
+          });
+        } else {
+          // Fallback to sending the text message
+          await sendMessage(quickReply.text);
+        }
+      } catch (e) {
+        debugPrint('Failed to handle quick reply via backend: $e');
+        await sendMessage(quickReply.text);
+      }
+    } else {
+      await sendMessage(quickReply.text);
+    }
 
     // Handle special actions
     if (quickReply.action != null) {
@@ -207,10 +446,7 @@ class CoachNotifier extends _$CoachNotifier {
           text: '🏆 Xem thành tích',
           action: 'view_achievements',
         ),
-        const QuickReply(
-          id: 'tomorrow_goal',
-          text: '📅 Mục tiêu ngày mai',
-        ),
+        const QuickReply(id: 'tomorrow_goal', text: '📅 Mục tiêu ngày mai'),
       ];
     } else if (context.completionPercentage >= 0.7) {
       content =
@@ -221,10 +457,7 @@ class CoachNotifier extends _$CoachNotifier {
           text: '💧 Uống thêm nước',
           action: 'log_water',
         ),
-        const QuickReply(
-          id: 'hydration_tips',
-          text: '💡 Gợi ý hydration',
-        ),
+        const QuickReply(id: 'hydration_tips', text: '💡 Gợi ý hydration'),
       ];
     } else if (context.completionPercentage >= 0.3) {
       content =
@@ -235,10 +468,7 @@ class CoachNotifier extends _$CoachNotifier {
           text: '💧 Ghi nhận nước',
           action: 'log_water',
         ),
-        const QuickReply(
-          id: 'set_reminder',
-          text: '⏰ Nhắc nhở',
-        ),
+        const QuickReply(id: 'set_reminder', text: '⏰ Nhắc nhở'),
       ];
     } else {
       content =
@@ -249,10 +479,7 @@ class CoachNotifier extends _$CoachNotifier {
           text: '💧 Bắt đầu uống',
           action: 'log_water',
         ),
-        const QuickReply(
-          id: 'why_important',
-          text: '❓ Tại sao quan trọng?',
-        ),
+        const QuickReply(id: 'why_important', text: '❓ Tại sao quan trọng?'),
       ];
     }
 
@@ -350,10 +577,9 @@ class CoachNotifier extends _$CoachNotifier {
     if (context.hydrationLevel < 0.4) {
       content =
           'Triệu chứng này có thể do thiếu nước! Cơ thể bạn chỉ đạt ${(context.hydrationLevel * 100).round()}% hydration. Hãy uống nước ngay và nghỉ ngơi! 🏥';
-      quickReplies.add(const QuickReply(
-        id: 'health_tips',
-        text: '💡 Lời khuyên sức khỏe',
-      ));
+      quickReplies.add(
+        const QuickReply(id: 'health_tips', text: '💡 Lời khuyên sức khỏe'),
+      );
     } else {
       content =
           'Nghe có vẻ bạn cần nghỉ ngơi. Hãy uống thêm nước và thư giãn một chút nhé! Hydration tốt sẽ giúp bạn cảm thấy khỏe hơn! 😌';
@@ -392,10 +618,7 @@ class CoachNotifier extends _$CoachNotifier {
             text: '💧 Tiếp tục uống',
             action: 'log_water',
           ),
-          const QuickReply(
-            id: 'adjust_goal',
-            text: '⚙️ Điều chỉnh mục tiêu',
-          ),
+          const QuickReply(id: 'adjust_goal', text: '⚙️ Điều chỉnh mục tiêu'),
         ],
       );
     }
@@ -425,10 +648,7 @@ class CoachNotifier extends _$CoachNotifier {
           text: '🎯 Xem Level',
           action: 'view_achievements',
         ),
-        const QuickReply(
-          id: 'next_milestone',
-          text: '🎯 Mục tiêu tiếp theo',
-        ),
+        const QuickReply(id: 'next_milestone', text: '🎯 Mục tiêu tiếp theo'),
       ],
     );
   }
@@ -444,10 +664,7 @@ class CoachNotifier extends _$CoachNotifier {
           text: '🗺️ Xem bản đồ cơ thể',
           action: 'check_body',
         ),
-        const QuickReply(
-          id: 'health_tips',
-          text: '💡 Lời khuyên sức khỏe',
-        ),
+        const QuickReply(id: 'health_tips', text: '💡 Lời khuyên sức khỏe'),
       ],
     );
   }
@@ -463,10 +680,7 @@ class CoachNotifier extends _$CoachNotifier {
           text: '📈 Chi tiết thống kê',
           action: 'check_stats',
         ),
-        const QuickReply(
-          id: 'weekly_summary',
-          text: '📅 Tóm tắt tuần',
-        ),
+        const QuickReply(id: 'weekly_summary', text: '📅 Tóm tắt tuần'),
       ],
     );
   }
@@ -476,12 +690,7 @@ class CoachNotifier extends _$CoachNotifier {
     return ChatMessage.ai(
       content:
           'Không có gì! Tôi luôn ở đây để hỗ trợ bạn duy trì thói quen hydration tốt! Hãy cùng giữ sức khỏe nhé! 🤗',
-      quickReplies: [
-        const QuickReply(
-          id: 'daily_tip',
-          text: '💡 Tip hôm nay',
-        ),
-      ],
+      quickReplies: [const QuickReply(id: 'daily_tip', text: '💡 Tip hôm nay')],
     );
   }
 
@@ -501,14 +710,8 @@ class CoachNotifier extends _$CoachNotifier {
           text: '💧 Ghi nhận nước',
           action: 'log_water',
         ),
-        const QuickReply(
-          id: 'health_check',
-          text: '🩺 Kiểm tra sức khỏe',
-        ),
-        const QuickReply(
-          id: 'daily_tips',
-          text: '💡 Lời khuyên hôm nay',
-        ),
+        const QuickReply(id: 'health_check', text: '🩺 Kiểm tra sức khỏe'),
+        const QuickReply(id: 'daily_tips', text: '💡 Lời khuyên hôm nay'),
       ],
     );
   }
@@ -532,8 +735,10 @@ class CoachNotifier extends _$CoachNotifier {
     final context = _getContext();
     final suggestion = _generateAutoSuggestion(context);
 
-    state = state.addMessage(suggestion);
-    _saveConversation();
+    state.whenData((currentState) {
+      state = AsyncValue.data(currentState.addMessage(suggestion));
+      _saveConversation();
+    });
   }
 
   /// Generate automatic suggestion message
@@ -563,30 +768,65 @@ class CoachNotifier extends _$CoachNotifier {
           text: '💧 Đã uống rồi!',
           action: 'log_water',
         ),
-        const QuickReply(
-          id: 'remind_later',
-          text: '⏰ Nhắc lại sau',
-        ),
+        const QuickReply(id: 'remind_later', text: '⏰ Nhắc lại sau'),
       ],
     );
   }
 
   /// Save conversation to storage
   Future<void> _saveConversation() async {
-    final storage = HiveStorageService.instance;
-    final messagesJson = state.messages.map((msg) => msg.toJson()).toList();
-    await storage.saveCoachConversation(messagesJson);
+    state.whenData((currentState) async {
+      final storage = HiveStorageService.instance;
+      final messagesJson = currentState.messages
+          .map((msg) => msg.toJson())
+          .toList();
+      await storage.saveCoachConversation(messagesJson);
+    });
   }
 
   /// Clear conversation
   Future<void> clearConversation() async {
-    state = _createWelcomeConversation();
+    // Archive current session if it exists
+    if (_currentSessionId != null) {
+      try {
+        await _coachRepository.archiveConversationSession(_currentSessionId!);
+      } catch (e) {
+        debugPrint('Failed to archive session: $e');
+      }
+    }
+
+    // Reset session ID and create new welcome conversation
+    _currentSessionId = null;
+    state = AsyncValue.data(_createWelcomeConversation());
     await _saveConversation();
   }
 
   /// Refresh conversation with updated context
   void refreshContext() {
+    // Update conversation context if we have a session
+    if (_currentSessionId != null) {
+      final context = _getContext();
+      final contextMap = {
+        'hydration_level': context.hydrationLevel,
+        'current_level': context.currentLevel,
+        'streak': context.streak,
+        'today_intake': context.todayIntake,
+        'daily_goal': context.dailyGoal,
+        'recent_achievements': context.recentAchievements,
+        'overall_health_status': context.overallHealthStatus,
+      };
+
+      _coachRepository.updateConversationContext(
+        sessionId: _currentSessionId!,
+        context: contextMap,
+      );
+    }
+
     // Just trigger rebuild with current messages
-    state = state.copyWith(lastUpdated: DateTime.now());
+    state.whenData((currentState) {
+      state = AsyncValue.data(
+        currentState.copyWith(lastUpdated: DateTime.now()),
+      );
+    });
   }
 }

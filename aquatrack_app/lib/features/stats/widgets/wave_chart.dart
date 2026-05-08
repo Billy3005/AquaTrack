@@ -10,11 +10,7 @@ class WaveChart extends StatelessWidget {
   final List<ChartDataPoint> data;
   final StatsPeriod period;
 
-  const WaveChart({
-    super.key,
-    required this.data,
-    required this.period,
-  });
+  const WaveChart({super.key, required this.data, required this.period});
 
   @override
   Widget build(BuildContext context) {
@@ -40,9 +36,7 @@ class WaveChart extends StatelessWidget {
           width: 1,
         ),
       ),
-      child: LineChart(
-        _buildLineChartData(),
-      ),
+      child: LineChart(_buildLineChartData()),
     );
   }
 
@@ -69,10 +63,7 @@ class WaveChart extends StatelessWidget {
               color: AppColors.textSecondary,
             ),
             SizedBox(height: 8),
-            Text(
-              'Chưa có dữ liệu',
-              style: AppTextStyles.bodyMedium,
-            ),
+            Text('Chưa có dữ liệu', style: AppTextStyles.bodyMedium),
             SizedBox(height: 4),
             Text(
               'Bắt đầu ghi nhận để xem biểu đồ',
@@ -123,9 +114,7 @@ class WaveChart extends StatelessWidget {
             getTitlesWidget: _buildBottomTitle,
           ),
         ),
-        topTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         rightTitles: const AxisTitles(
           sideTitles: SideTitles(showTitles: false),
         ),
@@ -246,7 +235,7 @@ class WaveChart extends StatelessWidget {
           'Thứ 4',
           'Thứ 5',
           'Thứ 6',
-          'Thứ 7'
+          'Thứ 7',
         ];
         dateStr = days[date.weekday % 7];
       } else {

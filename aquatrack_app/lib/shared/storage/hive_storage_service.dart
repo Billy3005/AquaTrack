@@ -62,8 +62,11 @@ class HiveStorageService {
     final todayEnd = todayStart.add(const Duration(days: 1));
 
     return _intakeLogsBox.values
-        .where((log) =>
-            log.loggedAt.isAfter(todayStart) && log.loggedAt.isBefore(todayEnd))
+        .where(
+          (log) =>
+              log.loggedAt.isAfter(todayStart) &&
+              log.loggedAt.isBefore(todayEnd),
+        )
         .toList()
       ..sort((a, b) => a.loggedAt.compareTo(b.loggedAt));
   }
@@ -71,8 +74,10 @@ class HiveStorageService {
   /// Load all intake logs for a specific date range
   List<IntakeLog> loadLogsInDateRange(DateTime startDate, DateTime endDate) {
     return _intakeLogsBox.values
-        .where((log) =>
-            log.loggedAt.isAfter(startDate) && log.loggedAt.isBefore(endDate))
+        .where(
+          (log) =>
+              log.loggedAt.isAfter(startDate) && log.loggedAt.isBefore(endDate),
+        )
         .toList()
       ..sort((a, b) => a.loggedAt.compareTo(b.loggedAt));
   }
@@ -109,7 +114,8 @@ class HiveStorageService {
 
   /// Save coach conversation messages
   Future<void> saveCoachConversation(
-      List<Map<String, dynamic>> messages) async {
+    List<Map<String, dynamic>> messages,
+  ) async {
     await _appSettingsBox.put('coach_conversation', messages);
   }
 

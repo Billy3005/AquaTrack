@@ -84,16 +84,18 @@ class _DrinkChip extends StatelessWidget {
               child: Icon(
                 drinkType.icon,
                 size: 16,
-                color:
-                    isSelected ? AppColors.textPrimary : AppColors.cyanAccent,
+                color: isSelected
+                    ? AppColors.textPrimary
+                    : AppColors.cyanAccent,
               ),
             ),
             const SizedBox(width: 8),
             Text(
               drinkType.displayName,
               style: AppTextStyles.bodyMedium.copyWith(
-                color:
-                    isSelected ? AppColors.textPrimary : AppColors.textPrimary,
+                color: isSelected
+                    ? AppColors.textPrimary
+                    : AppColors.textPrimary,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
               ),
             ),

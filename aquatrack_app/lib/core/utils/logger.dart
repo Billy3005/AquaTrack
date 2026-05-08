@@ -110,15 +110,19 @@ class AppLogger {
   static void userAction(String action, [Map<String, dynamic>? properties]) {
     if (!AppConfig.enableAnalytics) return;
 
-    final message =
-        properties != null ? '$action: ${properties.toString()}' : action;
+    final message = properties != null
+        ? '$action: ${properties.toString()}'
+        : action;
 
     info('UserAction', message);
   }
 
   /// Log performance metrics
-  static void performance(String operation, Duration duration,
-      [Map<String, dynamic>? metadata]) {
+  static void performance(
+    String operation,
+    Duration duration, [
+    Map<String, dynamic>? metadata,
+  ]) {
     final message = metadata != null
         ? '$operation took ${duration.inMilliseconds}ms: ${metadata.toString()}'
         : '$operation took ${duration.inMilliseconds}ms';

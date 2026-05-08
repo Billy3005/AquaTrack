@@ -11,11 +11,9 @@ class AuthRepository {
   final ApiService _apiService;
   final AuthService _authService;
 
-  AuthRepository({
-    ApiService? apiService,
-    AuthService? authService,
-  })  : _apiService = apiService ?? ApiService(),
-        _authService = authService ?? AuthService();
+  AuthRepository({ApiService? apiService, AuthService? authService})
+    : _apiService = apiService ?? ApiService(),
+      _authService = authService ?? AuthService();
 
   /// Login with email and password
   Future<AuthResponse> login({
@@ -42,7 +40,9 @@ class AuthRepository {
         await _authService.storeUserData(response.data!.user.toJson());
 
         AppLogger.info(
-            _tag, 'Login successful for user: ${response.data!.user.id}');
+          _tag,
+          'Login successful for user: ${response.data!.user.id}',
+        );
         return response.data!;
       } else {
         throw Exception('Login response data is null');
@@ -84,8 +84,10 @@ class AuthRepository {
         );
         await _authService.storeUserData(response.data!.user.toJson());
 
-        AppLogger.info(_tag,
-            'Registration successful for user: ${response.data!.user.id}');
+        AppLogger.info(
+          _tag,
+          'Registration successful for user: ${response.data!.user.id}',
+        );
         return response.data!;
       } else {
         throw Exception('Registration response data is null');
@@ -144,7 +146,10 @@ class AuthRepository {
       } catch (e) {
         // Ignore API errors for logout - we'll clear local data anyway
         AppLogger.warning(
-            _tag, 'Backend logout failed, continuing with local logout', e);
+          _tag,
+          'Backend logout failed, continuing with local logout',
+          e,
+        );
       }
 
       // Clear local auth data
@@ -191,10 +196,7 @@ class AuthRepository {
     AppLogger.info(_tag, 'Requesting password reset for: $email');
 
     try {
-      await _apiService.post(
-        '/auth/forgot-password',
-        data: {'email': email},
-      );
+      await _apiService.post('/auth/forgot-password', data: {'email': email});
       AppLogger.info(_tag, 'Password reset request sent');
     } catch (e) {
       AppLogger.error(_tag, 'Password reset request failed', e);
@@ -212,10 +214,7 @@ class AuthRepository {
     try {
       await _apiService.post(
         '/auth/reset-password',
-        data: {
-          'token': token,
-          'new_password': newPassword,
-        },
+        data: {'token': token, 'new_password': newPassword},
       );
       AppLogger.info(_tag, 'Password reset successful');
     } catch (e) {

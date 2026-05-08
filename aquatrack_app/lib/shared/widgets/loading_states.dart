@@ -9,11 +9,7 @@ class LoadingWidget extends StatelessWidget {
   final String? message;
   final bool showBackground;
 
-  const LoadingWidget({
-    super.key,
-    this.message,
-    this.showBackground = true,
-  });
+  const LoadingWidget({super.key, this.message, this.showBackground = true});
 
   @override
   Widget build(BuildContext context) {
@@ -70,11 +66,7 @@ class ErrorStateWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon ?? Icons.error_outline,
-              color: Colors.red,
-              size: 64,
-            ),
+            Icon(icon ?? Icons.error_outline, color: Colors.red, size: 64),
             const SizedBox(height: 16),
             Text(
               'Đã có lỗi xảy ra',
@@ -134,11 +126,7 @@ class EmptyStateWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: AppColors.textSecondary,
-              size: 64,
-            ),
+            Icon(icon, color: AppColors.textSecondary, size: 64),
             const SizedBox(height: 24),
             Text(
               title,
@@ -209,10 +197,7 @@ class AsyncValueWidget<T> extends StatelessWidget {
 class ConnectivityBanner extends StatelessWidget {
   final bool isConnected;
 
-  const ConnectivityBanner({
-    super.key,
-    required this.isConnected,
-  });
+  const ConnectivityBanner({super.key, required this.isConnected});
 
   @override
   Widget build(BuildContext context) {

@@ -1,10 +1,18 @@
+import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../shared/storage/hive_storage_service.dart';
+import '../../../core/repositories/level_repository.dart';
 import '../widgets/achievement_badges_grid.dart';
 import '../widgets/avatar_collection_showcase.dart';
 
 part 'level_provider.g.dart';
+
+/// Provider for LevelRepository dependency injection
+@riverpod
+LevelRepository levelRepository(ref) {
+  return LevelRepository();
+}
 
 /// Level system state
 class LevelState {
@@ -66,8 +74,194 @@ class LevelState {
 /// Level system notifier với XP, achievements, avatars
 @riverpod
 class LevelNotifier extends _$LevelNotifier {
+  late final LevelRepository _levelRepository;
+
   @override
-  LevelState build() {
+  Future<LevelState> build() async {
+    // Initialize repository via dependency injection
+    _levelRepository = ref.read(levelRepositoryProvider);
+    return await _loadLevelDataFromApi();
+  }
+
+  /// Load level data from API with fallback to local storage
+  Future<LevelState> _loadLevelDataFromApi() async {
+    try {
+      // Fetch data from API in parallel for better performance
+      final results = await Future.wait([
+        _levelRepository.getCurrentLevel(),
+        _levelRepository.getAchievements(),
+        _levelRepository.getUnlockedAvatars(),
+        _levelRepository.getLevelStats(),
+      ]);
+
+      final levelInfoResponse = results[0] as LevelApiResponse<LevelInfo>;
+      final achievementsResponse =
+          results[1] as LevelApiResponse<List<AchievementProgress>>;
+      final avatarsResponse = results[2] as LevelApiResponse<List<String>>;
+      final statsResponse = results[3] as LevelApiResponse<LevelStats>;
+
+      // Check for any API errors
+      if (!levelInfoResponse.isSuccess) {
+        throw Exception(levelInfoResponse.error ?? 'Failed to load level info');
+      }
+      if (!achievementsResponse.isSuccess) {
+        throw Exception(
+          achievementsResponse.error ?? 'Failed to load achievements',
+        );
+      }
+      if (!avatarsResponse.isSuccess) {
+        throw Exception(avatarsResponse.error ?? 'Failed to load avatars');
+      }
+      if (!statsResponse.isSuccess) {
+        throw Exception(statsResponse.error ?? 'Failed to load stats');
+      }
+
+      // Convert API responses to local LevelState format
+      return _convertApiDataToLevelState(
+        levelInfoResponse.data!,
+        achievementsResponse.data!,
+        avatarsResponse.data!,
+        statsResponse.data!,
+      );
+    } catch (e) {
+      debugPrint('❌ Failed to load level data from API: $e');
+
+      // Only fallback to local storage for genuine connectivity issues
+      final isConnectivityError =
+          e.toString().contains('SocketException') ||
+          e.toString().contains('HttpException') ||
+          e.toString().contains('TimeoutException') ||
+          e.toString().contains('Connection refused') ||
+          e.toString().contains('No route to host');
+
+      if (isConnectivityError) {
+        debugPrint(
+          '🌐 Network connectivity issue detected, falling back to local storage',
+        );
+        return _loadLevelDataFromLocal();
+      } else {
+        // Re-throw API errors for proper error handling in UI
+        debugPrint('🚨 API error (not connectivity), exposing to UI: $e');
+        rethrow;
+      }
+    }
+  }
+
+  /// Convert API response data to local LevelState format
+  LevelState _convertApiDataToLevelState(
+    LevelInfo levelInfo,
+    List<AchievementProgress> achievementsData,
+    List<String> unlockedAvatarIds,
+    LevelStats stats,
+  ) {
+    // Convert API achievements to local Achievement format
+    final achievements = achievementsData.map((apiAchievement) {
+      return Achievement(
+        id: apiAchievement.id,
+        title: apiAchievement.title,
+        description: apiAchievement.description,
+        icon: _getIconFromString(apiAchievement.icon),
+        type: _getAchievementTypeFromString(apiAchievement.type),
+        requiredValue: apiAchievement.requiredValue,
+        isUnlocked: apiAchievement.isUnlocked,
+        unlockedAt: apiAchievement.isUnlocked ? DateTime.now() : null,
+      );
+    }).toList();
+
+    // Generate avatars based on unlocked avatar IDs
+    final avatars = _generateAvatarsFromUnlockedIds(
+      unlockedAvatarIds,
+      levelInfo.currentLevel,
+    );
+
+    // Get selected avatar from local storage or default
+    final storage = HiveStorageService.instance;
+    final savedAvatarId =
+        storage.loadSetting<String>('selected_avatar') ?? 'water_drop';
+
+    return LevelState(
+      currentLevel: levelInfo.currentLevel,
+      currentXP: levelInfo.currentXP,
+      nextLevelXP: levelInfo.xpForNextLevel,
+      achievements: achievements,
+      avatars: avatars,
+      selectedAvatarId: savedAvatarId,
+      isLevelingUp: false,
+      totalLogsCount: stats.achievements.total > 0
+          ? stats.achievements.total
+          : 0,
+      currentStreak: 0, // TODO: Get from daily summary or stats API
+      totalVolume:
+          stats.totalXP * 10, // Approximate from XP, should get from proper API
+      daysWithGoal: stats.achievements.unlocked,
+    );
+  }
+
+  /// Generate avatars list from unlocked avatar IDs
+  List<AvatarItem> _generateAvatarsFromUnlockedIds(
+    List<String> unlockedIds,
+    int currentLevel,
+  ) {
+    // Use the existing DefaultAvatars logic but filter by unlocked IDs
+    final allAvatars = DefaultAvatars.getAll(
+      currentLevel: currentLevel,
+      selectedAvatarId: unlockedIds.isNotEmpty
+          ? unlockedIds.first
+          : 'water_drop',
+    );
+
+    // Filter avatars to only show unlocked ones
+    return allAvatars.map((avatar) {
+      final isUnlocked =
+          unlockedIds.contains(avatar.id) || avatar.id == 'water_drop';
+      return avatar.copyWith(isUnlocked: isUnlocked);
+    }).toList();
+  }
+
+  /// Convert string icon to IconData
+  IconData _getIconFromString(String iconString) {
+    // Simple mapping, could be expanded
+    switch (iconString) {
+      case 'first_day':
+        return Icons.star;
+      case 'week_warrior':
+        return Icons.military_tech;
+      case 'month_master':
+        return Icons.emoji_events;
+      case 'first_liter':
+        return Icons.water_drop;
+      case 'hydration_hero':
+        return Icons.local_fire_department;
+      case 'level_5':
+      case 'level_20':
+        return Icons.trending_up;
+      case 'frequent_drinker':
+        return Icons.repeat;
+      default:
+        return Icons.star;
+    }
+  }
+
+  /// Convert string achievement type to enum
+  AchievementType _getAchievementTypeFromString(String typeString) {
+    switch (typeString) {
+      case 'streak':
+        return AchievementType.streak;
+      case 'total_volume':
+        return AchievementType.totalVolume;
+      case 'level':
+        return AchievementType.level;
+      case 'daily_goal':
+        return AchievementType.dailyGoal;
+      case 'frequency':
+        return AchievementType.frequency;
+      default:
+        return AchievementType.frequency;
+    }
+  }
+
+  /// Fallback to local storage if API fails
+  LevelState _loadLevelDataFromLocal() {
     return _loadInitialState();
   }
 
@@ -120,33 +314,42 @@ class LevelNotifier extends _$LevelNotifier {
 
   /// Add XP và check for level up
   Future<bool> addXP(int xpAmount) async {
-    final currentState = state;
-    final newXP = currentState.currentXP + xpAmount;
-    var newLevel = currentState.currentLevel;
-    var remainingXP = newXP;
-    bool hasLeveledUp = false;
+    try {
+      final currentState = await future;
 
-    // Check for level up (có thể level up nhiều lần)
-    while (remainingXP >= _calculateNextLevelXP(newLevel)) {
-      remainingXP -= _calculateNextLevelXP(newLevel);
-      newLevel++;
-      hasLeveledUp = true;
+      // In production, this should call API to add XP
+      // For now, simulate local XP addition
+      final newXP = currentState.currentXP + xpAmount;
+      var newLevel = currentState.currentLevel;
+      var remainingXP = newXP;
+      bool hasLeveledUp = false;
+
+      // Check for level up (có thể level up nhiều lần)
+      while (remainingXP >= _calculateNextLevelXP(newLevel)) {
+        remainingXP -= _calculateNextLevelXP(newLevel);
+        newLevel++;
+        hasLeveledUp = true;
+      }
+
+      // Update state
+      final updatedState = currentState.copyWith(
+        currentLevel: newLevel,
+        currentXP: remainingXP,
+        nextLevelXP: _calculateNextLevelXP(newLevel),
+        isLevelingUp: hasLeveledUp,
+      );
+
+      final finalState = _updateAchievementsAndAvatars(updatedState);
+      state = AsyncValue.data(finalState);
+
+      // Save to storage
+      await _saveToStorage();
+
+      return hasLeveledUp;
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      return false;
     }
-
-    // Update state
-    final updatedState = currentState.copyWith(
-      currentLevel: newLevel,
-      currentXP: remainingXP,
-      nextLevelXP: _calculateNextLevelXP(newLevel),
-      isLevelingUp: hasLeveledUp,
-    );
-
-    state = _updateAchievementsAndAvatars(updatedState);
-
-    // Save to storage
-    await _saveToStorage();
-
-    return hasLeveledUp;
   }
 
   /// Update stats (được gọi khi user log drinks)
@@ -156,45 +359,59 @@ class LevelNotifier extends _$LevelNotifier {
     int? newStreak,
     bool? achievedGoalToday,
   }) async {
-    final currentState = state;
+    try {
+      final currentState = await future;
 
-    final updatedState = currentState.copyWith(
-      totalLogsCount: additionalLogs != null
-          ? currentState.totalLogsCount + additionalLogs
-          : currentState.totalLogsCount,
-      totalVolume: additionalVolume != null
-          ? currentState.totalVolume + additionalVolume
-          : currentState.totalVolume,
-      currentStreak: newStreak ?? currentState.currentStreak,
-      daysWithGoal: achievedGoalToday == true
-          ? currentState.daysWithGoal + 1
-          : currentState.daysWithGoal,
-    );
+      final updatedState = currentState.copyWith(
+        totalLogsCount: additionalLogs != null
+            ? currentState.totalLogsCount + additionalLogs
+            : currentState.totalLogsCount,
+        totalVolume: additionalVolume != null
+            ? currentState.totalVolume + additionalVolume
+            : currentState.totalVolume,
+        currentStreak: newStreak ?? currentState.currentStreak,
+        daysWithGoal: achievedGoalToday == true
+            ? currentState.daysWithGoal + 1
+            : currentState.daysWithGoal,
+      );
 
-    state = _updateAchievementsAndAvatars(updatedState);
-    await _saveToStorage();
+      final finalState = _updateAchievementsAndAvatars(updatedState);
+      state = AsyncValue.data(finalState);
+      await _saveToStorage();
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+    }
   }
 
   /// Select avatar
   Future<void> selectAvatar(String avatarId) async {
-    final currentState = state;
-    final updatedAvatars = currentState.avatars.map((avatar) {
-      return avatar.copyWith(
-        isSelected: avatar.id == avatarId,
+    try {
+      final currentState = await future;
+      final updatedAvatars = currentState.avatars.map((avatar) {
+        return avatar.copyWith(isSelected: avatar.id == avatarId);
+      }).toList();
+
+      final updatedState = currentState.copyWith(
+        selectedAvatarId: avatarId,
+        avatars: updatedAvatars,
       );
-    }).toList();
 
-    state = currentState.copyWith(
-      selectedAvatarId: avatarId,
-      avatars: updatedAvatars,
-    );
-
-    await _saveToStorage();
+      state = AsyncValue.data(updatedState);
+      await _saveToStorage();
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+    }
   }
 
   /// Clear level up animation state
-  void clearLevelUpState() {
-    state = state.copyWith(isLevelingUp: false);
+  Future<void> clearLevelUpState() async {
+    try {
+      final currentState = await future;
+      final updatedState = currentState.copyWith(isLevelingUp: false);
+      state = AsyncValue.data(updatedState);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+    }
   }
 
   /// Update achievements và avatars dựa trên current stats
@@ -227,53 +444,87 @@ class LevelNotifier extends _$LevelNotifier {
 
   /// Save state to storage
   Future<void> _saveToStorage() async {
-    final storage = HiveStorageService.instance;
-    final currentState = state;
+    try {
+      final storage = HiveStorageService.instance;
+      final currentState = await future;
 
-    await storage.saveSetting('current_level', currentState.currentLevel);
-    await storage.saveSetting('current_xp', currentState.currentXP);
-    await storage.saveSetting('selected_avatar', currentState.selectedAvatarId);
-    await storage.saveSetting('total_logs_count', currentState.totalLogsCount);
-    await storage.saveSetting('current_streak', currentState.currentStreak);
-    await storage.saveSetting('total_volume', currentState.totalVolume);
-    await storage.saveSetting('days_with_goal', currentState.daysWithGoal);
+      await storage.saveSetting('current_level', currentState.currentLevel);
+      await storage.saveSetting('current_xp', currentState.currentXP);
+      await storage.saveSetting(
+        'selected_avatar',
+        currentState.selectedAvatarId,
+      );
+      await storage.saveSetting(
+        'total_logs_count',
+        currentState.totalLogsCount,
+      );
+      await storage.saveSetting('current_streak', currentState.currentStreak);
+      await storage.saveSetting('total_volume', currentState.totalVolume);
+      await storage.saveSetting('days_with_goal', currentState.daysWithGoal);
+    } catch (e) {
+      // Silently fail - storage is not critical
+      debugPrint('Failed to save level state to storage: $e');
+    }
   }
 
-  /// Get current selected avatar
-  AvatarItem get selectedAvatar {
-    return state.avatars.firstWhere(
-      (avatar) => avatar.isSelected,
-      orElse: () => state.avatars.first,
-    );
+  /// Get current selected avatar (async)
+  Future<AvatarItem?> getSelectedAvatar() async {
+    try {
+      final currentState = await future;
+      return currentState.avatars.firstWhere(
+        (avatar) => avatar.isSelected,
+        orElse: () => currentState.avatars.first,
+      );
+    } catch (e) {
+      return null;
+    }
   }
 
-  /// Get unlocked achievements count
-  int get unlockedAchievementsCount {
-    return state.achievements
-        .where((achievement) => achievement.isUnlocked)
-        .length;
+  /// Get unlocked achievements count (async)
+  Future<int> getUnlockedAchievementsCount() async {
+    try {
+      final currentState = await future;
+      return currentState.achievements
+          .where((achievement) => achievement.isUnlocked)
+          .length;
+    } catch (e) {
+      return 0;
+    }
   }
 
-  /// Get progress to next level (0.0 → 1.0)
-  double get nextLevelProgress {
-    if (state.nextLevelXP == 0) return 1.0;
-    return (state.currentXP / state.nextLevelXP).clamp(0.0, 1.0);
+  /// Get progress to next level (0.0 → 1.0) (async)
+  Future<double> getNextLevelProgress() async {
+    try {
+      final currentState = await future;
+      if (currentState.nextLevelXP == 0) return 1.0;
+      return (currentState.currentXP / currentState.nextLevelXP).clamp(
+        0.0,
+        1.0,
+      );
+    } catch (e) {
+      return 0.0;
+    }
   }
 
   /// Reset all progress (for testing/admin)
   Future<void> resetProgress() async {
-    final storage = HiveStorageService.instance;
+    try {
+      final storage = HiveStorageService.instance;
 
-    // Clear saved settings
-    await storage.saveSetting('current_level', 1);
-    await storage.saveSetting('current_xp', 0);
-    await storage.saveSetting('selected_avatar', 'water_drop');
-    await storage.saveSetting('total_logs_count', 0);
-    await storage.saveSetting('current_streak', 0);
-    await storage.saveSetting('total_volume', 0);
-    await storage.saveSetting('days_with_goal', 0);
+      // Clear saved settings
+      await storage.saveSetting('current_level', 1);
+      await storage.saveSetting('current_xp', 0);
+      await storage.saveSetting('selected_avatar', 'water_drop');
+      await storage.saveSetting('total_logs_count', 0);
+      await storage.saveSetting('current_streak', 0);
+      await storage.saveSetting('total_volume', 0);
+      await storage.saveSetting('days_with_goal', 0);
 
-    // Reload state
-    state = _loadInitialState();
+      // Reload state from API
+      final newState = await _loadLevelDataFromApi();
+      state = AsyncValue.data(newState);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+    }
   }
 }

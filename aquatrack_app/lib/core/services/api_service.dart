@@ -20,94 +20,102 @@ class ApiService {
 
   /// Initialize API service with configuration
   void initialize() {
-    _dio = Dio(BaseOptions(
-      baseUrl: AppConfig.fullApiUrl,
-      connectTimeout: AppConfig.connectTimeout,
-      receiveTimeout: AppConfig.receiveTimeout,
-      sendTimeout: AppConfig.apiTimeout,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: AppConfig.fullApiUrl,
+        connectTimeout: AppConfig.connectTimeout,
+        receiveTimeout: AppConfig.receiveTimeout,
+        sendTimeout: AppConfig.apiTimeout,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
 
     // Add interceptors
     _setupInterceptors();
 
     AppLogger.debug(
-        _tag, 'API Service initialized with base URL: ${AppConfig.fullApiUrl}');
+      _tag,
+      'API Service initialized with base URL: ${AppConfig.fullApiUrl}',
+    );
   }
 
   /// Setup Dio interceptors for logging and authentication
   void _setupInterceptors() {
     // Request interceptor for adding auth token
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        // Add auth token if required
-        if (!_isPublicEndpoint(options.path)) {
-          final token = await _authService.getAccessToken();
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          // Add auth token if required
+          if (!_isPublicEndpoint(options.path)) {
+            final token = await _authService.getAccessToken();
+            if (token != null) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
           }
-        }
 
-        // Log request if enabled
-        if (AppConfig.enableNetworkLogs) {
-          AppLogger.network(options.method, options.uri.toString());
-        }
+          // Log request if enabled
+          if (AppConfig.enableNetworkLogs) {
+            AppLogger.network(options.method, options.uri.toString());
+          }
 
-        handler.next(options);
-      },
-      onResponse: (response, handler) {
-        // Log response if enabled
-        if (AppConfig.enableNetworkLogs) {
+          handler.next(options);
+        },
+        onResponse: (response, handler) {
+          // Log response if enabled
+          if (AppConfig.enableNetworkLogs) {
+            AppLogger.network(
+              response.requestOptions.method,
+              response.requestOptions.uri.toString(),
+              statusCode: response.statusCode,
+              duration: Duration(milliseconds: response.extra['duration'] ?? 0),
+            );
+          }
+
+          handler.next(response);
+        },
+        onError: (error, handler) async {
+          // Handle token expiration
+          if (error.response?.statusCode == 401) {
+            AppLogger.warning(_tag, 'Token expired, attempting refresh');
+
+            try {
+              await _authService.refreshToken();
+              // Retry the original request
+              final clonedRequest = await _retryRequest(error.requestOptions);
+              return handler.resolve(clonedRequest);
+            } catch (e) {
+              await _authService.logout();
+              AppLogger.error(_tag, 'Token refresh failed, user logged out');
+            }
+          }
+
+          // Log error
           AppLogger.network(
-            response.requestOptions.method,
-            response.requestOptions.uri.toString(),
-            statusCode: response.statusCode,
-            duration: Duration(milliseconds: response.extra['duration'] ?? 0),
+            error.requestOptions.method,
+            error.requestOptions.uri.toString(),
+            statusCode: error.response?.statusCode,
+            error: error,
           );
-        }
 
-        handler.next(response);
-      },
-      onError: (error, handler) async {
-        // Handle token expiration
-        if (error.response?.statusCode == 401) {
-          AppLogger.warning(_tag, 'Token expired, attempting refresh');
-
-          try {
-            await _authService.refreshToken();
-            // Retry the original request
-            final clonedRequest = await _retryRequest(error.requestOptions);
-            return handler.resolve(clonedRequest);
-          } catch (e) {
-            await _authService.logout();
-            AppLogger.error(_tag, 'Token refresh failed, user logged out');
-          }
-        }
-
-        // Log error
-        AppLogger.network(
-          error.requestOptions.method,
-          error.requestOptions.uri.toString(),
-          statusCode: error.response?.statusCode,
-          error: error,
-        );
-
-        handler.next(error);
-      },
-    ));
+          handler.next(error);
+        },
+      ),
+    );
 
     // Logging interceptor for development
     if (AppConfig.enableNetworkLogs && AppConfig.isDebug) {
-      _dio.interceptors.add(LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        requestHeader: false,
-        responseHeader: false,
-        logPrint: (log) => AppLogger.debug('DioLogger', log.toString()),
-      ));
+      _dio.interceptors.add(
+        LogInterceptor(
+          requestBody: true,
+          responseBody: true,
+          requestHeader: false,
+          responseHeader: false,
+          logPrint: (log) => AppLogger.debug('DioLogger', log.toString()),
+        ),
+      );
     }
   }
 
@@ -145,10 +153,7 @@ class ApiService {
     T Function(dynamic)? fromJson,
   }) async {
     try {
-      final response = await _dio.get(
-        endpoint,
-        queryParameters: queryParams,
-      );
+      final response = await _dio.get(endpoint, queryParameters: queryParams);
 
       return _handleResponse<T>(response, fromJson: fromJson);
     } on DioException catch (e) {
@@ -166,10 +171,7 @@ class ApiService {
     T Function(dynamic)? fromJson,
   }) async {
     try {
-      final response = await _dio.post(
-        endpoint,
-        data: data,
-      );
+      final response = await _dio.post(endpoint, data: data);
 
       return _handleResponse<T>(response, fromJson: fromJson);
     } on DioException catch (e) {
@@ -187,10 +189,7 @@ class ApiService {
     T Function(dynamic)? fromJson,
   }) async {
     try {
-      final response = await _dio.put(
-        endpoint,
-        data: data,
-      );
+      final response = await _dio.put(endpoint, data: data);
 
       return _handleResponse<T>(response, fromJson: fromJson);
     } on DioException catch (e) {

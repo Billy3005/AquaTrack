@@ -11,11 +11,7 @@ class ChatBubble extends StatelessWidget {
   final ChatMessage message;
   final Function(QuickReply)? onQuickReplyTap;
 
-  const ChatBubble({
-    super.key,
-    required this.message,
-    this.onQuickReplyTap,
-  });
+  const ChatBubble({super.key, required this.message, this.onQuickReplyTap});
 
   @override
   Widget build(BuildContext context) {
@@ -24,24 +20,24 @@ class ChatBubble extends StatelessWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-      child: Column(
-        crossAxisAlignment: message.isFromUser
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
-        children: [
-          _buildMessageBubble(),
-          if (message.quickReplies.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8, left: 48),
-              child: QuickRepliesWidget(
-                quickReplies: message.quickReplies,
-                onTap: onQuickReplyTap,
-              ),
-            ),
-        ],
-      ),
-    )
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+          child: Column(
+            crossAxisAlignment: message.isFromUser
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
+            children: [
+              _buildMessageBubble(),
+              if (message.quickReplies.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, left: 48),
+                  child: QuickRepliesWidget(
+                    quickReplies: message.quickReplies,
+                    onTap: onQuickReplyTap,
+                  ),
+                ),
+            ],
+          ),
+        )
         .animate()
         .fadeIn(duration: 300.ms, delay: 100.ms)
         .slideY(begin: 0.2, end: 0.0, curve: Curves.easeOutCubic);
@@ -50,8 +46,9 @@ class ChatBubble extends StatelessWidget {
   /// Build main message bubble
   Widget _buildMessageBubble() {
     return Row(
-      mainAxisAlignment:
-          message.isFromUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+      mainAxisAlignment: message.isFromUser
+          ? MainAxisAlignment.end
+          : MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         // AI avatar
@@ -64,10 +61,7 @@ class ChatBubble extends StatelessWidget {
               left: message.isFromUser ? 48 : 8,
               right: message.isFromUser ? 8 : 48,
             ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               gradient: message.isFromUser
                   ? LinearGradient(
@@ -159,10 +153,7 @@ class ChatBubble extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.cyan,
-            AppColors.xpPurple,
-          ],
+          colors: [AppColors.cyan, AppColors.xpPurple],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
@@ -173,11 +164,7 @@ class ChatBubble extends StatelessWidget {
           ),
         ],
       ),
-      child: const Icon(
-        Icons.water_drop,
-        color: Colors.white,
-        size: 18,
-      ),
+      child: const Icon(Icons.water_drop, color: Colors.white, size: 18),
     );
   }
 
@@ -195,11 +182,7 @@ class ChatBubble extends StatelessWidget {
           width: 1,
         ),
       ),
-      child: const Icon(
-        Icons.person,
-        color: AppColors.cyan,
-        size: 16,
-      ),
+      child: const Icon(Icons.person, color: AppColors.cyan, size: 16),
     );
   }
 
@@ -239,11 +222,7 @@ class ChatBubble extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: color,
-            size: 14,
-          ),
+          Icon(icon, color: color, size: 14),
           const SizedBox(width: 4),
           Text(
             label,
@@ -260,45 +239,49 @@ class ChatBubble extends StatelessWidget {
   /// Build typing indicator animation
   Widget _buildTypingIndicator() {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-      child: Row(
-        children: [
-          _buildAvatar(),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.surface.withValues(alpha: 0.7),
-              borderRadius: BorderRadius.circular(16).copyWith(
-                bottomLeft: const Radius.circular(4),
-              ),
-              border: Border.all(
-                color: AppColors.textSecondary.withValues(alpha: 0.2),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'AQUA AI đang soạn tin',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                    fontStyle: FontStyle.italic,
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+          child: Row(
+            children: [
+              _buildAvatar(),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surface.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(
+                    16,
+                  ).copyWith(bottomLeft: const Radius.circular(4)),
+                  border: Border.all(
+                    color: AppColors.textSecondary.withValues(alpha: 0.2),
+                    width: 1,
                   ),
                 ),
-                const SizedBox(width: 8),
-                _buildTypingDots(),
-              ],
-            ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'AQUA AI đang soạn tin',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildTypingDots(),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    ).animate(onPlay: (controller) => controller.repeat()).shimmer(
-        duration: 1500.ms, color: AppColors.cyan.withValues(alpha: 0.3));
+        )
+        .animate(onPlay: (controller) => controller.repeat())
+        .shimmer(
+          duration: 1500.ms,
+          color: AppColors.cyan.withValues(alpha: 0.3),
+        );
   }
 
   /// Build typing dots animation
@@ -308,14 +291,16 @@ class ChatBubble extends StatelessWidget {
       children: [
         for (int i = 0; i < 3; i++)
           Container(
-            width: 4,
-            height: 4,
-            margin: EdgeInsets.only(right: i < 2 ? 2 : 0),
-            decoration: BoxDecoration(
-              color: AppColors.cyan,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ).animate(onPlay: (controller) => controller.repeat()).scale(
+                width: 4,
+                height: 4,
+                margin: EdgeInsets.only(right: i < 2 ? 2 : 0),
+                decoration: BoxDecoration(
+                  color: AppColors.cyan,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              )
+              .animate(onPlay: (controller) => controller.repeat())
+              .scale(
                 begin: const Offset(0.8, 0.8),
                 end: const Offset(1.2, 1.2),
                 duration: 600.ms,

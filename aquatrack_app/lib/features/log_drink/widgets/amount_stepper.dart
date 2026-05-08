@@ -32,8 +32,10 @@ class AmountStepper extends StatelessWidget {
               icon: Icons.remove,
               onTap: () {
                 HapticFeedback.lightImpact();
-                final newAmount =
-                    (currentAmount - stepAmount).clamp(minAmount, maxAmount);
+                final newAmount = (currentAmount - stepAmount).clamp(
+                  minAmount,
+                  maxAmount,
+                );
                 onAmountChanged(newAmount);
               },
               enabled: currentAmount > minAmount,
@@ -83,8 +85,10 @@ class AmountStepper extends StatelessWidget {
               icon: Icons.add,
               onTap: () {
                 HapticFeedback.lightImpact();
-                final newAmount =
-                    (currentAmount + stepAmount).clamp(minAmount, maxAmount);
+                final newAmount = (currentAmount + stepAmount).clamp(
+                  minAmount,
+                  maxAmount,
+                );
                 onAmountChanged(newAmount);
               },
               enabled: currentAmount < maxAmount,
