@@ -82,8 +82,8 @@ mixin ConnectivityAware {
     required void Function(bool isConnected) onConnectivityChanged,
   }) {
     _connectivitySubscription = ConnectivityService().connectionStream.listen(
-      onConnectivityChanged,
-    );
+          onConnectivityChanged,
+        );
   }
 
   void disposeConnectivity() {

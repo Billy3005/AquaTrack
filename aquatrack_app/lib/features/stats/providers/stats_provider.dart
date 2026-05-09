@@ -135,8 +135,7 @@ class StatsNotifier extends _$StatsNotifier {
 
       // Only fallback to local storage for genuine connectivity issues
       // Other API errors (auth, validation, etc.) should be exposed to user
-      final isConnectivityError =
-          e.toString().contains('SocketException') ||
+      final isConnectivityError = e.toString().contains('SocketException') ||
           e.toString().contains('HttpException') ||
           e.toString().contains('TimeoutException') ||
           e.toString().contains('Connection refused') ||
@@ -173,9 +172,8 @@ class StatsNotifier extends _$StatsNotifier {
     }).toList();
 
     // Get period stats from dashboard
-    final periodStats = period == StatsPeriod.week
-        ? dashboardData.week
-        : dashboardData.month;
+    final periodStats =
+        period == StatsPeriod.week ? dashboardData.week : dashboardData.month;
 
     // Get top liquid type from breakdown
     String topLiquidType = 'Nước';
@@ -312,9 +310,8 @@ class StatsNotifier extends _$StatsNotifier {
   double _calculateGoalCompletionRate(List<ChartDataPoint> data) {
     if (data.isEmpty) return 0.0;
 
-    final completedDays = data
-        .where((point) => point.value >= point.goal)
-        .length;
+    final completedDays =
+        data.where((point) => point.value >= point.goal).length;
     return completedDays / data.length;
   }
 

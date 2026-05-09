@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/repositories/body_map_repository.dart';
+import '../../../core/sync/body_map_sync_repository.dart';
 import '../../../shared/storage/hive_storage_service.dart';
 import '../models/organ_model.dart';
 
@@ -37,9 +39,8 @@ class BodyMapState {
       organHealths: organHealths ?? this.organHealths,
       overallHydrationLevel:
           overallHydrationLevel ?? this.overallHydrationLevel,
-      selectedOrgan: clearSelectedOrgan
-          ? null
-          : (selectedOrgan ?? this.selectedOrgan),
+      selectedOrgan:
+          clearSelectedOrgan ? null : (selectedOrgan ?? this.selectedOrgan),
       isAnimating: isAnimating ?? this.isAnimating,
     );
   }
@@ -100,8 +101,7 @@ class BodyMapNotifier extends _$BodyMapNotifier {
       debugPrint('❌ Failed to load body map from API: $e');
 
       // Only fallback to local storage for genuine connectivity issues
-      final isConnectivityError =
-          e.toString().contains('SocketException') ||
+      final isConnectivityError = e.toString().contains('SocketException') ||
           e.toString().contains('HttpException') ||
           e.toString().contains('TimeoutException') ||
           e.toString().contains('Connection refused') ||
@@ -134,12 +134,11 @@ class BodyMapNotifier extends _$BodyMapNotifier {
     final streakBonus =
         (hydrationStatus.currentStreak / 7.0).clamp(0.0, 1.0) * 0.1;
 
-    final enhancedHydrationLevel =
-        (baseHydrationLevel +
-                goalAchievementBonus +
-                liquidQualityBonus +
-                streakBonus)
-            .clamp(0.0, 1.0);
+    final enhancedHydrationLevel = (baseHydrationLevel +
+            goalAchievementBonus +
+            liquidQualityBonus +
+            streakBonus)
+        .clamp(0.0, 1.0);
 
     // Calculate organ healths with enhanced data
     final organHealths = DefaultOrgans.all.map((organ) {
@@ -231,15 +230,14 @@ class BodyMapNotifier extends _$BodyMapNotifier {
   /// Get organs sorted by health priority (most critical first)
   List<OrganHealth> getCriticalOrgans() {
     return state.when(
-      data: (bodyMapState) =>
-          bodyMapState.organHealths
-              .where(
-                (organHealth) =>
-                    organHealth.state == OrganState.critical ||
-                    organHealth.state == OrganState.poor,
-              )
-              .toList()
-            ..sort((a, b) => a.organ.priority.compareTo(b.organ.priority)),
+      data: (bodyMapState) => bodyMapState.organHealths
+          .where(
+            (organHealth) =>
+                organHealth.state == OrganState.critical ||
+                organHealth.state == OrganState.poor,
+          )
+          .toList()
+        ..sort((a, b) => a.organ.priority.compareTo(b.organ.priority)),
       loading: () => [],
       error: (error, stack) => [],
     );

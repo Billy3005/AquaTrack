@@ -62,10 +62,10 @@ class AppConfig {
 
   /// Get configuration based on environment
   static Map<String, dynamic> get config => {
-    'apiBaseUrl': apiBaseUrl,
-    'apiTimeout': apiTimeout.inMilliseconds,
-    'enableLogging': enableLogging && isDebug,
-    'enableAnalytics': enableAnalytics && isProduction,
-    'maxRetries': maxRetries,
-  };
+        'apiBaseUrl': apiBaseUrl,
+        'apiTimeout': apiTimeout.inMilliseconds,
+        'enableLogging': enableLogging && isDebug,
+        'enableAnalytics': enableAnalytics && isProduction,
+        'maxRetries': maxRetries,
+      };
 }

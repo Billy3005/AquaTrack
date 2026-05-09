@@ -1,0 +1,27 @@
+# AquaTrack ML Training Configuration
+model:
+  input_size: [224, 224, 3]
+  num_container_classes: 10
+  num_liquid_classes: 5
+  backbone: 'mobilenetv2'  # mobilenetv2, resnet50, efficientnet
+
+dataset:
+  train_split: 0.7
+  val_split: 0.2
+  test_split: 0.1
+  batch_size: 32
+  augmentation: true
+
+training:
+  epochs: 100
+  learning_rate: 0.001
+  optimizer: 'adam'
+  early_stopping_patience: 10
+  reduce_lr_patience: 5
+
+paths:
+  raw_data: './data/raw'
+  processed_data: './data/processed'
+  annotations: './data/annotations'
+  models: './models'
+  logs: './logs'

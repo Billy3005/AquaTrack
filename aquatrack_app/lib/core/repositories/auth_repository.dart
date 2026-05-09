@@ -12,8 +12,8 @@ class AuthRepository {
   final AuthService _authService;
 
   AuthRepository({ApiService? apiService, AuthService? authService})
-    : _apiService = apiService ?? ApiService(),
-      _authService = authService ?? AuthService();
+      : _apiService = apiService ?? ApiService(),
+        _authService = authService ?? AuthService();
 
   /// Login with email and password
   Future<AuthResponse> login({
