@@ -16,8 +16,8 @@ class CoachConversationSyncRepository {
   CoachConversationSyncRepository({
     required SyncService syncService,
     required ConflictResolver conflictResolver,
-  }) : _syncService = syncService,
-       _conflictResolver = conflictResolver;
+  })  : _syncService = syncService,
+        _conflictResolver = conflictResolver;
 
   /// Sync all conversation data (messages and sessions)
   Future<ConversationSyncResult> syncConversationData({DateTime? since}) async {

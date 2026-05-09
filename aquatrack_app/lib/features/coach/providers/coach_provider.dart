@@ -78,33 +78,24 @@ class CoachNotifier extends _$CoachNotifier {
   Future<ConversationState> _loadConversationFromApi() async {
     try {
       // Try to get recent conversation session
-      final sessionsResponse = await _coachRepository.getConversationSessions(
+      final sessions = await _coachRepository.getConversationSessions(
         limit: 1,
       );
 
-      if (!sessionsResponse.isSuccess) {
-        throw Exception(sessionsResponse.error ?? 'Failed to load sessions');
+      if (sessions == null) {
+        throw Exception('Failed to load sessions');
       }
-
-      final sessions = sessionsResponse.data?.sessions ?? [];
 
       if (sessions.isNotEmpty) {
         final recentSession = sessions.first;
-        _currentSessionId = recentSession.sessionId;
+        _currentSessionId = recentSession['session_id'];
 
         // Load conversation history for this session
-        final historyResponse = await _coachRepository.getConversationHistory(
-          sessionId: recentSession.sessionId,
+        final messages = await _coachRepository.getConversationHistory(
+          sessionId: recentSession['session_id'],
         );
 
-        if (historyResponse.isSuccess && historyResponse.data != null) {
-          final conversationHistory = historyResponse.data!;
-
-          // Convert backend messages to local ChatMessage format
-          final messages = conversationHistory.messages.map((msg) {
-            return _convertApiMessageToChatMessage(msg);
-          }).toList();
-
+        if (messages != null && messages.isNotEmpty) {
           return ConversationState(
             messages: messages,
             lastUpdated: DateTime.now(),
@@ -118,8 +109,7 @@ class CoachNotifier extends _$CoachNotifier {
       debugPrint('❌ Failed to load conversation from API: $e');
 
       // Only fallback to local storage for genuine connectivity issues
-      final isConnectivityError =
-          e.toString().contains('SocketException') ||
+      final isConnectivityError = e.toString().contains('SocketException') ||
           e.toString().contains('HttpException') ||
           e.toString().contains('TimeoutException') ||
           e.toString().contains('Connection refused') ||
@@ -196,9 +186,8 @@ class CoachNotifier extends _$CoachNotifier {
     // Try to load existing conversation
     final savedConversation = storage.loadCoachConversation();
     if (savedConversation != null && savedConversation.isNotEmpty) {
-      final messages = savedConversation
-          .map((json) => ChatMessage.fromJson(json))
-          .toList();
+      final messages =
+          savedConversation.map((json) => ChatMessage.fromJson(json)).toList();
 
       return ConversationState(messages: messages, lastUpdated: DateTime.now());
     }
@@ -261,9 +250,8 @@ class CoachNotifier extends _$CoachNotifier {
       todayIntake: todaysSummary?.totalEffectiveMl ?? 0,
       dailyGoal: todaysSummary?.dailyGoalMl ?? 2000,
       recentAchievements: recentAchievements,
-      overallHealthStatus: ref
-          .read(bodyMapNotifierProvider.notifier)
-          .overallHealthMessage,
+      overallHealthStatus:
+          ref.read(bodyMapNotifierProvider.notifier).overallHealthMessage,
     );
   }
 
@@ -291,23 +279,15 @@ class CoachNotifier extends _$CoachNotifier {
         };
 
         // Send message to backend
-        final response = await _coachRepository.sendMessage(
+        final aiMessage = await _coachRepository.sendMessage(
           content: content,
           sessionId: _currentSessionId,
           context: contextMap,
         );
 
-        if (!response.isSuccess) {
-          throw Exception(response.error ?? 'Failed to send message');
+        if (aiMessage == null) {
+          throw Exception('Failed to send message');
         }
-
-        final chatResponse = response.data!;
-        _currentSessionId = chatResponse.sessionId;
-
-        // Convert AI response to local format
-        final aiMessage = _convertApiMessageToChatMessage(
-          chatResponse.aiResponse,
-        );
 
         // Update state with AI response
         state.whenData((stateAfterSend) {
@@ -358,9 +338,8 @@ class CoachNotifier extends _$CoachNotifier {
   Future<void> _saveConversationLocal() async {
     state.whenData((currentState) async {
       final storage = HiveStorageService.instance;
-      final messagesJson = currentState.messages
-          .map((msg) => msg.toJson())
-          .toList();
+      final messagesJson =
+          currentState.messages.map((msg) => msg.toJson()).toList();
       await storage.saveCoachConversation(messagesJson);
     });
   }
@@ -777,9 +756,8 @@ class CoachNotifier extends _$CoachNotifier {
   Future<void> _saveConversation() async {
     state.whenData((currentState) async {
       final storage = HiveStorageService.instance;
-      final messagesJson = currentState.messages
-          .map((msg) => msg.toJson())
-          .toList();
+      final messagesJson =
+          currentState.messages.map((msg) => msg.toJson()).toList();
       await storage.saveCoachConversation(messagesJson);
     });
   }

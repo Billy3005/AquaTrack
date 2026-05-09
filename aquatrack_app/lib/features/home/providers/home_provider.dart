@@ -1,9 +1,12 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/home_state.dart';
 import '../../../core/repositories/intake_repository.dart';
+import '../../../core/sync/stats_sync_repository.dart';
+import '../../../core/sync/sync_service.dart';
 import '../../../shared/models/daily_summary.dart';
 import '../../../shared/models/intake_log.dart';
 import '../../../shared/storage/hive_storage_service.dart';
@@ -11,13 +14,36 @@ import '../../level/providers/level_provider.dart';
 
 part 'home_provider.g.dart';
 
-/// Home screen state notifier với offline-first approach
+/// Provider for Stats Sync Repository dependency injection
+@riverpod
+StatsSyncRepository statsSyncRepository(Ref ref) {
+  // In real implementation, get SyncService and ConflictResolver from providers
+  // For now, return a mock or handle gracefully
+  throw UnimplementedError('StatsSyncRepository not configured yet');
+}
+
+/// Home screen state notifier với enhanced offline-first sync
 @riverpod
 class HomeNotifier extends _$HomeNotifier {
+  StatsSyncRepository? _statsSyncRepository;
+
   @override
   Future<DailySummary> build() async {
-    // Load from local storage first, then sync with server
-    return await _loadTodaySummary();
+    // Initialize sync repository if available
+    try {
+      _statsSyncRepository = ref.read(statsSyncRepositoryProvider);
+    } catch (e) {
+      // Continue without sync if not available
+      _statsSyncRepository = null;
+    }
+
+    // Load from local storage first, then trigger background sync
+    final summary = await _loadTodaySummary();
+
+    // Trigger background sync if available
+    _triggerBackgroundSync();
+
+    return summary;
   }
 
   /// Quick log action: 100ml, 250ml, 500ml buttons
@@ -44,6 +70,9 @@ class HomeNotifier extends _$HomeNotifier {
 
     // Background sync to server (không chặn UI)
     _syncToServerInBackground(intakeLog);
+
+    // Trigger enhanced sync if available
+    _triggerEnhancedSync();
   }
 
   /// Load today's summary (server first → local fallback)
@@ -271,6 +300,40 @@ class HomeNotifier extends _$HomeNotifier {
       state = AsyncValue.data(freshSummary);
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
+    }
+  }
+
+  /// Trigger background sync when app starts
+  void _triggerBackgroundSync() {
+    if (_statsSyncRepository != null) {
+      // Trigger sync in background without blocking UI
+      Future.microtask(() async {
+        try {
+          await _statsSyncRepository!.syncIntakeLogs(
+            since: DateTime.now().subtract(const Duration(hours: 24)),
+          );
+          debugPrint('✅ HomeProvider: Background intake sync completed');
+        } catch (e) {
+          debugPrint('⚠️ HomeProvider: Background sync failed: $e');
+        }
+      });
+    }
+  }
+
+  /// Trigger enhanced sync after new data changes
+  void _triggerEnhancedSync() {
+    if (_statsSyncRepository != null) {
+      // Sync latest changes immediately
+      Future.microtask(() async {
+        try {
+          await _statsSyncRepository!.syncDailySummaries(
+            since: DateTime.now().subtract(const Duration(hours: 6)),
+          );
+          debugPrint('✅ HomeProvider: Enhanced summary sync completed');
+        } catch (e) {
+          debugPrint('⚠️ HomeProvider: Enhanced sync failed: $e');
+        }
+      });
     }
   }
 }

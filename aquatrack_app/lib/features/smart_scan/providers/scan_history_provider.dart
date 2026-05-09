@@ -144,18 +144,17 @@ class ScanHistoryNotifier extends _$ScanHistoryNotifier {
       );
     }
 
-    final confirmedRecords = records
-        .where((r) => r.userConfirmedVolume != null)
-        .toList();
+    final confirmedRecords =
+        records.where((r) => r.userConfirmedVolume != null).toList();
 
     final averageAccuracy = confirmedRecords.isEmpty
         ? 0.0
         : confirmedRecords.map((r) => r.accuracyScore).reduce((a, b) => a + b) /
-              confirmedRecords.length;
+            confirmedRecords.length;
 
     final averageConfidence =
         records.map((r) => r.aiResult.confidence).reduce((a, b) => a + b) /
-        records.length;
+            records.length;
 
     // Container type distribution
     final containerCount = <String, int>{};

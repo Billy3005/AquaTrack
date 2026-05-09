@@ -16,19 +16,19 @@ class HomeStateHelper {
 
   /// Drop fill color theo state (Living Drop widget)
   static Color dropColor(HomeState state) => switch (state) {
-    HomeState.dehydrated => AppColors.dropDehydrated,
-    HomeState.low => AppColors.dropLow,
-    HomeState.normalCool => AppColors.dropNormalCool,
-    HomeState.normalHot => AppColors.dropNormalHot,
-    HomeState.nearGoal => AppColors.dropNearGoal,
-  };
+        HomeState.dehydrated => AppColors.dropDehydrated,
+        HomeState.low => AppColors.dropLow,
+        HomeState.normalCool => AppColors.dropNormalCool,
+        HomeState.normalHot => AppColors.dropNormalHot,
+        HomeState.nearGoal => AppColors.dropNearGoal,
+      };
 
   /// Headline message cho từng state
   static String getHeadline(HomeState state) => switch (state) {
-    HomeState.dehydrated => "Cơ thể bạn đang khát",
-    HomeState.low => "Hãy cùng giữ nhịp uống nước",
-    HomeState.normalCool => "Hãy cùng giữ nhịp uống nước",
-    HomeState.normalHot => "Trời nóng — uống nhiều hơn nhé",
-    HomeState.nearGoal => "Tuyệt vời, gần đủ rồi!",
-  };
+        HomeState.dehydrated => "Cơ thể bạn đang khát",
+        HomeState.low => "Hãy cùng giữ nhịp uống nước",
+        HomeState.normalCool => "Hãy cùng giữ nhịp uống nước",
+        HomeState.normalHot => "Trời nóng — uống nhiều hơn nhé",
+        HomeState.nearGoal => "Tuyệt vời, gần đủ rồi!",
+      };
 }

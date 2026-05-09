@@ -13,7 +13,7 @@ class StatsSyncRepository {
   static const String _tag = 'StatsSyncRepository';
 
   final StatsRepository
-  _statsRepository; // TODO: Use when implementing local storage access
+      _statsRepository; // TODO: Use when implementing local storage access
   final SyncService _syncService;
   final ConflictResolver _conflictResolver;
   final Uuid _uuid = const Uuid();
@@ -22,9 +22,9 @@ class StatsSyncRepository {
     required StatsRepository statsRepository,
     required SyncService syncService,
     required ConflictResolver conflictResolver,
-  }) : _statsRepository = statsRepository,
-       _syncService = syncService,
-       _conflictResolver = conflictResolver;
+  })  : _statsRepository = statsRepository,
+        _syncService = syncService,
+        _conflictResolver = conflictResolver;
 
   /// Sync intake logs incrementally
   Future<SyncResult> syncIntakeLogs({DateTime? since}) async {
@@ -429,7 +429,7 @@ class StatsSyncRepository {
     // TODO: Update local summary with remote data
     AppLogger.debug(
       _tag,
-      'Applying remote update to daily summary ${localSummary.date}',
+      'Applying remote update to daily summary ${localSummary.lastUpdated}',
     );
   }
 
@@ -472,7 +472,7 @@ class StatsSyncRepository {
     // TODO: Apply resolved conflict data to local daily summary
     AppLogger.debug(
       _tag,
-      'Applying resolved conflict data to daily summary ${localSummary.date}',
+      'Applying resolved conflict data to daily summary ${localSummary.lastUpdated}',
     );
   }
 }

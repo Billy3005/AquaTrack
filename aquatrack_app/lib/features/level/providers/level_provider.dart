@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../shared/storage/hive_storage_service.dart';
 import '../../../core/repositories/level_repository.dart';
+import '../../../core/sync/level_sync_repository.dart';
 import '../widgets/achievement_badges_grid.dart';
 import '../widgets/avatar_collection_showcase.dart';
 
@@ -10,8 +12,15 @@ part 'level_provider.g.dart';
 
 /// Provider for LevelRepository dependency injection
 @riverpod
-LevelRepository levelRepository(ref) {
+LevelRepository levelRepository(Ref ref) {
   return LevelRepository();
+}
+
+/// Provider for Level Sync Repository dependency injection
+@riverpod
+LevelSyncRepository levelSyncRepository(Ref ref) {
+  // In real implementation, get SyncService and ConflictResolver from providers
+  throw UnimplementedError('LevelSyncRepository not configured yet');
 }
 
 /// Level system state
@@ -71,16 +80,30 @@ class LevelState {
   }
 }
 
-/// Level system notifier với XP, achievements, avatars
+/// Level system notifier với enhanced offline-first sync
 @riverpod
 class LevelNotifier extends _$LevelNotifier {
   late final LevelRepository _levelRepository;
+  LevelSyncRepository? _levelSyncRepository;
 
   @override
   Future<LevelState> build() async {
-    // Initialize repository via dependency injection
+    // Initialize repositories via dependency injection
     _levelRepository = ref.read(levelRepositoryProvider);
-    return await _loadLevelDataFromApi();
+
+    try {
+      _levelSyncRepository = ref.read(levelSyncRepositoryProvider);
+    } catch (e) {
+      // Continue without sync if not available
+      _levelSyncRepository = null;
+      debugPrint('⚠️ LevelNotifier: Sync not available: $e');
+    }
+
+    // Load data and trigger background sync
+    final levelState = await _loadLevelDataFromApi();
+    _triggerBackgroundLevelSync();
+
+    return levelState;
   }
 
   /// Load level data from API with fallback to local storage
@@ -127,8 +150,7 @@ class LevelNotifier extends _$LevelNotifier {
       debugPrint('❌ Failed to load level data from API: $e');
 
       // Only fallback to local storage for genuine connectivity issues
-      final isConnectivityError =
-          e.toString().contains('SocketException') ||
+      final isConnectivityError = e.toString().contains('SocketException') ||
           e.toString().contains('HttpException') ||
           e.toString().contains('TimeoutException') ||
           e.toString().contains('Connection refused') ||
@@ -187,9 +209,8 @@ class LevelNotifier extends _$LevelNotifier {
       avatars: avatars,
       selectedAvatarId: savedAvatarId,
       isLevelingUp: false,
-      totalLogsCount: stats.achievements.total > 0
-          ? stats.achievements.total
-          : 0,
+      totalLogsCount:
+          stats.achievements.total > 0 ? stats.achievements.total : 0,
       currentStreak: 0, // TODO: Get from daily summary or stats API
       totalVolume:
           stats.totalXP * 10, // Approximate from XP, should get from proper API
@@ -205,9 +226,8 @@ class LevelNotifier extends _$LevelNotifier {
     // Use the existing DefaultAvatars logic but filter by unlocked IDs
     final allAvatars = DefaultAvatars.getAll(
       currentLevel: currentLevel,
-      selectedAvatarId: unlockedIds.isNotEmpty
-          ? unlockedIds.first
-          : 'water_drop',
+      selectedAvatarId:
+          unlockedIds.isNotEmpty ? unlockedIds.first : 'water_drop',
     );
 
     // Filter avatars to only show unlocked ones
@@ -525,6 +545,22 @@ class LevelNotifier extends _$LevelNotifier {
       state = AsyncValue.data(newState);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
+    }
+  }
+
+  /// Trigger background level sync
+  void _triggerBackgroundLevelSync() {
+    if (_levelSyncRepository != null) {
+      // Sync level data in background
+      Future.microtask(() async {
+        try {
+          await _levelSyncRepository!.syncUserLevel();
+          await _levelSyncRepository!.syncAchievements();
+          debugPrint('✅ LevelNotifier: Background sync completed');
+        } catch (e) {
+          debugPrint('⚠️ LevelNotifier: Background sync failed: $e');
+        }
+      });
     }
   }
 }

@@ -166,8 +166,8 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
                           confidenceCategory == 'high'
                               ? Icons.check_circle
                               : confidenceCategory == 'medium'
-                              ? Icons.warning
-                              : Icons.error,
+                                  ? Icons.warning
+                                  : Icons.error,
                           color: _getConfidenceColor(widget.result.confidence),
                           size: 16,
                         ),

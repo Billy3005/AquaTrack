@@ -16,8 +16,8 @@ class BodyMapSyncRepository {
   BodyMapSyncRepository({
     required SyncService syncService,
     required ConflictResolver conflictResolver,
-  }) : _syncService = syncService,
-       _conflictResolver = conflictResolver;
+  })  : _syncService = syncService,
+        _conflictResolver = conflictResolver;
 
   /// Sync body map preferences and historical data
   Future<BodyMapSyncResult> syncBodyMapData({DateTime? since}) async {

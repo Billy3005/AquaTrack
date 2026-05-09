@@ -131,6 +131,122 @@ class HiveStorageService {
         .toList();
   }
 
+  /// Cache friends data
+  Future<void> cacheFriends(List<dynamic> friends) async {
+    final friendsData = friends.map((friend) {
+      if (friend is Map<String, dynamic>) {
+        return friend;
+      } else {
+        // Assume it's a Friend object with toJson method
+        return (friend as dynamic).toJson();
+      }
+    }).toList();
+
+    await _appSettingsBox.put('cached_friends', friendsData);
+    await _appSettingsBox.put(
+        'friends_cache_time', DateTime.now().millisecondsSinceEpoch);
+  }
+
+  /// Load cached friends data
+  List<Map<String, dynamic>> loadCachedFriends() {
+    final data = _appSettingsBox.get('cached_friends');
+    if (data == null) return [];
+
+    return (data as List)
+        .map<Map<String, dynamic>>(
+          (item) => Map<String, dynamic>.from(item as Map),
+        )
+        .toList();
+  }
+
+  /// Cache friend requests data
+  Future<void> cacheFriendRequests(List<dynamic> requests) async {
+    final requestsData = requests.map((request) {
+      if (request is Map<String, dynamic>) {
+        return request;
+      } else {
+        return (request as dynamic).toJson();
+      }
+    }).toList();
+
+    await _appSettingsBox.put('cached_friend_requests', requestsData);
+  }
+
+  /// Load cached friend requests
+  List<Map<String, dynamic>> loadCachedFriendRequests() {
+    final data = _appSettingsBox.get('cached_friend_requests');
+    if (data == null) return [];
+
+    return (data as List)
+        .map<Map<String, dynamic>>(
+          (item) => Map<String, dynamic>.from(item as Map),
+        )
+        .toList();
+  }
+
+  /// Cache weekly leaderboard data
+  Future<void> cacheWeeklyLeaderboard(List<dynamic> leaderboard) async {
+    final leaderboardData = leaderboard.map((entry) {
+      if (entry is Map<String, dynamic>) {
+        return entry;
+      } else {
+        return (entry as dynamic).toJson();
+      }
+    }).toList();
+
+    await _appSettingsBox.put('cached_weekly_leaderboard', leaderboardData);
+  }
+
+  /// Load cached weekly leaderboard
+  List<Map<String, dynamic>> loadCachedWeeklyLeaderboard() {
+    final data = _appSettingsBox.get('cached_weekly_leaderboard');
+    if (data == null) return [];
+
+    return (data as List)
+        .map<Map<String, dynamic>>(
+          (item) => Map<String, dynamic>.from(item as Map),
+        )
+        .toList();
+  }
+
+  /// Cache social stats data
+  Future<void> cacheSocialStats(Map<String, dynamic> stats) async {
+    await _appSettingsBox.put('cached_social_stats', stats);
+  }
+
+  /// Load cached social stats
+  Map<String, dynamic>? loadCachedSocialStats() {
+    final data = _appSettingsBox.get('cached_social_stats');
+    if (data == null) return null;
+
+    return Map<String, dynamic>.from(data as Map);
+  }
+
+  /// Cache timestamp for data freshness tracking
+  Future<void> cacheSocialDataTimestamp(DateTime timestamp) async {
+    await _appSettingsBox.put(
+        'social_data_timestamp', timestamp.millisecondsSinceEpoch);
+  }
+
+  /// Load cached social data timestamp
+  DateTime? loadCachedSocialDataTimestamp() {
+    final timestampMs = _appSettingsBox.get('social_data_timestamp');
+    if (timestampMs == null) return null;
+
+    return DateTime.fromMillisecondsSinceEpoch(timestampMs as int);
+  }
+
+  /// Check if friends cache is expired (older than 5 minutes)
+  bool isFriendsCacheExpired() {
+    final cacheTime = _appSettingsBox.get('friends_cache_time');
+    if (cacheTime == null) return true;
+
+    final cacheDateTime = DateTime.fromMillisecondsSinceEpoch(cacheTime as int);
+    final now = DateTime.now();
+
+    return now.difference(cacheDateTime).inMinutes > 5;
+  }
+
   /// Clear all data (for testing or reset functionality)
   Future<void> clearAllData() async {
     await _dailySummaryBox.clear();
