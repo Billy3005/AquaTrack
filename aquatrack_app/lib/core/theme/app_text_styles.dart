@@ -1,67 +1,73 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
-/// Typography styles based on design prototype using Inter font
+/// Typography styles based on design prototype using SF Pro fonts
 class AppTextStyles {
   AppTextStyles._();
 
-  static const String _fontFamily = 'Inter';
+  // SF Pro font families (with fallbacks)
+  static const String _fontDisplay = 'SF Pro Display';
+  static const String _fontText = 'SF Pro Text';
+  static const String _fontRounded = 'SF Pro Rounded';
 
-  // Display Styles (Large headings)
+  // Display Styles (Hero headings) - Using SF Pro Display
   static const TextStyle displayLarge = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 32,
+    fontFamily: _fontDisplay,
+    fontSize: 36,
+    fontWeight: FontWeight.w800,
+    height: 1.1,
+    color: AppColors.textPrimary,
+    letterSpacing: -0.8,
+  );
+
+  static const TextStyle displayMedium = TextStyle(
+    fontFamily: _fontDisplay,
+    fontSize: 30,
     fontWeight: FontWeight.w700,
     height: 1.2,
     color: AppColors.textPrimary,
     letterSpacing: -0.5,
   );
 
-  static const TextStyle displayMedium = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 28,
+  static const TextStyle displaySmall = TextStyle(
+    fontFamily: _fontDisplay,
+    fontSize: 26,
     fontWeight: FontWeight.w700,
     height: 1.25,
     color: AppColors.textPrimary,
-    letterSpacing: -0.25,
+    letterSpacing: -0.3,
   );
 
-  static const TextStyle displaySmall = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 24,
-    fontWeight: FontWeight.w600,
-    height: 1.3,
-    color: AppColors.textPrimary,
-  );
-
-  // Headline Styles
+  // Headline Styles - Section headers using SF Pro Display
   static const TextStyle headlineLarge = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 22,
-    fontWeight: FontWeight.w600,
-    height: 1.3,
+    fontFamily: _fontDisplay,
+    fontSize: 24,
+    fontWeight: FontWeight.w700,
+    height: 1.2,
     color: AppColors.textPrimary,
+    letterSpacing: -0.2,
   );
 
   static const TextStyle headlineMedium = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontDisplay,
     fontSize: 20,
     fontWeight: FontWeight.w600,
     height: 1.3,
     color: AppColors.textPrimary,
+    letterSpacing: -0.1,
   );
 
   static const TextStyle headlineSmall = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontDisplay,
     fontSize: 18,
-    fontWeight: FontWeight.w500,
-    height: 1.35,
+    fontWeight: FontWeight.w600,
+    height: 1.3,
     color: AppColors.textPrimary,
   );
 
-  // Title Styles
+  // Title Styles - Using SF Pro Text
   static const TextStyle titleLarge = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontText,
     fontSize: 16,
     fontWeight: FontWeight.w600,
     height: 1.4,
@@ -69,7 +75,7 @@ class AppTextStyles {
   );
 
   static const TextStyle titleMedium = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontText,
     fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 1.4,
@@ -77,41 +83,41 @@ class AppTextStyles {
   );
 
   static const TextStyle titleSmall = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontText,
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.4,
     color: AppColors.textSecondary,
   );
 
-  // Body Styles
+  // Body Styles - Reading text using SF Pro Text
   static const TextStyle bodyLarge = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 16,
+    fontFamily: _fontText,
+    fontSize: 17,
     fontWeight: FontWeight.w400,
     height: 1.5,
     color: AppColors.textSecondary,
   );
 
   static const TextStyle bodyMedium = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 14,
+    fontFamily: _fontText,
+    fontSize: 15,
     fontWeight: FontWeight.w400,
     height: 1.5,
     color: AppColors.textSecondary,
   );
 
   static const TextStyle bodySmall = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 12,
+    fontFamily: _fontText,
+    fontSize: 13,
     fontWeight: FontWeight.w400,
-    height: 1.45,
+    height: 1.4,
     color: AppColors.textTertiary,
   );
 
-  // Label Styles
+  // Label Styles - Using SF Pro Rounded
   static const TextStyle labelLarge = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontRounded,
     fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 1.4,
@@ -120,7 +126,7 @@ class AppTextStyles {
   );
 
   static const TextStyle labelMedium = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontRounded,
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.4,
@@ -129,7 +135,7 @@ class AppTextStyles {
   );
 
   static const TextStyle labelSmall = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontRounded,
     fontSize: 11,
     fontWeight: FontWeight.w500,
     height: 1.4,
@@ -139,19 +145,19 @@ class AppTextStyles {
 
   // Special App-Specific Styles
 
-  // Water amount display
+  // Water amount display - Hero number using SF Pro Display
   static const TextStyle waterAmount = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 48,
-    fontWeight: FontWeight.w700,
-    height: 1.0,
+    fontFamily: _fontDisplay,
+    fontSize: 56,
+    fontWeight: FontWeight.w800,
+    height: 0.9,
     color: AppColors.cyanAccent,
-    letterSpacing: -1.0,
+    letterSpacing: -1.5,
   );
 
-  // XP and level styles
+  // XP and level styles - Using SF Pro Rounded for gamification
   static const TextStyle xpText = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontRounded,
     fontSize: 18,
     fontWeight: FontWeight.w600,
     height: 1.3,
@@ -159,7 +165,7 @@ class AppTextStyles {
   );
 
   static const TextStyle levelText = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontDisplay,
     fontSize: 24,
     fontWeight: FontWeight.w700,
     height: 1.2,
@@ -168,34 +174,34 @@ class AppTextStyles {
 
   // Navigation label
   static const TextStyle navLabel = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontRounded,
     fontSize: 10,
     fontWeight: FontWeight.w500,
     height: 1.2,
     letterSpacing: 0.4,
   );
 
-  // Button text styles
+  // Button text styles - SF Pro Text for buttons
   static const TextStyle buttonTextLarge = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 16,
+    fontFamily: _fontText,
+    fontSize: 17,
     fontWeight: FontWeight.w600,
-    height: 1.25,
+    height: 1.2,
     color: AppColors.textPrimary,
-    letterSpacing: 0.1,
+    letterSpacing: 0.2,
   );
 
   static const TextStyle buttonTextMedium = TextStyle(
-    fontFamily: _fontFamily,
-    fontSize: 14,
+    fontFamily: _fontText,
+    fontSize: 15,
     fontWeight: FontWeight.w600,
-    height: 1.25,
+    height: 1.2,
     color: AppColors.textPrimary,
-    letterSpacing: 0.1,
+    letterSpacing: 0.2,
   );
 
   static const TextStyle buttonTextSmall = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontText,
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.25,
@@ -205,7 +211,7 @@ class AppTextStyles {
 
   // Input field styles
   static const TextStyle inputText = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontText,
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 1.4,
@@ -213,7 +219,7 @@ class AppTextStyles {
   );
 
   static const TextStyle inputHint = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontText,
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 1.4,
@@ -221,7 +227,7 @@ class AppTextStyles {
   );
 
   static const TextStyle inputLabel = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontText,
     fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 1.4,
@@ -230,7 +236,7 @@ class AppTextStyles {
 
   // Error and helper text
   static const TextStyle errorText = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontText,
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.4,
@@ -238,7 +244,7 @@ class AppTextStyles {
   );
 
   static const TextStyle helperText = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontText,
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.4,
@@ -247,7 +253,7 @@ class AppTextStyles {
 
   // Chat styles for AI Coach
   static const TextStyle chatMessage = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontText,
     fontSize: 15,
     fontWeight: FontWeight.w400,
     height: 1.4,
@@ -255,7 +261,7 @@ class AppTextStyles {
   );
 
   static const TextStyle chatTime = TextStyle(
-    fontFamily: _fontFamily,
+    fontFamily: _fontText,
     fontSize: 11,
     fontWeight: FontWeight.w400,
     height: 1.3,

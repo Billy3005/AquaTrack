@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AquaTrack — Print</title>
+  <link rel="preconnect" href="https://rsms.me/" />
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+  <style>
+    html, body { margin: 0; padding: 0; background: #06091A; color: #F1F5F9; }
+    body { font-family: "SF Pro Display", -apple-system, "Inter", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    * { box-sizing: border-box; }
+    button { font-family: inherit; }
+    input { font-family: inherit; }
+
+    /* Print layout — one phone per landscape page */
+    .print-root { padding: 24px; }
+    .print-page {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+      padding: 32px;
+      page-break-after: always;
+      break-after: page;
+    }
+    .print-page:last-child { page-break-after: auto; break-after: auto; }
+    .print-meta {
+      max-width: 320px;
+      color: #F1F5F9;
+      font-family: "SF Pro Display", -apple-system, "Inter", sans-serif;
+    }
+    .print-meta .num {
+      font-size: 14px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #38BDF8;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .print-meta .title {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin: 0 0 16px;
+    }
+    .print-meta .desc {
+      font-size: 15px;
+      line-height: 1.5;
+      color: #94A3B8;
+      margin: 0;
+    }
+    .print-cover {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 32px;
+      page-break-after: always;
+      break-after: page;
+      background: radial-gradient(ellipse at center, #0F1A2E, #050B18);
+      padding: 64px;
+      text-align: center;
+    }
+    .print-cover h1 {
+      font-size: 72px; font-weight: 700; letter-spacing: -0.03em;
+      margin: 0; color: white;
+    }
+    .print-cover .tag {
+      font-size: 16px; letter-spacing: 0.24em; text-transform: uppercase;
+      color: #38BDF8; font-weight: 600; margin-bottom: 16px;
+    }
+    .print-cover p {
+      font-size: 18px; color: #CBD5E1; max-width: 600px; line-height: 1.5; margin: 0;
+    }
+    .print-cover .grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 32px;
+      max-width: 720px;
+    }
+    .print-cover .grid-cell {
+      background: rgba(56,189,248,0.08);
+      border: 1px solid rgba(56,189,248,0.2);
+      border-radius: 12px; padding: 14px;
+      font-size: 12px; color: #BAE6FD; font-weight: 500;
+      text-align: left;
+    }
+    .print-cover .grid-cell .n {
+      color: #38BDF8; font-size: 11px; letter-spacing: 0.1em; font-weight: 700;
+      display: block; margin-bottom: 4px;
+    }
+
+    .section-head {
+      page-break-after: always; break-after: page;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+      padding: 96px;
+      background: linear-gradient(135deg, #0C2A4A, #050B18);
+    }
+    .section-head .num {
+      font-size: 14px; letter-spacing: 0.24em; text-transform: uppercase;
+      color: #38BDF8; font-weight: 700; margin-bottom: 16px;
+    }
+    .section-head h2 {
+      font-size: 64px; font-weight: 700; letter-spacing: -0.03em;
+      margin: 0 0 16px; color: white;
+    }
+    .section-head p {
+      font-size: 20px; color: #94A3B8; max-width: 560px; line-height: 1.4; margin: 0;
+    }
+
+    /* Multi-up grid pages for state variants */
+    .print-grid {
+      page-break-after: always; break-after: page;
+      min-height: 100vh; padding: 48px;
+      display: flex; flex-direction: column; gap: 24px;
+    }
+    .print-grid h3 {
+      font-size: 20px; font-weight: 600; margin: 0; color: white;
+      letter-spacing: -0.01em;
+    }
+    .print-grid .grid {
+      display: grid; gap: 24px; flex: 1;
+      grid-template-columns: repeat(auto-fit, 420px);
+      align-items: start;
+      justify-content: center;
+    }
+    .print-grid .cell { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .print-grid .cell .lbl {
+      font-size: 12px; color: #94A3B8; letter-spacing: 0.04em;
+    }
+
+    .print-widgets {
+      page-break-after: always; break-after: page;
+      min-height: 100vh; padding: 64px;
+      display: flex; flex-direction: column; gap: 24px;
+      justify-content: center;
+    }
+    .print-widgets h3 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; color: white; margin: 0 0 4px; }
+    .print-widgets p { color: #94A3B8; margin: 0 0 32px; }
+    .print-widgets .row { display: flex; gap: 32px; align-items: center; flex-wrap: wrap; justify-content: center; }
+    .print-widgets .item { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+    .print-widgets .item .lbl { font-size: 12px; color: #94A3B8; letter-spacing: 0.04em; }
+
+    @page {
+      size: A4 landscape;
+      margin: 0;
+    }
+    @media print {
+      html, body { background: #06091A !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .print-page, .print-cover, .section-head, .print-grid, .print-widgets {
+        height: 210mm; /* A4 landscape height */
+        min-height: 210mm;
+        page-break-after: always; break-after: page;
+      }
+      .print-page:last-child, .print-widgets:last-child { page-break-after: auto; break-after: auto; }
+    }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="components/atoms.jsx"></script>
+  <script type="text/babel" src="components/drop.jsx"></script>
+  <script type="text/babel" src="components/home.jsx"></script>
+  <script type="text/babel" src="components/coach.jsx"></script>
+  <script type="text/babel" src="components/eco.jsx"></script>
+  <script type="text/babel" src="components/stats.jsx"></script>
+  <script type="text/babel" src="components/level.jsx"></script>
+  <script type="text/babel" src="components/log.jsx"></script>
+  <script type="text/babel" src="components/camera.jsx"></script>
+  <script type="text/babel" src="components/profile.jsx"></script>
+
+  <script type="text/babel" src="print-app.jsx"></script>
+</body>
+</html>
