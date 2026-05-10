@@ -4,20 +4,26 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Primary Colors
-  static const Color primaryBackground = Color(0xFF0D1B2A); // Dark navy
-  static const Color secondaryBackground = Color(0xFF1B2951); // Lighter navy
-  static const Color surfaceColor = Color(0xFF2A3B5C); // Card surfaces
+  // Primary Colors (Exact prototype match)
+  static const Color primaryBackground =
+      Color(0xFF0D1B2A); // Exact prototype navy
+  static const Color secondaryBackground =
+      Color(0xFF1B2C47); // Lighter navy gradient
+  static const Color surfaceColor = Color(0xFF253347); // Card surfaces
+  static const Color surfaceColorSoft = Color(0xFF1F3049); // Soft card variant
 
-  // Accent Colors
-  static const Color cyanAccent = Color(0xFF00B4D8); // Main accent
-  static const Color cyanLight = Color(0xFF33C5E8); // Lighter cyan
-  static const Color cyanDark = Color(0xFF0094B8); // Darker cyan
+  // Accent Colors (Exact prototype match)
+  static const Color cyanAccent = Color(0xFF00B4D8); // Prototype primary cyan
+  static const Color cyanLight = Color(0xFF89CCDB); // Light cyan glow
+  static const Color cyanDark = Color(0xFF0081A7); // Deep cyan
+  static const Color cyanDeep = Color(0xFF003459); // Hero section deep
+  static const Color cyanDeeper = Color(0xFF001D2E); // Deepest cyan shade
 
-  // XP & Gamification
-  static const Color purpleXP = Color(0xFF7B5EA7); // XP color
-  static const Color purpleLight = Color(0xFF9B7EC7); // Light purple
-  static const Color purpleDark = Color(0xFF5B3E87); // Dark purple
+  // XP & Gamification (Updated to match design prototype)
+  static const Color purpleXP = Color(0xFF818CF8); // purple
+  static const Color purpleDeep = Color(0xFF4F46E5); // purpleDeep
+  static const Color green = Color(0xFF059669); // green
+  static const Color amber = Color(0xFFF59E0B); // amber
 
   // Status Colors
   static const Color success = Color(0xFF22C55E); // Green
@@ -25,17 +31,17 @@ class AppColors {
   static const Color error = Color(0xFFEF4444); // Red
   static const Color info = Color(0xFF3B82F6); // Blue
 
-  // Text Colors
-  static const Color textPrimary = Color(0xFFFFFFFF); // White
-  static const Color textSecondary = Color(0xFFE2E8F0); // Light gray
-  static const Color textTertiary = Color(0xFF94A3B8); // Medium gray
-  static const Color textDisabled = Color(0xFF64748B); // Dark gray
+  // Text Colors (Exact prototype match)
+  static const Color textPrimary = Color(0xFFFFFFFF); // Pure white for headings
+  static const Color textSecondary = Color(0xFFB8C5D1); // Medium gray-blue
+  static const Color textTertiary = Color(0xFF7A8B9A); // Muted text
+  static const Color textBright = Color(0xFF89CCDB); // Cyan-tinted bright text
 
-  // Water Drop Colors
-  static const Color dropEmpty = Color(0xFF334155); // Empty drop
+  // Water Drop Colors (Updated to match design prototype)
+  static const Color dropEmpty = Color(0xFF1E3A5F); // Empty drop (low state)
   static const Color dropFilled = cyanAccent; // Filled drop
-  static const Color dropGradientStart = Color(0xFF00B4D8); // Gradient start
-  static const Color dropGradientEnd = Color(0xFF0284C7); // Gradient end
+  static const Color dropGradientStart = cyanLight; // Gradient start (glow)
+  static const Color dropGradientEnd = cyanAccent; // Gradient end (primary)
 
   // Liquid Type Colors
   static const Color waterColor = cyanAccent;
@@ -44,15 +50,23 @@ class AppColors {
   static const Color juiceColor = Color(0xFFFFA500); // Orange
   static const Color sportsColor = Color(0xFF32CD32); // Lime green
 
-  // Navigation
-  static const Color navBarBackground = Color(0xFF1E293B); // Nav bar
-  static const Color navIconActive = cyanAccent; // Active icon
-  static const Color navIconInactive = Color(0xFF64748B); // Inactive icon
+  // Navigation (Exact prototype match)
+  static const Color navBarBackground =
+      Color(0xFF253347); // Nav bar matching surface
+  static const Color navIconActive = cyanAccent; // Active cyan
+  static const Color navIconInactive = Color(0xFF7A8B9A); // Inactive muted
 
-  // Overlays & Borders
+  // Overlays & Borders (Exact prototype match)
   static const Color overlay = Color(0x80000000); // Black overlay
-  static const Color borderColor = Color(0xFF475569); // Border
-  static const Color dividerColor = Color(0xFF374151); // Divider
+  static const Color border =
+      Color(0x1A00B4D8); // Subtle cyan border (10% opacity)
+  static const Color borderColor = Color(0xFF3A4B5C); // Subtle border
+  static const Color borderActive = cyanLight; // Active cyan border
+  static const Color dividerColor = Color(0xFF2A3B4C); // Subtle divider
+
+  // Additional Colors
+  static const Color textDisabled = Color(0xFF5A6B7C); // Disabled text
+  static const Color purpleLight = Color(0xFFA78BFA); // Light purple for XP
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
@@ -62,13 +76,14 @@ class AppColors {
   );
 
   static const LinearGradient xpGradient = LinearGradient(
-    colors: [purpleXP, purpleLight],
+    colors: [purpleXP, purpleDeep],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );
 
   static const LinearGradient backgroundGradient = LinearGradient(
-    colors: [primaryBackground, secondaryBackground],
+    colors: [primaryBackground, secondaryBackground, surfaceColor],
+    stops: [0.0, 0.6, 1.0],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );

@@ -98,38 +98,66 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Logo and title
-                    _buildHeader(),
-                    const SizedBox(height: 48),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Logo and title
+                      _buildHeader(),
+                      const SizedBox(height: 56),
 
-                    // Login form
-                    _buildLoginForm(),
-                    const SizedBox(height: 24),
+                      // Login form container
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceColor.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppColors.borderColor.withValues(alpha: 0.2),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.cyanDeep.withValues(alpha: 0.05),
+                              blurRadius: 24,
+                              spreadRadius: 4,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            // Login form
+                            _buildLoginForm(),
+                            const SizedBox(height: 24),
 
-                    // Error message
-                    if (_errorMessage != null) _buildErrorMessage(),
+                            // Error message
+                            if (_errorMessage != null) _buildErrorMessage(),
 
-                    // Login button
-                    _buildLoginButton(),
-                    const SizedBox(height: 16),
+                            // Login button
+                            _buildLoginButton(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
 
-                    // Divider
-                    _buildDivider(),
+                      // Divider
+                      _buildDivider(),
+                      const SizedBox(height: 24),
 
-                    // Register link
-                    _buildRegisterLink(),
-                    const SizedBox(height: 24),
+                      // Register link
+                      _buildRegisterLink(),
+                      const SizedBox(height: 32),
 
-                    // Demo credentials
-                    _buildDemoCredentials(),
-                  ],
+                      // Demo credentials
+                      _buildDemoCredentials(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -142,35 +170,62 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _buildHeader() {
     return Column(
       children: [
-        // Logo
+        // Enhanced logo with prototype styling
         Container(
-          width: 80,
-          height: 80,
-          decoration: const BoxDecoration(
+          width: 96,
+          height: 96,
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: AppColors.primaryGradient,
+            gradient: const LinearGradient(
+              colors: [
+                AppColors.cyanLight,
+                AppColors.cyanAccent,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.cyanAccent.withValues(alpha: 0.3),
+                blurRadius: 20,
+                spreadRadius: 2,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: const Icon(
-            Icons.water_drop,
-            size: 40,
+            Icons.water_drop_rounded,
+            size: 48,
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
 
-        // Title
+        // Enhanced title with prototype typography
         Text(
-          'Đăng nhập AquaTrack',
-          style: AppTextStyles.displayMedium,
+          'AquaTrack',
+          style: AppTextStyles.displayLarge.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w800,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
 
-        // Subtitle
         Text(
-          'Tiếp tục hành trình hydration của bạn',
-          style: AppTextStyles.bodyLarge.copyWith(
+          'Đăng nhập',
+          style: AppTextStyles.headlineMedium.copyWith(
             color: AppColors.textSecondary,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+
+        // Enhanced subtitle
+        Text(
+          'Tiếp tục hành trình hydration của bạn 💧',
+          style: AppTextStyles.bodyLarge.copyWith(
+            color: AppColors.textTertiary,
           ),
           textAlign: TextAlign.center,
         ),
@@ -267,21 +322,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Widget _buildLoginButton() {
-    return ElevatedButton(
-      onPressed: _isLoading ? null : _login,
-      style: ElevatedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 52),
-      ),
-      child: _isLoading
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                color: AppColors.textPrimary,
-                strokeWidth: 2,
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: _isLoading
+            ? null
+            : const LinearGradient(
+                colors: [
+                  AppColors.cyanLight,
+                  AppColors.cyanAccent,
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
-            )
-          : Text('Đăng nhập', style: AppTextStyles.buttonTextLarge),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: _isLoading
+            ? null
+            : [
+                BoxShadow(
+                  color: AppColors.cyanAccent.withValues(alpha: 0.3),
+                  blurRadius: 16,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _login,
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              _isLoading ? AppColors.surfaceColorSoft : Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  color: AppColors.cyanAccent,
+                  strokeWidth: 2.5,
+                ),
+              )
+            : Text(
+                'Đăng nhập',
+                style: AppTextStyles.buttonTextLarge.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+      ),
     );
   }
 
@@ -329,11 +422,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Widget _buildDemoCredentials() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surfaceColor.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.3)),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.cyanAccent.withValues(alpha: 0.08),
+            AppColors.cyanDeep.withValues(alpha: 0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.cyanAccent.withValues(alpha: 0.15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cyanAccent.withValues(alpha: 0.05),
+            blurRadius: 12,
+            spreadRadius: 2,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

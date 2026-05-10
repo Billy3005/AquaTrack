@@ -1,6 +1,6 @@
 # AquaTrack ML Training Dependencies
 # Computer Vision & Deep Learning
-tensorflow==2.15.0
+tensorflow>=2.20.0
 opencv-python==4.8.1.78
 Pillow==10.0.1
 numpy==1.24.3

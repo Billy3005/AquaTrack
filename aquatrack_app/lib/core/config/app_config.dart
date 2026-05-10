@@ -3,12 +3,12 @@ class AppConfig {
   // Private constructor to prevent instantiation
   AppConfig._();
 
-  // API Configuration (temporary port 8002 for testing)
-  static const String apiBaseUrl = 'http://localhost:8002';
+  // API Configuration (temporary port 8001 for testing)
+  static const String apiBaseUrl = 'http://localhost:8001';
   static const String apiVersion = 'v1';
 
   // Simple endpoints for CORS testing
-  static const String simpleLoginUrl = 'http://localhost:8002/simple-login';
+  static const String simpleLoginUrl = 'http://localhost:8001/simple-login';
   static const Duration apiTimeout = Duration(seconds: 30);
   static const Duration connectTimeout = Duration(seconds: 10);
   static const Duration receiveTimeout = Duration(seconds: 30);

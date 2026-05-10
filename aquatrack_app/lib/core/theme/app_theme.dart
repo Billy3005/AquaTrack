@@ -78,42 +78,102 @@ class AppTheme {
         elevation: 8,
       ),
 
-      // Card theme
+      // Enhanced Card theme
       cardTheme: CardThemeData(
-        color: AppColors.surfaceColor,
-        elevation: 2,
-        shadowColor: AppColors.overlay,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: AppColors.surfaceColor.withValues(alpha: 0.7),
+        elevation: 0, // Use custom shadows instead
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: AppColors.borderColor.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
         clipBehavior: Clip.antiAlias,
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       ),
 
-      // Elevated Button theme
+      // Enhanced Elevated Button theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.cyanAccent,
           foregroundColor: AppColors.textPrimary,
-          elevation: 2,
-          shadowColor: AppColors.overlay,
+          elevation: 4,
+          shadowColor: AppColors.cyanAccent.withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: AppTextStyles.buttonTextMedium,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          minimumSize: const Size(120, 48),
+          textStyle: AppTextStyles.buttonTextMedium.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          minimumSize: const Size(140, 52),
+        ).copyWith(
+          // Enhanced shadow/elevation
+          elevation: WidgetStateProperty.resolveWith<double>((states) {
+            if (states.contains(WidgetState.pressed)) return 2;
+            if (states.contains(WidgetState.hovered)) return 6;
+            if (states.contains(WidgetState.disabled)) return 0;
+            return 4;
+          }),
+          // Background color with states
+          backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return AppColors.surfaceColorSoft;
+            }
+            if (states.contains(WidgetState.pressed)) {
+              return AppColors.cyanDark;
+            }
+            if (states.contains(WidgetState.hovered)) {
+              return AppColors.cyanLight;
+            }
+            return AppColors.cyanAccent;
+          }),
         ),
       ),
 
-      // Outlined Button theme
+      // Enhanced Outlined Button theme
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.cyanAccent,
-          side: const BorderSide(color: AppColors.borderColor, width: 1),
+          backgroundColor: AppColors.surfaceColor.withValues(alpha: 0.3),
+          side: const BorderSide(color: AppColors.cyanAccent, width: 1.5),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: AppTextStyles.buttonTextMedium,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          minimumSize: const Size(120, 48),
+          textStyle: AppTextStyles.buttonTextMedium.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          minimumSize: const Size(140, 52),
+        ).copyWith(
+          // Border color with states
+          side: WidgetStateProperty.resolveWith<BorderSide>((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return BorderSide(
+                color: AppColors.borderColor.withValues(alpha: 0.5),
+                width: 1,
+              );
+            }
+            if (states.contains(WidgetState.pressed)) {
+              return const BorderSide(
+                color: AppColors.cyanDark,
+                width: 2,
+              );
+            }
+            if (states.contains(WidgetState.hovered)) {
+              return const BorderSide(
+                color: AppColors.cyanLight,
+                width: 2,
+              );
+            }
+            return const BorderSide(
+              color: AppColors.cyanAccent,
+              width: 1.5,
+            );
+          }),
         ),
       ),
 

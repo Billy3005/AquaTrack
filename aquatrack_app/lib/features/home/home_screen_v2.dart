@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/living_drop.dart';
 import 'providers/home_provider.dart';
 
 /// Home Screen - Real data with API integration
@@ -15,34 +16,10 @@ class HomeScreenV2 extends ConsumerStatefulWidget {
   ConsumerState<HomeScreenV2> createState() => _HomeScreenV2State();
 }
 
-class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
-    with TickerProviderStateMixin {
-  late AnimationController _breathingController;
-  late Animation<double> _breathingAnimation;
-
+class _HomeScreenV2State extends ConsumerState<HomeScreenV2> {
   @override
   void initState() {
     super.initState();
-    _setupAnimations();
-  }
-
-  @override
-  void dispose() {
-    _breathingController.dispose();
-    super.dispose();
-  }
-
-  void _setupAnimations() {
-    _breathingController = AnimationController(
-      duration: const Duration(seconds: 3),
-      vsync: this,
-    );
-
-    _breathingAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(parent: _breathingController, curve: Curves.easeInOut),
-    );
-
-    _breathingController.repeat(reverse: true);
   }
 
   /// Quick log water intake using provider
@@ -93,21 +70,22 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
         child: SafeArea(
           child: homeSummaryAsync.when(
             data: (summary) => SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(summary),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
                   _buildLivingDrop(summary),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 40),
                   _buildQuickActions(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                   _buildTodayStats(summary),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                   _buildAquaCoachCard(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                   _buildAuthMessage(),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -150,208 +128,263 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
     );
   }
 
-  /// Header with greeting and level
+  /// Header with greeting and level - Enhanced prototype styling
   Widget _buildHeader(dynamic summary) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Chào Demo User! 👋', style: AppTextStyles.displayMedium),
-            const SizedBox(height: 4),
-            Row(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.star, size: 16, color: AppColors.purpleXP),
-                const SizedBox(width: 4),
                 Text(
-                  'Level ${summary?.currentLevel ?? 1} • ${summary?.xpToday ?? 0}XP',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
+                  'Chào Demo User! 👋',
+                  style: AppTextStyles.displayMedium.copyWith(
+                    color: AppColors.textPrimary,
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.cyanAccent.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColors.cyanAccent.withValues(alpha: 0.3),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.local_fire_department,
-                size: 16,
-                color: AppColors.juiceColor,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${summary?.streakDays ?? 0} ngày',
-                style: AppTextStyles.labelMedium.copyWith(
-                  color: AppColors.cyanAccent,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Living Drop với breathing animation
-  Widget _buildLivingDrop(dynamic summary) {
-    final hydrationPercentage = summary != null
-        ? (summary.totalEffectiveMl / summary.dailyGoalMl).clamp(0.0, 1.0)
-        : 0.0;
-    return AnimatedBuilder(
-      animation: _breathingAnimation,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _breathingAnimation.value,
-          child: Container(
-            width: double.infinity,
-            height: 280,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceColor,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.borderColor),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Drop shape với fill level
+                const SizedBox(height: 8),
                 Container(
-                  width: 160,
-                  height: 200,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.dropEmpty,
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(80),
-                      top: Radius.circular(20),
+                    color: AppColors.purpleXP.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.purpleXP.withValues(alpha: 0.2),
                     ),
                   ),
-                  child: Stack(
-                    alignment: Alignment.bottomCenter,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Filled portion
-                      Container(
-                        height: 200.0 * hydrationPercentage,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              AppColors.dropGradientStart,
-                              AppColors.dropGradientEnd,
-                            ],
-                          ),
-                          borderRadius: BorderRadius.vertical(
-                            bottom: const Radius.circular(80),
-                            top: hydrationPercentage > 0.9
-                                ? const Radius.circular(20)
-                                : Radius.zero,
-                          ),
+                      Icon(Icons.star_rounded,
+                          size: 16, color: AppColors.purpleXP),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Level ${summary?.currentLevel ?? 1} • ${summary?.xpToday ?? 0}XP',
+                        style: AppTextStyles.labelMedium.copyWith(
+                          color: AppColors.purpleXP,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      // Water level indicator
-                      if (hydrationPercentage > 0)
-                        Positioned(
-                          bottom: 200.0 * hydrationPercentage - 2,
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: AppColors.cyanLight,
-                              borderRadius: BorderRadius.circular(2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.cyanAccent.withValues(
-                                    alpha: 0.3,
-                                  ),
-                                  blurRadius: 8,
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                 ),
-                // Progress text overlay
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '${(hydrationPercentage * 100).round()}%',
-                      style: AppTextStyles.displayLarge.copyWith(
-                        color: hydrationPercentage > 0.5
-                            ? AppColors.textPrimary
-                            : AppColors.cyanAccent,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${summary?.totalEffectiveMl ?? 0}ml / ${summary?.dailyGoalMl ?? 2000}ml',
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        color: hydrationPercentage > 0.5
-                            ? AppColors.textSecondary
-                            : AppColors.textTertiary,
-                      ),
-                    ),
-                  ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.cyanAccent.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.cyanAccent.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.local_fire_department,
+                  size: 16,
+                  color: AppColors.juiceColor,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${summary?.streakDays ?? 0} ngày',
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: AppColors.cyanAccent,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
-  /// Quick action buttons
+  /// Living Drop với beautiful wave animation
+  Widget _buildLivingDrop(dynamic summary) {
+    final hydrationPercentage = summary != null
+        ? (summary.totalEffectiveMl / summary.dailyGoalMl).clamp(0.0, 1.0) * 100
+        : 0.0;
+
+    final totalMl = summary?.totalEffectiveMl ?? 0;
+    final goalMl = summary?.dailyGoalMl ?? 2000;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.surfaceColor.withValues(alpha: 0.4),
+            AppColors.surfaceColorSoft.withValues(alpha: 0.6),
+            AppColors.primaryBackground.withValues(alpha: 0.3),
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: AppColors.border,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cyanDeep.withValues(alpha: 0.1),
+            blurRadius: 20,
+            spreadRadius: 2,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Living Drop
+          LivingDrop(
+            percent: hydrationPercentage,
+            size: 200,
+            label: '${hydrationPercentage.round()}%',
+            sublabel: '${totalMl}ml / ${goalMl}ml',
+            showGlow: hydrationPercentage >= 70,
+          ),
+
+          const SizedBox(height: 16),
+
+          // Enhanced progress indicator
+          Container(
+            width: double.infinity,
+            height: 12,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceColorSoft.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.borderColor.withValues(alpha: 0.3),
+                width: 0.5,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: hydrationPercentage / 100,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        AppColors.cyanLight,
+                        AppColors.cyanAccent,
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.cyanAccent.withValues(alpha: 0.4),
+                        blurRadius: 12,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Status text
+          Text(
+            _getHydrationStatus(hydrationPercentage),
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: _getStatusColor(hydrationPercentage),
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getHydrationStatus(double percentage) {
+    if (percentage >= 100)
+      return '🎉 Xuất sắc! Bạn đã hoàn thành mục tiêu hôm nay';
+    if (percentage >= 80) return '💧 Tuyệt vời! Sắp đạt mục tiêu rồi';
+    if (percentage >= 50) return '✨ Đang tiến bộ tốt, tiếp tục nào!';
+    if (percentage >= 25) return '💪 Hãy uống thêm nước nhé';
+    return '🚨 Cơ thể bạn cần nước ngay!';
+  }
+
+  Color _getStatusColor(double percentage) {
+    if (percentage >= 80) return AppColors.green;
+    if (percentage >= 50) return AppColors.cyanAccent;
+    if (percentage >= 25) return AppColors.amber;
+    return AppColors.error;
+  }
+
+  /// Quick action buttons - Enhanced prototype styling
   Widget _buildQuickActions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Quick Log', style: AppTextStyles.headlineMedium),
-        const SizedBox(height: 16),
+        Text(
+          'Quick Log',
+          style: AppTextStyles.headlineMedium.copyWith(
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 20),
         Row(
           children: [
             Expanded(child: _buildQuickLogButton(150)),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Expanded(child: _buildQuickLogButton(250)),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Expanded(child: _buildQuickLogButton(350)),
           ],
         ),
-        const SizedBox(height: 16),
-        // Smart Scan button
-        SizedBox(
+        const SizedBox(height: 20),
+        // Enhanced Smart Scan button
+        Container(
           width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.purpleXP.withValues(alpha: 0.15),
+                AppColors.purpleDeep.withValues(alpha: 0.1),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.purpleXP.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
           child: ElevatedButton.icon(
             onPressed: () => context.push('/smart-scan'),
-            icon: const Icon(Icons.camera_alt),
-            label: const Text('📸 Smart Scan - Tự động đo thể tích'),
+            icon: const Icon(Icons.camera_alt_rounded, size: 20),
+            label: Text(
+              '📸 Smart Scan - Tự động đo thể tích',
+              style: AppTextStyles.buttonTextMedium.copyWith(
+                color: AppColors.purpleXP,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              backgroundColor: AppColors.purpleXP.withValues(alpha: 0.2),
+              backgroundColor: Colors.transparent,
               foregroundColor: AppColors.purpleXP,
+              shadowColor: Colors.transparent,
+              padding: const EdgeInsets.symmetric(vertical: 18),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(
-                  color: AppColors.purpleXP.withValues(alpha: 0.3),
-                ),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
           ),
@@ -361,23 +394,57 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2>
   }
 
   Widget _buildQuickLogButton(int amountMl) {
-    return ElevatedButton(
-      onPressed: () => _quickLogWater(amountMl),
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.water_drop, color: AppColors.cyanAccent, size: 24),
-          const SizedBox(height: 4),
-          Text(
-            '${amountMl}ml',
-            style: AppTextStyles.labelLarge.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.surfaceColor.withValues(alpha: 0.6),
+            AppColors.surfaceColorSoft.withValues(alpha: 0.4),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.borderColor.withValues(alpha: 0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cyanAccent.withValues(alpha: 0.1),
+            blurRadius: 8,
+            spreadRadius: 1,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: ElevatedButton(
+        onPressed: () => _quickLogWater(amountMl),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.water_drop_rounded,
+              color: AppColors.cyanAccent,
+              size: 28,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${amountMl}ml',
+              style: AppTextStyles.labelLarge.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
