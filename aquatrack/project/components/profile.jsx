@@ -3,11 +3,11 @@ function ProfileScreen({ onNavigate }) {
   const [goal, setGoal] = React.useState(2500);
   const [editingGoal, setEditingGoal] = React.useState(false);
   const [reminders, setReminders] = React.useState([
-    { time: '08:00', tone: 'Energetic', label: 'Khởi động ngày mới', on: true },
-    { time: '12:00', tone: 'Friendly', label: 'Nhắc giữa trưa', on: true },
-    { time: '15:00', tone: 'Gentle', label: 'Buổi chiều dễ quên', on: true },
-    { time: '18:30', tone: 'Friendly', label: 'Sau giờ làm', on: false },
-    { time: '20:00', tone: 'Calm', label: 'Cuối ngày', on: true },
+    { time: '08:00', tone: 'Năng động', label: 'Khởi động ngày mới', on: true },
+    { time: '12:00', tone: 'Thân thiện', label: 'Nhắc giữa trưa', on: true },
+    { time: '15:00', tone: 'Nhẹ nhàng', label: 'Buổi chiều dễ quên', on: true },
+    { time: '18:30', tone: 'Thân thiện', label: 'Sau giờ làm', on: false },
+    { time: '20:00', tone: 'Bình yên', label: 'Cuối ngày', on: true },
   ]);
   const [bodyData] = React.useState({
     weight: 62, activity: 'Vừa phải', climate: 'Nhiệt đới (HCMC)', age: 28,
@@ -32,8 +32,10 @@ function ProfileScreen({ onNavigate }) {
         }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ fontSize: 11, color: COLORS.textBright, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: FONT_TEXT }}>
-            Profile
+            Hồ sơ
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <CoinBadge amount={1240} compact suffix="prof" onClick={() => onNavigate && onNavigate('shop')} />
           <button style={{
             width: 36, height: 36, borderRadius: 999,
             background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)',
@@ -45,6 +47,7 @@ function ProfileScreen({ onNavigate }) {
               <path d="M19.4 15 a2 2 0 0 0 0.4 2.2 L20 17.5 a1.6 1.6 0 0 1-2.3 2.3 L17.4 19.6 a2 2 0 0 0-2.2 0.4 a2 2 0 0 0-1.2 1.8 L14 22 a1.6 1.6 0 0 1-3.2 0 V21.8 a2 2 0 0 0-1.3-1.8 a2 2 0 0 0-2.2-0.4 L7.0 19.7 a1.6 1.6 0 0 1-2.3-2.3 L4.8 17.2 a2 2 0 0 0 0.4-2.2 a2 2 0 0 0-1.8-1.2 L3 13.6 a1.6 1.6 0 0 1 0-3.2 H3.4 a2 2 0 0 0 1.8-1.3 a2 2 0 0 0-0.4-2.2 L4.5 6.6 a1.6 1.6 0 0 1 2.3-2.3 L7.0 4.5 a2 2 0 0 0 2.2 0.4 H9.4 a2 2 0 0 0 1.2-1.8 V3 a1.6 1.6 0 0 1 3.2 0 V3.4 a2 2 0 0 0 1.2 1.8 a2 2 0 0 0 2.2-0.4 L17.4 4.5 a1.6 1.6 0 0 1 2.3 2.3 L19.6 7 a2 2 0 0 0-0.4 2.2 V9.4 a2 2 0 0 0 1.8 1.2 H21 a1.6 1.6 0 0 1 0 3.2 H20.6 a2 2 0 0 0-1.8 1.2 z"/>
             </svg>
           </button>
+          </div>
         </div>
 
         {/* Avatar + name */}
@@ -81,12 +84,12 @@ function ProfileScreen({ onNavigate }) {
               Minh Nguyễn
             </div>
             <div style={{ fontSize: 12.5, color: '#A5B4FC', fontFamily: FONT_ROUND, fontWeight: 600, marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-              Aqua Warrior
+              Chiến binh Nước
               <span style={{ width: 3, height: 3, borderRadius: 999, background: '#A5B4FC', display: 'inline-block', opacity: 0.6 }} />
               <span style={{ color: COLORS.textSecondary, fontFamily: FONT_TEXT, fontWeight: 500 }}>Tham gia 84 ngày</span>
             </div>
             <div style={{ marginTop: 8 }}>
-              <XPBar xp={1240} xpMax={2000} level={7} levelName="Aqua Warrior" />
+              <XPBar xp={1240} xpMax={2000} level={7} levelName="Chiến binh Nước" />
             </div>
           </div>
         </div>
@@ -95,19 +98,19 @@ function ProfileScreen({ onNavigate }) {
       <div style={{ flex: 1, overflow: 'auto', padding: '16px 16px 20px' }}>
         {/* Lifetime stats */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 18 }}>
-          <LifetimeStat icon={I.drop('#38BDF8', 16)} value="284L" label="Total water" />
-          <LifetimeStat icon={I.flame('#F97316', 16)} value="21" label="Longest streak" sub="ngày" />
+          <LifetimeStat icon={I.drop('#38BDF8', 16)} value="284L" label="Tổng nước" />
+          <LifetimeStat icon={I.flame('#F97316', 16)} value="21" label="Streak dài nhất" sub="ngày" />
           <LifetimeStat icon={
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#A78BFA">
               <rect x="3" y="5" width="18" height="16" rx="2"/>
               <path d="M7 3 V7 M17 3 V7" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round"/>
               <rect x="3" y="9" width="18" height="1" fill="#0B1120"/>
             </svg>
-          } value="84" label="Days active" sub="trên 90" />
+          } value="84" label="Ngày hoạt động" sub="trên 90" />
         </div>
 
         {/* Avatar collection */}
-        <SectionHeader title="Avatar collection" trailing="3/5" />
+        <SectionHeader title="Bộ sưu tập avatar" trailing="3/5" />
         <div style={{
           display: 'flex', gap: 10, overflowX: 'auto',
           paddingBottom: 8, marginBottom: 18,
@@ -302,16 +305,36 @@ function ProfileScreen({ onNavigate }) {
         </div>
 
         {/* Body data */}
-        <SectionHeader title="My Body Data" subtitle="Dùng để AI tính goal" />
-        <div style={{
+        <SectionHeader
+          title="Hồ sơ cơ thể"
+          subtitle="Dùng để AI tính goal"
+          trailing={(
+            <button onClick={() => onNavigate && onNavigate('bodyinfo-edit')} style={{
+              background: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.3)',
+              color: '#BAE6FD', fontFamily: FONT_TEXT, fontSize: 11, fontWeight: 600,
+              padding: '4px 10px', borderRadius: 999, cursor: 'pointer',
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+            }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 4 L20 10 L9 21 H3 V15 z"/>
+              </svg>
+              Sửa
+            </button>
+          )}
+        />
+        <div onClick={() => onNavigate && onNavigate('bodyinfo-edit')} style={{
           background: COLORS.nightCard, borderRadius: 14,
           border: '1px solid rgba(255,255,255,0.04)',
           padding: '4px 0',
           marginBottom: 18,
+          cursor: 'pointer',
         }}>
-          <BodyRow label="Cân nặng" value={`${bodyData.weight} kg`} hint="Cập nhật 2 tuần trước" />
-          <BodyRow label="Tuổi" value={`${bodyData.age}`} />
+          <BodyRow label="Cân nặng · Chiều cao" value={`${bodyData.weight} kg · 168 cm`} hint="Cập nhật 2 tuần trước" />
+          <BodyRow label="Giới tính · Tuổi" value={`Nam · ${bodyData.age}`} />
           <BodyRow label="Mức vận động" value={bodyData.activity} pillColor="#10B981" />
+          <BodyRow label="Công việc" value="Văn phòng" pillColor="#38BDF8" />
+          <BodyRow label="Sức khoẻ đặc biệt" value="Không có" />
+          <BodyRow label="Cà phê · Rượu bia" value="1 cốc · 0 đơn vị" />
           <BodyRow label="Climate zone" value={bodyData.climate} pillColor="#F59E0B" last />
         </div>
 

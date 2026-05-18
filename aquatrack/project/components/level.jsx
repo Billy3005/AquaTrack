@@ -6,13 +6,16 @@ function LevelScreen({ onNavigate }) {
       background: COLORS.nightBase, color: COLORS.textPrimary,
       fontFamily: FONT, display: 'flex', flexDirection: 'column',
     }}>
-      <div style={{ padding: '54px 20px 12px' }}>
-        <div style={{ fontSize: 11, color: '#C7D2FE', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: FONT_TEXT }}>
-          Hành trình
+      <div style={{ padding: '54px 20px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 11, color: '#C7D2FE', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: FONT_TEXT }}>
+            Hành trình
+          </div>
+          <div style={{ fontSize: 26, fontWeight: 600, color: 'white', letterSpacing: '-0.02em', marginTop: 2 }}>
+            Cấp độ & Thành tựu
+          </div>
         </div>
-        <div style={{ fontSize: 26, fontWeight: 600, color: 'white', letterSpacing: '-0.02em', marginTop: 2 }}>
-          Cấp độ & Thành tựu
-        </div>
+        <CoinBadge amount={1240} compact suffix="lv" onClick={() => onNavigate && onNavigate('shop')} />
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: '0 16px 20px' }}>
@@ -39,7 +42,7 @@ function LevelScreen({ onNavigate }) {
                 Cấp hiện tại
               </div>
               <div style={{ fontSize: 30, fontWeight: 700, color: 'white', letterSpacing: '-0.02em', marginTop: 2, fontFamily: FONT_ROUND }}>
-                Aqua Warrior
+                Chiến binh Nước
               </div>
               <div style={{ fontSize: 12, color: '#C7D2FE', marginTop: 2, fontFamily: FONT_TEXT }}>
                 Còn 760 XP để lên Lv 8
@@ -57,7 +60,7 @@ function LevelScreen({ onNavigate }) {
           </div>
 
           <div style={{ marginTop: 18, position: 'relative' }}>
-            <XPBar xp={1240} xpMax={2000} level={7} levelName="Aqua Warrior" trackBg="#312E81" />
+            <XPBar xp={1240} xpMax={2000} level={7} levelName="Chiến binh Nước" trackBg="#312E81" />
           </div>
 
           {/* Level ladder */}
@@ -66,10 +69,10 @@ function LevelScreen({ onNavigate }) {
             fontSize: 9.5, color: 'rgba(199,210,254,0.5)', fontFamily: FONT_ROUND, fontWeight: 600,
           }}>
             {[
-              { lv: 5, n: 'Water Warrior' },
-              { lv: 7, n: 'Aqua Warrior', cur: true },
-              { lv: 10, n: 'Ocean Master' },
-              { lv: 15, n: 'Hydration Legend' },
+              { lv: 5, n: 'Hiệp sĩ Nước' },
+              { lv: 7, n: 'Chiến binh Nước', cur: true },
+              { lv: 10, n: 'Bậc thầy Đại dương' },
+              { lv: 15, n: 'Huyền thoại Hydrate' },
             ].map((s, i) => (
               <div key={i} style={{ textAlign: 'center', flex: 1, opacity: s.cur ? 1 : 0.6 }}>
                 <div style={{ color: s.cur ? '#FBBF24' : '#A5B4FC', fontSize: 11, fontWeight: 700 }}>LV {s.lv}</div>
@@ -84,10 +87,10 @@ function LevelScreen({ onNavigate }) {
           Thành tựu
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
-          <Achievement icon="🔥" name="Streak 7 ngày" cond="7-day streak" reward="+50 XP" unlocked />
-          <Achievement icon="⭐" name="Đủ nước 5 lần" cond="5× daily goal" reward="Theme unlock" unlocked />
-          <Achievement icon="🌊" name="Tuần 14L" cond="2,000ml × 7 ngày" reward="Avatar frame" />
-          <Achievement icon="🏆" name="Top 10% tuần" cond="Leaderboard" reward="Special badge" />
+          <Achievement icon="🔥" name="Streak 7 ngày" cond="Streak 7 ngày liên tiếp" reward="+50 XP" unlocked />
+          <Achievement icon="⭐" name="Đủ nước 5 lần" cond="5× đạt mục tiêu" reward="Mở khoá theme" unlocked />
+          <Achievement icon="🌊" name="Tuần 14L" cond="2.000ml × 7 ngày" reward="Khung avatar" />
+          <Achievement icon="🏆" name="Top 10% tuần" cond="Bảng xếp hạng" reward="Huy hiệu đặc biệt" />
         </div>
 
         {/* Rewards */}
@@ -131,10 +134,10 @@ function LevelScreen({ onNavigate }) {
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {[
-              { n: 'Ocean Night', cur: true, g: 'linear-gradient(135deg, #0C4A80, #082F5C)' },
-              { n: 'Default Blue', g: 'linear-gradient(135deg, #38BDF8, #0EA5E9)' },
-              { n: 'Desert', g: 'linear-gradient(135deg, #F59E0B, #92400E)', locked: true },
-              { n: 'Forest Rain', g: 'linear-gradient(135deg, #059669, #064E3B)', locked: true },
+              { n: 'Đêm Đại dương', cur: true, g: 'linear-gradient(135deg, #0C4A80, #082F5C)' },
+              { n: 'Xanh mặc định', g: 'linear-gradient(135deg, #38BDF8, #0EA5E9)' },
+              { n: 'Sa mạc', g: 'linear-gradient(135deg, #F59E0B, #92400E)', locked: true },
+              { n: 'Mưa rừng', g: 'linear-gradient(135deg, #059669, #064E3B)', locked: true },
             ].map((t, i) => (
               <div key={i} style={{ flex: 1 }}>
                 <div style={{

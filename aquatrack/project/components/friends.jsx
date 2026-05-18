@@ -58,6 +58,9 @@ function FriendsScreen({ onNavigate }) {
           borderRadius: '50%',
           background: 'radial-gradient(circle, rgba(56,189,248,0.16), transparent 60%)',
         }} />
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+          <CoinBadge amount={1240} compact suffix="fr" onClick={() => onNavigate && onNavigate('shop')} />
+        </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div>

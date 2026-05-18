@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'app_colors.dart';
+import '../theme/app_colors.dart';
 
 /// AquaTrack Design System - Typography
 /// Inter / SF Pro inspired với clear hierarchy
@@ -51,6 +51,6 @@ class AppTextStyles {
   static const caption = TextStyle(
     fontSize: 11,
     fontWeight: FontWeight.w400,
-    color: AppColors.textHint,
+    color: AppColors.textMuted,
   );
 }

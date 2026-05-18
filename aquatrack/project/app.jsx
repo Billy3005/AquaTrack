@@ -56,31 +56,37 @@ function App() {
         <IOSDevice width={390} height={844} dark>
           {screen === 'home' && <HomeScreen state={tweaks.homeState} hot={tweaks.hot} current={cur} goal={tweaks.goal} onLog={handleLog} onNavigate={setScreen} />}
           {screen === 'coach' && <CoachScreen current={cur} goal={tweaks.goal} onLog={handleLog} onNavigate={setScreen} />}
-          {screen === 'eco' && <EcosystemScreen current={cur} goal={tweaks.goal} onNavigate={setScreen} />}
           {screen === 'stats' && <StatsScreen onNavigate={setScreen} />}
           {screen === 'level' && <LevelScreen onNavigate={setScreen} />}
           {screen === 'log' && <LogScreen current={cur} goal={tweaks.goal} onLog={handleLog} onNavigate={setScreen} />}
           {screen === 'camera' && <CameraScreen onLog={handleLog} onNavigate={setScreen} />}
           {screen === 'profile' && <ProfileScreen onNavigate={setScreen} />}
           {screen === 'friends' && <FriendsScreen onNavigate={setScreen} />}
+          {screen === 'missions' && <MissionsScreen onNavigate={setScreen} />}
+          {screen === 'missions-weekly' && <MissionsScreen onNavigate={setScreen} initialTab="weekly" />}
+          {screen === 'shop' && <ShopScreen onNavigate={setScreen} />}
+          {screen === 'login' && <LoginScreen onNavigate={setScreen} />}
+          {screen === 'register' && <RegisterScreen onNavigate={setScreen} onSignedIn={() => setScreen('bodyinfo')} />}
+          {screen === 'bodyinfo' && <BodyInfoScreen mode="onboarding" onNavigate={setScreen} onDone={() => setScreen('home')} />}
+          {screen === 'bodyinfo-edit' && <BodyInfoScreen mode="edit" onNavigate={setScreen} onDone={() => setScreen('profile')} />}
         </IOSDevice>
 
         <TweaksPanel>
           <TweakSection label="Hydration">
-            <TweakSlider label="Current ml" min={0} max={3500} step={50} value={tweaks.current} onChange={(v) => setTweak('current', v)} />
-            <TweakSlider label="Goal ml" min={1500} max={4000} step={100} value={tweaks.goal} onChange={(v) => setTweak('goal', v)} />
+            <TweakSlider label="Hiện tại (ml)" min={0} max={3500} step={50} value={tweaks.current} onChange={(v) => setTweak('current', v)} />
+            <TweakSlider label="Mục tiêu (ml)" min={1500} max={4000} step={100} value={tweaks.goal} onChange={(v) => setTweak('goal', v)} />
           </TweakSection>
-          <TweakSection label="Home state">
-            <TweakRadio label="State" value={tweaks.homeState} onChange={(v) => setTweak('homeState', v)} options={[
-              { value: 'normal', label: 'Normal' },
-              { value: 'dehydrated', label: 'Low' },
-              { value: 'goal', label: 'Goal' },
-              { value: 'night', label: 'Night' },
+          <TweakSection label="Trạng thái">
+            <TweakRadio label="Trạng thái" value={tweaks.homeState} onChange={(v) => setTweak('homeState', v)} options={[
+              { value: 'normal', label: 'Thường' },
+              { value: 'dehydrated', label: 'Thiếu' },
+              { value: 'goal', label: 'Đạt' },
+              { value: 'night', label: 'Đêm' },
             ]} />
-            <TweakToggle label="Hot weather (34°C)" value={tweaks.hot} onChange={(v) => setTweak('hot', v)} />
+            <TweakToggle label="Thời tiết nóng (34°C)" value={tweaks.hot} onChange={(v) => setTweak('hot', v)} />
           </TweakSection>
-          <TweakSection label="Layout">
-            <TweakToggle label="Show all screens (canvas)" value={tweaks.showAllScreens} onChange={(v) => setTweak('showAllScreens', v)} />
+          <TweakSection label="Bố cục">
+            <TweakToggle label="Hiện tất cả màn hình" value={tweaks.showAllScreens} onChange={(v) => setTweak('showAllScreens', v)} />
           </TweakSection>
         </TweaksPanel>
       </div>
@@ -96,9 +102,9 @@ function App() {
   return (
     <div style={{ width: '100vw', minHeight: '100vh', background: '#06091A', fontFamily: FONT }}>
       <DesignCanvas>
-        <DCSection id="primary" title="AquaTrack" subtitle="Living Drop · Coach · Ecosystem · Stats · Level · Log">
+        <DCSection id="primary" title="AquaTrack" subtitle="Giọt sống · Trợ lý · Cơ thể · Thống kê · Cấp độ · Ghi nước">
 
-          <DCArtboard id="home" label="01 · Home (Living Drop)" width={420} height={870}>
+          <DCArtboard id="home" label="01 · Trang chủ" width={420} height={870}>
             <IOSDevice width={390} height={844} dark>
               <HomeScreen
                 state={tweaks.homeState}
@@ -111,128 +117,167 @@ function App() {
             </IOSDevice>
           </DCArtboard>
 
-          <DCArtboard id="coach" label="02 · AI Coach" width={420} height={870}>
+          <DCArtboard id="coach" label="02 · Trợ lý AI" width={420} height={870}>
             <IOSDevice width={390} height={844} dark>
               <CoachScreen current={1450} goal={goal} onLog={() => {}} onNavigate={() => {}} />
             </IOSDevice>
           </DCArtboard>
 
-          <DCArtboard id="eco" label="03 · Ecosystem (Body)" width={420} height={870}>
-            <IOSDevice width={390} height={844} dark>
-              <EcosystemScreen current={1750} goal={goal} onNavigate={() => {}} />
-            </IOSDevice>
-          </DCArtboard>
-
-          <DCArtboard id="stats" label="04 · Stats (Wave)" width={420} height={870}>
+          <DCArtboard id="stats" label="04 · Thống kê" width={420} height={870}>
             <IOSDevice width={390} height={844} dark>
               <StatsScreen onNavigate={() => {}} />
             </IOSDevice>
           </DCArtboard>
 
-          <DCArtboard id="level" label="05 · Level & Achievements" width={420} height={870}>
+          <DCArtboard id="level" label="05 · Cấp độ & Thành tựu" width={420} height={870}>
             <IOSDevice width={390} height={844} dark>
               <LevelScreen onNavigate={() => {}} />
             </IOSDevice>
           </DCArtboard>
 
-          <DCArtboard id="log" label="06 · Log Drink" width={420} height={870}>
+          <DCArtboard id="log" label="06 · Ghi nước" width={420} height={870}>
             <IOSDevice width={390} height={844} dark>
               <LogScreen current={1450} goal={goal} onLog={() => {}} onNavigate={() => {}} />
             </IOSDevice>
           </DCArtboard>
 
-          <DCArtboard id="camera" label="07 · Smart Scan (Camera)" width={420} height={870}>
+          <DCArtboard id="camera" label="07 · Quét thông minh" width={420} height={870}>
             <IOSDevice width={390} height={844} dark>
               <CameraScreen onNavigate={() => {}} onLog={() => {}} />
             </IOSDevice>
           </DCArtboard>
 
-          <DCArtboard id="profile" label="08 · Profile" width={420} height={870}>
+          <DCArtboard id="profile" label="08 · Hồ sơ" width={420} height={870}>
             <IOSDevice width={390} height={844} dark>
               <ProfileScreen onNavigate={() => {}} />
             </IOSDevice>
           </DCArtboard>
 
-          <DCArtboard id="friends" label="09 · Friends & Leaderboard" width={420} height={870}>
+          <DCArtboard id="friends" label="09 · Bạn bè & Xếp hạng" width={420} height={870}>
             <IOSDevice width={390} height={844} dark>
               <FriendsScreen onNavigate={() => {}} />
             </IOSDevice>
           </DCArtboard>
 
+          <DCArtboard id="missions-daily" label="10 · Nhiệm vụ — Hằng ngày" width={420} height={870}>
+            <IOSDevice width={390} height={844} dark>
+              <MissionsScreen onNavigate={() => {}} initialTab="daily" />
+            </IOSDevice>
+          </DCArtboard>
+
+          <DCArtboard id="missions-weekly" label="11 · Nhiệm vụ — Hằng tuần" width={420} height={870}>
+            <IOSDevice width={390} height={844} dark>
+              <MissionsScreen onNavigate={() => {}} initialTab="weekly" />
+            </IOSDevice>
+          </DCArtboard>
+
+          <DCArtboard id="shop" label="12 · Cửa hàng (AquaShop)" width={420} height={870}>
+            <IOSDevice width={390} height={844} dark>
+              <ShopScreen onNavigate={() => {}} />
+            </IOSDevice>
+          </DCArtboard>
+
+          <DCArtboard id="login" label="13 · Đăng nhập" width={420} height={870}>
+            <IOSDevice width={390} height={844} dark>
+              <LoginScreen onNavigate={() => {}} />
+            </IOSDevice>
+          </DCArtboard>
+
+          <DCArtboard id="register" label="14 · Đăng ký" width={420} height={870}>
+            <IOSDevice width={390} height={844} dark>
+              <RegisterScreen onNavigate={() => {}} />
+            </IOSDevice>
+          </DCArtboard>
+
         </DCSection>
 
-        <DCSection id="states" title="Home — State Variants" subtitle="Empathic UI reacts to context">
-          <DCArtboard id="s-low" label="Dehydrated · 22%" width={420} height={870}>
+        <DCSection id="bodyinfo" title="Onboarding sau đăng ký" subtitle="Wizard 5 bước để AI tính nhu cầu nước · cũng truy cập được từ Hồ sơ">
+          <DCArtboard id="bi-body" label="B1 · Cơ thể" width={420} height={870}>
+            <IOSDevice width={390} height={844} dark>
+              <BodyInfoScreen mode="onboarding" />
+            </IOSDevice>
+          </DCArtboard>
+          <DCArtboard id="bi-life" label="B2 · Nhịp sống" width={420} height={870}>
+            <IOSDevice width={390} height={844} dark>
+              <BodyInfoScreenAtStep step={1} />
+            </IOSDevice>
+          </DCArtboard>
+          <DCArtboard id="bi-health" label="B3 · Sức khoẻ" width={420} height={870}>
+            <IOSDevice width={390} height={844} dark>
+              <BodyInfoScreenAtStep step={2} />
+            </IOSDevice>
+          </DCArtboard>
+          <DCArtboard id="bi-diet" label="B4 · Ăn uống" width={420} height={870}>
+            <IOSDevice width={390} height={844} dark>
+              <BodyInfoScreenAtStep step={3} />
+            </IOSDevice>
+          </DCArtboard>
+          <DCArtboard id="bi-review" label="B5 · Tóm tắt & Mục tiêu" width={420} height={870}>
+            <IOSDevice width={390} height={844} dark>
+              <BodyInfoScreenAtStep step={4} />
+            </IOSDevice>
+          </DCArtboard>
+          <DCArtboard id="bi-edit" label="Chế độ chỉnh sửa (từ Hồ sơ)" width={420} height={870}>
+            <IOSDevice width={390} height={844} dark>
+              <BodyInfoScreen mode="edit" />
+            </IOSDevice>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="states" title="Trang chủ — Các trạng thái" subtitle="Giao diện phản ứng theo ngữ cảnh">
+          <DCArtboard id="s-low" label="Mất nước · 22%" width={420} height={870}>
             <IOSDevice width={390} height={844} dark>
               <HomeScreen state="dehydrated" current={Math.round(goal * 0.22)} goal={goal} />
             </IOSDevice>
           </DCArtboard>
-          <DCArtboard id="s-normal" label="Normal · 58%" width={420} height={870}>
+          <DCArtboard id="s-normal" label="Bình thường · 58%" width={420} height={870}>
             <IOSDevice width={390} height={844} dark>
               <HomeScreen state="normal" current={Math.round(goal * 0.58)} goal={goal} />
             </IOSDevice>
           </DCArtboard>
-          <DCArtboard id="s-hot" label="Hot weather · 45%" width={420} height={870}>
+          <DCArtboard id="s-hot" label="Trời nóng · 45%" width={420} height={870}>
             <IOSDevice width={390} height={844} dark>
               <HomeScreen state="normal" hot current={Math.round(goal * 0.45)} goal={goal} />
             </IOSDevice>
           </DCArtboard>
-          <DCArtboard id="s-goal" label="Goal reached · 94%" width={420} height={870}>
+          <DCArtboard id="s-goal" label="Đạt mục tiêu · 94%" width={420} height={870}>
             <IOSDevice width={390} height={844} dark>
               <HomeScreen state="goal" current={Math.round(goal * 0.94)} goal={goal} />
             </IOSDevice>
           </DCArtboard>
-          <DCArtboard id="s-night" label="Late night · auto-dim" width={420} height={870}>
+          <DCArtboard id="s-night" label="Đêm muộn · tự mờ" width={420} height={870}>
             <IOSDevice width={390} height={844} dark>
               <HomeScreen state="night" current={Math.round(goal * 0.78)} goal={goal} />
             </IOSDevice>
           </DCArtboard>
         </DCSection>
 
-        <DCSection id="eco-states" title="Ecosystem — Hydration response" subtitle="Body as world: dry → blooming">
-          <DCArtboard id="e-low" label="Dehydrated · desert" width={420} height={870}>
-            <IOSDevice width={390} height={844} dark>
-              <EcosystemScreen current={Math.round(goal * 0.25)} goal={goal} />
-            </IOSDevice>
-          </DCArtboard>
-          <DCArtboard id="e-mid" label="Recovering · mid" width={420} height={870}>
-            <IOSDevice width={390} height={844} dark>
-              <EcosystemScreen current={Math.round(goal * 0.6)} goal={goal} />
-            </IOSDevice>
-          </DCArtboard>
-          <DCArtboard id="e-high" label="Blooming · 95%" width={420} height={870}>
-            <IOSDevice width={390} height={844} dark>
-              <EcosystemScreen current={Math.round(goal * 0.95)} goal={goal} />
-            </IOSDevice>
-          </DCArtboard>
-        </DCSection>
-
-        <DCSection id="widgets" title="Widgets & Lock screen" subtitle="1-tap log without opening app">
-          <DCArtboard id="w-small" label="Small widget · 2×2" width={220} height={220}>
+        <DCSection id="widgets" title="Widget & Màn khoá" subtitle="Ghi nước 1 chạm không cần mở app">
+          <DCArtboard id="w-small" label="Widget nhỏ · 2×2" width={220} height={220}>
             <SmallWidget current={1450} goal={goal} />
           </DCArtboard>
-          <DCArtboard id="w-medium" label="Medium widget · 4×2" width={460} height={220}>
+          <DCArtboard id="w-medium" label="Widget vừa · 4×2" width={460} height={220}>
             <MediumWidget current={1450} goal={goal} />
           </DCArtboard>
-          <DCArtboard id="w-lock" label="Lock screen widget" width={300} height={220}>
+          <DCArtboard id="w-lock" label="Widget màn khoá" width={300} height={220}>
             <LockWidget current={1450} goal={goal} />
           </DCArtboard>
         </DCSection>
       </DesignCanvas>
 
       <TweaksPanel>
-        <TweakSection label="Home state preview">
-          <TweakRadio label="State" value={tweaks.homeState} onChange={(v) => setTweak('homeState', v)} options={[
-            { value: 'normal', label: 'Normal' },
-            { value: 'dehydrated', label: 'Low' },
-            { value: 'goal', label: 'Goal' },
-            { value: 'night', label: 'Night' },
+        <TweakSection label="Xem trước trạng thái">
+          <TweakRadio label="Trạng thái" value={tweaks.homeState} onChange={(v) => setTweak('homeState', v)} options={[
+            { value: 'normal', label: 'Thường' },
+            { value: 'dehydrated', label: 'Thiếu' },
+            { value: 'goal', label: 'Đạt' },
+            { value: 'night', label: 'Đêm' },
           ]} />
-          <TweakToggle label="Hot weather" value={tweaks.hot} onChange={(v) => setTweak('hot', v)} />
-          <TweakSlider label="Daily goal" min={1500} max={4000} step={100} value={tweaks.goal} onChange={(v) => setTweak('goal', v)} />
+          <TweakToggle label="Thời tiết nóng" value={tweaks.hot} onChange={(v) => setTweak('hot', v)} />
+          <TweakSlider label="Mục tiêu/ngày" min={1500} max={4000} step={100} value={tweaks.goal} onChange={(v) => setTweak('goal', v)} />
         </TweakSection>
-        <TweakSection label="Mode">
-          <TweakToggle label="Canvas (all screens)" value={tweaks.showAllScreens} onChange={(v) => setTweak('showAllScreens', v)} />
+        <TweakSection label="Chế độ">
+          <TweakToggle label="Canvas (tất cả màn)" value={tweaks.showAllScreens} onChange={(v) => setTweak('showAllScreens', v)} />
         </TweakSection>
       </TweaksPanel>
     </div>

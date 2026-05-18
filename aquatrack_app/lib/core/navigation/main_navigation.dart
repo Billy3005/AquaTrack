@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../../features/stats/stats_screen.dart';
+import '../../features/home/home_screen_redesign.dart';
 
 /// Main bottom navigation with 6 tabs: Drop · Coach · Body · Stats · Level · You
 class MainNavigation extends StatefulWidget {
@@ -62,7 +63,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   /// Navigation pages (placeholders for now)
   final List<Widget> _pages = const [
-    _PlaceholderPage(title: 'Home', subtitle: 'Living Drop'),
+    HomeScreenRedesign(),
     _PlaceholderPage(title: 'AI Coach', subtitle: 'Chat với AQUA AI'),
     _PlaceholderPage(title: 'Body Map', subtitle: 'SVG organs với hydration'),
     StatsScreen(),
