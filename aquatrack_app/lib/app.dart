@@ -8,12 +8,13 @@ import 'core/config/app_config.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
-import 'features/home/home_screen_v2.dart';
-import 'features/profile/profile_screen_v2.dart';
-import 'features/coach/screens/coach_screen.dart';
-import 'features/body_map/screens/body_map_screen.dart';
-import 'features/stats/screens/stats_screen.dart';
-import 'features/level/screens/level_screen.dart';
+import 'features/home/home_screen_redesign.dart';
+import 'features/profile/profile_screen_redesign.dart';
+import 'features/coach/coach_screen_redesign.dart';
+import 'features/stats/stats_screen_redesign.dart';
+import 'features/level/level_screen_redesign.dart';
+import 'features/friends/friends_screen_redesign.dart';
+import 'features/missions/missions_screen_redesign.dart';
 import 'features/log_drink/screens/log_drink_screen.dart';
 import 'shared/widgets/bottom_nav.dart';
 
@@ -66,32 +67,37 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/',
             pageBuilder: (context, state) =>
-                const NoTransitionPage(child: HomeScreenV2()),
+                const NoTransitionPage(child: HomeScreenRedesign()),
           ),
           GoRoute(
             path: '/coach',
             pageBuilder: (context, state) =>
-                const NoTransitionPage(child: CoachScreen()),
+                const NoTransitionPage(child: CoachScreenRedesign()),
           ),
           GoRoute(
-            path: '/body',
+            path: '/missions',
             pageBuilder: (context, state) =>
-                const NoTransitionPage(child: BodyMapScreen()),
+                const NoTransitionPage(child: MissionsScreenRedesign()),
+          ),
+          GoRoute(
+            path: '/friends',
+            pageBuilder: (context, state) =>
+                const NoTransitionPage(child: FriendsScreenRedesign()),
           ),
           GoRoute(
             path: '/stats',
             pageBuilder: (context, state) =>
-                const NoTransitionPage(child: StatsScreen()),
+                const NoTransitionPage(child: StatsScreenRedesign()),
           ),
           GoRoute(
             path: '/level',
             pageBuilder: (context, state) =>
-                const NoTransitionPage(child: LevelScreen()),
+                const NoTransitionPage(child: LevelScreenRedesign()),
           ),
           GoRoute(
             path: '/profile',
             pageBuilder: (context, state) =>
-                const NoTransitionPage(child: ProfileScreenV2()),
+                const NoTransitionPage(child: ProfileScreenRedesign()),
           ),
         ],
       ),

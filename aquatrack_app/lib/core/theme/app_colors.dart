@@ -4,22 +4,32 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Primary Colors (Exact prototype match)
-  static const Color primaryBackground =
-      Color(0xFF0D1B2A); // Exact prototype navy
-  static const Color secondaryBackground =
-      Color(0xFF1B2C47); // Lighter navy gradient
-  static const Color surfaceColor = Color(0xFF253347); // Card surfaces
-  static const Color surfaceColorSoft = Color(0xFF1F3049); // Soft card variant
+  // Primary Colors (Exact from atoms.jsx)
+  static const Color primary = Color(0xFF0EA5E9); // primary
+  static const Color glow = Color(0xFF38BDF8); // glow
+  static const Color deep = Color(0xFF0284C7); // deep
+  static const Color heroDeep = Color(0xFF0C4A80); // heroDeep
+  static const Color heroDeeper = Color(0xFF082F5C); // heroDeeper
+  static const Color nightBase =
+      Color(0xFF0B1120); // nightBase - main background
+  static const Color nightSurface = Color(0xFF0F1A2E); // nightSurface - surface
+  static const Color nightCard = Color(0xFF1E293B); // nightCard
+  static const Color nightCardSoft = Color(0xFF172033); // nightCardSoft
 
-  // Accent Colors (Exact prototype match)
-  static const Color cyanAccent = Color(0xFF00B4D8); // Prototype primary cyan
-  static const Color cyanLight = Color(0xFF89CCDB); // Light cyan glow
-  static const Color cyanDark = Color(0xFF0081A7); // Deep cyan
-  static const Color cyanDeep = Color(0xFF003459); // Hero section deep
-  static const Color cyanDeeper = Color(0xFF001D2E); // Deepest cyan shade
+  // Legacy compatibility
+  static const Color primaryBackground = nightBase;
+  static const Color secondaryBackground = nightSurface;
+  static const Color surfaceColor = nightCard;
+  static const Color surfaceColorSoft = nightCardSoft;
 
-  // XP & Gamification (Updated to match design prototype)
+  // Accent Colors (Exact from atoms.jsx)
+  static const Color cyanAccent = glow; // Using glow as cyan accent
+  static const Color cyanLight = Color(0xFF7DD3FC); // Lighter cyan
+  static const Color cyanDark = deep; // Using deep as dark cyan
+  static const Color cyanDeep = heroDeep; // Hero section deep
+  static const Color cyanDeeper = heroDeeper; // Deepest cyan shade
+
+  // XP & Gamification (Exact from atoms.jsx)
   static const Color purpleXP = Color(0xFF818CF8); // purple
   static const Color purpleDeep = Color(0xFF4F46E5); // purpleDeep
   static const Color green = Color(0xFF059669); // green
@@ -31,11 +41,12 @@ class AppColors {
   static const Color error = Color(0xFFEF4444); // Red
   static const Color info = Color(0xFF3B82F6); // Blue
 
-  // Text Colors (Exact prototype match)
-  static const Color textPrimary = Color(0xFFFFFFFF); // Pure white for headings
-  static const Color textSecondary = Color(0xFFB8C5D1); // Medium gray-blue
-  static const Color textTertiary = Color(0xFF7A8B9A); // Muted text
-  static const Color textBright = Color(0xFF89CCDB); // Cyan-tinted bright text
+  // Text Colors (Exact from atoms.jsx)
+  static const Color textPrimary = Color(0xFFF1F5F9); // textPrimary
+  static const Color textSecondary = Color(0xFF94A3B8); // textSecondary
+  static const Color textMuted = Color(0xFF64748B); // textMuted
+  static const Color textBright = Color(0xFFBAE6FD); // textBright
+  static const Color textTertiary = textMuted; // Legacy compatibility
 
   // Water Drop Colors (Updated to match design prototype)
   static const Color dropEmpty = Color(0xFF1E3A5F); // Empty drop (low state)
@@ -56,12 +67,12 @@ class AppColors {
   static const Color navIconActive = cyanAccent; // Active cyan
   static const Color navIconInactive = Color(0xFF7A8B9A); // Inactive muted
 
-  // Overlays & Borders (Exact prototype match)
+  // Overlays & Borders (Exact from atoms.jsx)
   static const Color overlay = Color(0x80000000); // Black overlay
   static const Color border =
-      Color(0x1A00B4D8); // Subtle cyan border (10% opacity)
+      Color(0x2638BDF8); // rgba(56,189,248,0.15) from atoms.jsx
   static const Color borderColor = Color(0xFF3A4B5C); // Subtle border
-  static const Color borderActive = cyanLight; // Active cyan border
+  static const Color borderActive = glow; // Active cyan border using glow
   static const Color dividerColor = Color(0xFF2A3B4C); // Subtle divider
 
   // Additional Colors

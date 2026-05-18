@@ -87,7 +87,7 @@ function CameraScreen({ onNavigate, onLog }) {
           color: '#BAE6FD', letterSpacing: '0.04em',
         }}>
           {I.spark('#38BDF8', 12)}
-          <span>Smart Scan · AI</span>
+          <span>Quét thông minh · AI</span>
         </div>
         <button onClick={() => setPhase(phase === 'fallback' ? 'scanning' : 'fallback')} style={{
           width: 38, height: 38, borderRadius: 999,

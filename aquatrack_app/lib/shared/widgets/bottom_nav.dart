@@ -12,12 +12,13 @@ class BottomNavigationWrapper extends StatelessWidget {
   const BottomNavigationWrapper({super.key, required this.child});
 
   static const tabs = [
-    (icon: Icons.water_drop_outlined, label: 'Drop', route: '/'),
-    (icon: Icons.chat_bubble_outline, label: 'Coach', route: '/coach'),
-    (icon: Icons.person_outline, label: 'Body', route: '/body'),
-    (icon: Icons.bar_chart_outlined, label: 'Stats', route: '/stats'),
-    (icon: Icons.emoji_events_outlined, label: 'Level', route: '/level'),
-    (icon: Icons.account_circle_outlined, label: 'You', route: '/profile'),
+    (icon: Icons.water_drop, label: 'Nước', route: '/'),
+    (icon: Icons.chat_bubble, label: 'Chat', route: '/coach'),
+    (icon: Icons.track_changes, label: 'Nhiệm vụ', route: '/missions'),
+    (icon: Icons.show_chart, label: 'Thống kê', route: '/stats'),
+    (icon: Icons.people, label: 'Bạn bè', route: '/friends'),
+    (icon: Icons.emoji_events, label: 'Cấp độ', route: '/level'),
+    (icon: Icons.person, label: 'Hồ sơ', route: '/profile'),
   ];
 
   @override
@@ -47,15 +48,15 @@ class BottomNavigationWrapper extends StatelessWidget {
 
       // Bottom Navigation Bar
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          border: Border(
-            top: BorderSide(color: AppColors.surfaceLight, width: 0.5),
+        decoration: BoxDecoration(
+          color: AppColors.background.withValues(alpha: 0.85),
+          border: const Border(
+            top: BorderSide(color: Color(0xFF38BDF8), width: 0.12),
           ),
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.fromLTRB(8, 10, 8, 32),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(tabs.length, (index) {

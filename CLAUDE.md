@@ -40,6 +40,22 @@ Language    : Tiếng Việt (UI) + English (code/comment)
 | FastAPI / DB / AI Coach API | `.claude/agents/backend.md` |
 | README / report / commit | `.claude/agents/docs.md` |
 
+## Skills (Matt Pocock's Engineering Best Practices)
+| Skill | File | Khi nào dùng |
+|---|---|---|
+| **TDD** | `.claude/skills/engineering/tdd.md` | Trước khi code feature mới · unit/widget testing |
+| **Grill-Me** | `.claude/skills/productivity/grill-me.md` | Trước implementation lớn · design review |
+| **Diagnose** | `.claude/skills/engineering/diagnose.md` | Debug issues phức tạp · performance problems |
+| **Improve Architecture** | `.claude/skills/engineering/improve-architecture.md` | Code review · refactoring · tech debt cleanup |
+
+### Workflow với Skills:
+```
+1. Planning → /grill-me trước khi start
+2. Development → /tdd cho mỗi component
+3. Debugging → /diagnose cho issues
+4. Review → /improve-architecture sau features
+```
+
 ## Rules — luôn áp dụng
 ```
 NGÔN NGỮ  : Trả lời tiếng Việt

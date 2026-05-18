@@ -1,0 +1,663 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../home/providers/home_provider.dart';
+
+/// Coach Screen - Complete redesign matching aquatrack/project/components/coach.jsx
+class CoachScreenRedesign extends ConsumerStatefulWidget {
+  const CoachScreenRedesign({super.key});
+
+  @override
+  ConsumerState<CoachScreenRedesign> createState() =>
+      _CoachScreenRedesignState();
+}
+
+class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
+    with TickerProviderStateMixin {
+  late TextEditingController _textController;
+  late ScrollController _scrollController;
+  late AnimationController _typingController;
+  late Animation<double> _typingAnimation;
+
+  // Sample messages to demonstrate the UI (in real app, this would come from provider)
+  List<ChatMessage> messages = [
+    ChatMessage(
+      from: MessageSender.ai,
+      text:
+          'Chào buổi chiều! Bạn vừa log một ly cà phê đá 180ml — cà phê có tính lợi tiểu nhẹ ☕',
+      time: '14:46',
+    ),
+    ChatMessage(
+      from: MessageSender.ai,
+      text: 'Mình đề xuất uống thêm +250ml trong 30 phút tới để bù lại nhé.',
+      time: '14:46',
+      quickReplies: ['Uống 250ml ngay', 'Xem tiến độ', 'Đặt nhắc nhở'],
+    ),
+    ChatMessage(
+      from: MessageSender.user,
+      text: 'Trời nóng lắm hôm nay 😅',
+      time: '14:48',
+    ),
+    ChatMessage(
+      from: MessageSender.ai,
+      text:
+          'Đúng rồi — HCMC đang 34°C. Mình đã tự động tăng goal hôm nay từ 2,500ml lên 2,800ml. Bạn còn 1,350ml nữa.',
+      time: '14:48',
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController();
+    _scrollController = ScrollController();
+    _typingController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _typingAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _typingController,
+      curve: Curves.easeInOut,
+    ));
+
+    _typingController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _scrollController.dispose();
+    _typingController.dispose();
+    super.dispose();
+  }
+
+  void _sendMessage(String text) {
+    if (text.trim().isEmpty) return;
+
+    final now = TimeOfDay.now();
+    final timeString =
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+    setState(() {
+      messages.add(ChatMessage(
+        from: MessageSender.user,
+        text: text,
+        time: timeString,
+      ));
+      _textController.clear();
+    });
+
+    // Simulate AI response
+    Future.delayed(const Duration(milliseconds: 700), () {
+      if (mounted) {
+        setState(() {
+          messages.add(ChatMessage(
+            from: MessageSender.ai,
+            text: 'Mình hiểu rồi — sẽ điều chỉnh lịch nhắc cho phù hợp 💙',
+            time: timeString,
+          ));
+        });
+        _scrollToBottom();
+      }
+    });
+
+    _scrollToBottom();
+  }
+
+  void _handleQuickReply(String reply) {
+    if (reply == 'Uống 250ml ngay') {
+      // Log water
+      ref.read(homeNotifierProvider.notifier).quickLog(250);
+    }
+    _sendMessage(reply);
+  }
+
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final homeSummaryAsync = ref.watch(homeNotifierProvider);
+
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: AppColors.nightBase,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              _buildHeader(homeSummaryAsync),
+
+              // Messages
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(14, 16, 14, 8),
+                  child: Column(
+                    children: [
+                      // Day separator
+                      _buildDaySeparator(),
+                      const SizedBox(height: 14),
+
+                      // Message list
+                      Expanded(
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          itemCount: messages.length,
+                          itemBuilder: (context, index) {
+                            return _buildMessageBubble(messages[index]);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Input composer
+              _buildComposer(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(dynamic homeSummaryAsync) {
+    return homeSummaryAsync.when(
+      data: (summary) {
+        final current = summary?.totalEffectiveMl ?? 1450;
+        final goal = summary?.dailyGoalMl ?? 2800;
+        final percent = ((current / goal) * 100).clamp(0, 100).round();
+
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF0A2545), AppColors.nightBase],
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 50, 16, 14),
+          child: Column(
+            children: [
+              // Top row with AI info and close button
+              Row(
+                children: [
+                  // AI Avatar
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: const RadialGradient(
+                        center: Alignment(0.3, 0.3),
+                        colors: [Color(0xFF7DD3FC), Color(0xFF0EA5E9)],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              const Color(0x9938BDF8), // rgba(56,189,248,0.6)
+                          blurRadius: 20,
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: SizedBox(
+                        width: 10,
+                        height: 10,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Title and status
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Aqua AI',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF10B981),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            const Text(
+                              'online · context-aware',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF86EFAC),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Close button
+                  GestureDetector(
+                    onTap: () => context.go('/'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
+                        ),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        'Đóng',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textPrimary,
+                          fontFamily: 'SF Pro Text',
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Progress bar
+              Container(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                decoration: BoxDecoration(
+                  color: const Color(0x99081E38), // rgba(8,30,56,0.6)
+                  border: Border.all(
+                    color: const Color(0x3338BDF8), // rgba(56,189,248,0.2)
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.water_drop,
+                      color: Color(0xFF38BDF8),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          // Progress text
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '${current.toString()} / ${goal.toString()}ml',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'SF Pro Text',
+                                ),
+                              ),
+                              Text(
+                                '$percent%',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.glow,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'SF Pro Rounded',
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+
+                          // Progress bar
+                          Container(
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: FractionallySizedBox(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: percent / 100,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF0EA5E9),
+                                      Color(0xFF38BDF8)
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(999),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(
+                                          0x9938BDF8), // rgba(56,189,248,0.6)
+                                      blurRadius: 8,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => _buildHeaderLoading(),
+      error: (error, stack) => _buildHeaderError(),
+    );
+  }
+
+  Widget _buildHeaderLoading() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF0A2545), AppColors.nightBase],
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 50, 16, 14),
+      child: const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  Widget _buildHeaderError() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF0A2545), AppColors.nightBase],
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 50, 16, 14),
+      child: const Text(
+        'Error loading data',
+        style: TextStyle(color: AppColors.error),
+      ),
+    );
+  }
+
+  Widget _buildDaySeparator() {
+    return Text(
+      'HÔM NAY',
+      style: TextStyle(
+        fontSize: 10,
+        color: AppColors.textMuted,
+        fontFamily: 'SF Pro Text',
+        letterSpacing: 0.1,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  Widget _buildMessageBubble(ChatMessage message) {
+    final isAi = message.from == MessageSender.ai;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment:
+            isAi ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+        children: [
+          Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.78,
+            ),
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+            decoration: BoxDecoration(
+              color: isAi ? const Color(0xFF1E3A5F) : null,
+              gradient: isAi
+                  ? null
+                  : const LinearGradient(
+                      begin: Alignment(-1.35, -1.35),
+                      end: Alignment(1.35, 1.35),
+                      colors: [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                    ),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(isAi ? 4 : 14),
+                topRight: Radius.circular(isAi ? 14 : 4),
+                bottomLeft: const Radius.circular(14),
+                bottomRight: const Radius.circular(14),
+              ),
+              boxShadow: isAi
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: const Color(0x400EA5E9), // rgba(14,165,233,0.25)
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+            ),
+            child: Text(
+              message.text,
+              style: TextStyle(
+                fontSize: 13.5,
+                height: 1.45,
+                fontFamily: 'SF Pro Text',
+                color: isAi ? const Color(0xFFBAE6FD) : Colors.white,
+              ),
+            ),
+          ),
+
+          // Quick replies
+          if (message.quickReplies != null && message.quickReplies!.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.85,
+              ),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: message.quickReplies!.map((reply) {
+                  return GestureDetector(
+                    onTap: () => _handleQuickReply(reply),
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0x1F38BDF8), // rgba(56,189,248,0.12)
+                        border: Border.all(
+                          color:
+                              const Color(0x4D38BDF8), // rgba(56,189,248,0.3)
+                        ),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        reply,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontFamily: 'SF Pro Text',
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFFBAE6FD),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+
+          // Time
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              message.time,
+              style: TextStyle(
+                fontSize: 9.5,
+                color: AppColors.textMuted,
+                fontFamily: 'SF Pro Text',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComposer() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: const Color(0x1438BDF8), // rgba(56,189,248,0.08)
+          ),
+        ),
+        color: const Color(0x990F1A2E), // rgba(15,26,46,0.6)
+      ),
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ColorFilter.mode(
+            Colors.white.withValues(alpha: 0.05),
+            BlendMode.lighten,
+          ),
+          child: Row(
+            children: [
+              // Text input
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.nightCard,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.06),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _textController,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textPrimary,
+                            fontFamily: 'SF Pro Text',
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Hỏi Aqua AI bất cứ điều gì...',
+                            hintStyle: TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 14,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          onSubmitted: _sendMessage,
+                          textInputAction: TextInputAction.send,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Send button
+              GestureDetector(
+                onTap: () => _sendMessage(_textController.text),
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    gradient: _textController.text.trim().isNotEmpty
+                        ? const LinearGradient(
+                            begin: Alignment(-1.35, -1.35),
+                            end: Alignment(1.35, 1.35),
+                            colors: [Color(0xFF0EA5E9), Color(0xFF38BDF8)],
+                          )
+                        : null,
+                    color: _textController.text.trim().isEmpty
+                        ? const Color(0x3338BDF8) // rgba(56,189,248,0.2)
+                        : null,
+                    shape: BoxShape.circle,
+                    boxShadow: _textController.text.trim().isNotEmpty
+                        ? [
+                            BoxShadow(
+                              color: const Color(
+                                  0x660EA5E9), // rgba(14,165,233,0.4)
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: const Icon(
+                    Icons.send,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Message model
+class ChatMessage {
+  final MessageSender from;
+  final String text;
+  final String time;
+  final List<String>? quickReplies;
+
+  ChatMessage({
+    required this.from,
+    required this.text,
+    required this.time,
+    this.quickReplies,
+  });
+}
+
+enum MessageSender { ai, user }

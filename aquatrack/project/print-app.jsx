@@ -35,12 +35,11 @@ function PrintApp() {
   const screens = [
     { id: 'home', num: '01', title: 'Home — Living Drop', desc: 'A breathing water drop reveals hydration % at a glance. Status pill shifts with weather and time of day.', el: <HomeScreen state="normal" current={1450} goal={goal} onLog={() => {}} onNavigate={() => {}} /> },
     { id: 'coach', num: '02', title: 'AI Coach', desc: 'Conversational nudges with quick-replies. The coach reasons about caffeine, exercise, and weather to suggest precise top-ups.', el: <CoachScreen current={1450} goal={goal} onLog={() => {}} onNavigate={() => {}} /> },
-    { id: 'eco', num: '03', title: 'Ecosystem — Body Map', desc: 'A living body cross-section. Organs glow brighter as hydration improves, showing the systemic impact of every glass.', el: <EcosystemScreen current={1750} goal={goal} onNavigate={() => {}} /> },
-    { id: 'stats', num: '04', title: 'Stats — Wave Chart', desc: 'Weekly hydration as a flowing wave. Patterns surface — weekend dips, post-workout spikes — without spreadsheet feel.', el: <StatsScreen onNavigate={() => {}} /> },
-    { id: 'level', num: '05', title: 'Level & Achievements', desc: 'XP, streaks, and unlockable avatars turn hydration into a long-game ritual rather than a daily checkbox.', el: <LevelScreen onNavigate={() => {}} /> },
-    { id: 'log', num: '06', title: 'Log Drink', desc: 'Six common drink presets, smart amount slider, and effective-hydration math (coffee, tea offset automatically).', el: <LogScreen current={1450} goal={goal} onLog={() => {}} onNavigate={() => {}} /> },
-    { id: 'camera', num: '07', title: 'Smart Scan', desc: 'AI vision identifies the drink, estimates volume, and computes effective hydration — log a coffee in one tap.', el: <CameraScreen onLog={() => {}} onNavigate={() => {}} /> },
-    { id: 'profile', num: '08', title: 'Profile', desc: 'Identity, body data, reminder schedule, and avatar collection — gamification kept human and editable.', el: <ProfileScreen onNavigate={() => {}} /> },
+    { id: 'stats', num: '03', title: 'Stats — Wave Chart', desc: 'Weekly hydration as a flowing wave. Patterns surface — weekend dips, post-workout spikes — without spreadsheet feel.', el: <StatsScreen onNavigate={() => {}} /> },
+    { id: 'level', num: '04', title: 'Level & Achievements', desc: 'XP, streaks, and unlockable avatars turn hydration into a long-game ritual rather than a daily checkbox.', el: <LevelScreen onNavigate={() => {}} /> },
+    { id: 'log', num: '05', title: 'Log Drink', desc: 'Six common drink presets, smart amount slider, and effective-hydration math (coffee, tea offset automatically).', el: <LogScreen current={1450} goal={goal} onLog={() => {}} onNavigate={() => {}} /> },
+    { id: 'camera', num: '06', title: 'Smart Scan', desc: 'AI vision identifies the drink, estimates volume, and computes effective hydration — log a coffee in one tap.', el: <CameraScreen onLog={() => {}} onNavigate={() => {}} /> },
+    { id: 'profile', num: '07', title: 'Profile', desc: 'Identity, body data, reminder schedule, and avatar collection — gamification kept human and editable.', el: <ProfileScreen onNavigate={() => {}} /> },
   ];
 
   return (
@@ -92,29 +91,8 @@ function PrintApp() {
         </div>
       </div>
 
-      {/* Section: Ecosystem variants */}
-      <SectionHead num="III" title="Ecosystem — dry to blooming" desc="A second metaphor for the same data. The body as a small world that thrives on water." />
-
-      <div className="print-grid">
-        <h3>Ecosystem — hydration response</h3>
-        <div className="grid">
-          {[
-            { lbl: 'Dehydrated · desert', cur: 0.25 },
-            { lbl: 'Recovering · mid', cur: 0.6 },
-            { lbl: 'Blooming · 95%', cur: 0.95 },
-          ].map((v, i) => (
-            <div key={i} className="cell">
-              <IOSDevice width={390} height={844} dark>
-                <EcosystemScreen current={Math.round(goal * v.cur)} goal={goal} />
-              </IOSDevice>
-              <div className="lbl">{v.lbl}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Widgets */}
-      <SectionHead num="IV" title="Widgets & lock screen" desc="One-tap logging without ever opening the app. The Living Drop scales down beautifully." />
+      <SectionHead num="III" title="Widgets & lock screen" desc="One-tap logging without ever opening the app. The Living Drop scales down beautifully." />
 
       <div className="print-widgets">
         <h3>Widgets</h3>

@@ -99,6 +99,21 @@ const I = {
       <path d="M9 13 H15 V16 H9 z M8 17 H16 V19 H8 z" />
     </svg>
   ),
+  coin: (s = 14, suffix = 'a') => (
+    <svg width={s} height={s} viewBox="0 0 24 24">
+      <defs>
+        <radialGradient id={`aq-coin-g-${suffix}`} cx="35%" cy="30%" r="75%">
+          <stop offset="0%" stopColor="#FEF3C7"/>
+          <stop offset="55%" stopColor="#FBBF24"/>
+          <stop offset="100%" stopColor="#B45309"/>
+        </radialGradient>
+      </defs>
+      <circle cx="12" cy="12" r="10" fill={`url(#aq-coin-g-${suffix})`} stroke="#78350F" strokeWidth="0.6"/>
+      <circle cx="12" cy="12" r="7" fill="none" stroke="#FDE68A" strokeWidth="0.8" opacity="0.7"/>
+      <path d="M12 7.5 C10.3 7.5 9 8.7 9 10.3 C9 11.7 10 12.4 11.5 12.8 C13 13.2 13.6 13.5 13.6 14.2 C13.6 14.9 12.9 15.3 12 15.3 C10.9 15.3 10.1 14.8 9.7 14.1" fill="none" stroke="#78350F" strokeWidth="1.3" strokeLinecap="round"/>
+      <path d="M12 6.5 V8 M12 15 V16.5" stroke="#78350F" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  ),
 };
 
 // XP Bar
@@ -135,6 +150,36 @@ function XPBar({ xp, xpMax, level, levelName, accent = COLORS.purple, trackBg = 
   );
 }
 
+// Coin Badge — user's wallet, placed on every primary screen.
+function CoinBadge({ amount = 1240, compact = false, onClick, glow = false, delta = null, suffix = 'a' }) {
+  return (
+    <button onClick={onClick} type="button" style={{
+      display: 'inline-flex', alignItems: 'center', gap: compact ? 5 : 6,
+      padding: compact ? '4px 9px 4px 6px' : '5px 11px 5px 7px',
+      background: 'linear-gradient(135deg, rgba(251,191,36,0.18), rgba(245,158,11,0.06))',
+      border: '1px solid rgba(251,191,36,0.45)',
+      borderRadius: 999,
+      fontFamily: FONT_ROUND, fontSize: compact ? 11 : 12, fontWeight: 700,
+      color: '#FDE68A',
+      fontFeatureSettings: '"tnum"',
+      letterSpacing: '0.01em',
+      cursor: onClick ? 'pointer' : 'default',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
+      animation: glow ? 'aq-coin-pulse 1.8s ease-in-out infinite' : 'none',
+    }}>
+      {I.coin(compact ? 13 : 15, suffix)}
+      <span>{amount.toLocaleString('vi-VN')}</span>
+      {delta != null && (
+        <span style={{
+          marginLeft: 2, fontSize: compact ? 9.5 : 10,
+          color: '#86EFAC', fontWeight: 700, letterSpacing: '0.02em',
+        }}>+{delta}</span>
+      )}
+      <style>{`@keyframes aq-coin-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(251,191,36,0.45);} 50% { box-shadow: 0 0 0 6px rgba(251,191,36,0);} }`}</style>
+    </button>
+  );
+}
+
 // Streak Badge
 function StreakBadge({ days = 12, compact = false }) {
   return (
@@ -148,7 +193,7 @@ function StreakBadge({ days = 12, compact = false }) {
       color: '#FED7AA',
     }}>
       {I.flame('#F97316', compact ? 12 : 14)}
-      <span>Streak {days} ngày</span>
+      <span>Chuỗi {days} ngày</span>
     </div>
   );
 }
@@ -239,5 +284,6 @@ window.FONT_ROUND = FONT_ROUND;
 window.I = I;
 window.XPBar = XPBar;
 window.StreakBadge = StreakBadge;
+window.CoinBadge = CoinBadge;
 window.QuickChip = QuickChip;
 window.DrinkIcon = DrinkIcon;
