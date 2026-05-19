@@ -160,20 +160,22 @@ class FriendsNotifier extends _$FriendsNotifier {
       final storage = HiveStorageService.instance;
       final cachedFriendsData = storage.loadCachedFriends();
       final cachedRequestsData = storage.loadCachedFriendRequests();
-      final cachedLeaderboardData =
-          storage.loadCachedWeeklyLeaderboard(); // Fix: Load leaderboard
-      final cachedStatsData =
-          storage.loadCachedSocialStats(); // Fix: Load real stats
-      final cachedTimestamp =
-          storage.loadCachedSocialDataTimestamp(); // Fix: Load timestamp
+      final cachedLeaderboardData = storage
+          .loadCachedWeeklyLeaderboard(); // Fix: Load leaderboard
+      final cachedStatsData = storage
+          .loadCachedSocialStats(); // Fix: Load real stats
+      final cachedTimestamp = storage
+          .loadCachedSocialDataTimestamp(); // Fix: Load timestamp
 
       if (cachedFriendsData.isNotEmpty) {
         debugPrint(
-            '🏠 FriendsProvider: Loaded cached data with timestamp (friends, requests, leaderboard, stats)');
+          '🏠 FriendsProvider: Loaded cached data with timestamp (friends, requests, leaderboard, stats)',
+        );
 
         // Convert cached data to models
-        final cachedFriends =
-            cachedFriendsData.map((json) => Friend.fromJson(json)).toList();
+        final cachedFriends = cachedFriendsData
+            .map((json) => Friend.fromJson(json))
+            .toList();
         final cachedRequests = cachedRequestsData
             .map((json) => FriendRequest.fromJson(json))
             .toList();
@@ -227,12 +229,15 @@ class FriendsNotifier extends _$FriendsNotifier {
       await storage.cacheFriends(friends);
       await storage.cacheFriendRequests(requests);
       await storage.cacheWeeklyLeaderboard(leaderboard);
-      await storage
-          .cacheSocialStats(stats.toJson()); // Fix: Add missing stats caching
-      await storage
-          .cacheSocialDataTimestamp(DateTime.now()); // Fix: Cache timestamp
+      await storage.cacheSocialStats(
+        stats.toJson(),
+      ); // Fix: Add missing stats caching
+      await storage.cacheSocialDataTimestamp(
+        DateTime.now(),
+      ); // Fix: Cache timestamp
       debugPrint(
-          '💾 FriendsProvider: Cached all social data with timestamp (friends, requests, leaderboard, stats)');
+        '💾 FriendsProvider: Cached all social data with timestamp (friends, requests, leaderboard, stats)',
+      );
     } catch (e) {
       debugPrint('❌ FriendsProvider: Error caching data: $e');
     }
@@ -262,8 +267,10 @@ class FriendsNotifier extends _$FriendsNotifier {
   /// Accept friend request
   Future<bool> acceptFriendRequest(String requestId) async {
     try {
-      final success =
-          await _socialService.respondToFriendRequest(requestId, accept: true);
+      final success = await _socialService.respondToFriendRequest(
+        requestId,
+        accept: true,
+      );
 
       if (success) {
         // Refresh friends data
@@ -280,8 +287,10 @@ class FriendsNotifier extends _$FriendsNotifier {
   /// Decline friend request
   Future<bool> declineFriendRequest(String requestId) async {
     try {
-      final success =
-          await _socialService.respondToFriendRequest(requestId, accept: false);
+      final success = await _socialService.respondToFriendRequest(
+        requestId,
+        accept: false,
+      );
 
       if (success) {
         // Remove from pending requests

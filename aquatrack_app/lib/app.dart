@@ -8,6 +8,7 @@ import 'core/config/app_config.dart';
 import 'features/splash/splash_screen.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
+import 'features/onboarding/body_info_screen.dart';
 import 'features/home/home_screen_redesign.dart';
 import 'features/profile/profile_screen_redesign.dart';
 import 'features/coach/coach_screen_redesign.dart';
@@ -15,7 +16,9 @@ import 'features/stats/stats_screen_redesign.dart';
 import 'features/level/level_screen_redesign.dart';
 import 'features/friends/friends_screen_redesign.dart';
 import 'features/missions/missions_screen_redesign.dart';
+import 'features/shop/shop_screen.dart';
 import 'features/log_drink/screens/log_drink_screen.dart';
+import 'features/smart_scan/screens/smart_scan_screen.dart';
 import 'shared/widgets/bottom_nav.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -46,6 +49,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/register',
         pageBuilder: (context, state) => CustomTransitionPage(
           child: const RegisterScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(1.0, 0.0), end: Offset.zero),
+              ),
+              child: child,
+            );
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const BodyInfoScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SlideTransition(
               position: animation.drive(
@@ -118,11 +135,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/shop',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const ShopScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(1.0, 0.0), end: Offset.zero),
+              ),
+              child: child,
+            );
+          },
+        ),
+      ),
+      GoRoute(
         path: '/smart-scan',
         pageBuilder: (context, state) => CustomTransitionPage(
-          child: const Scaffold(
-            body: Center(child: Text('Smart Scan Screen')),
-          ), // Placeholder
+          child: const SmartScanScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },

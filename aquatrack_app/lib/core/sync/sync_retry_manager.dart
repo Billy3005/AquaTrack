@@ -22,7 +22,7 @@ class SyncRetryManager {
   static const int _circuitBreakerFailureThreshold = 3;
 
   SyncRetryManager({required SyncDatabase syncDatabase})
-      : _syncDatabase = syncDatabase;
+    : _syncDatabase = syncDatabase;
 
   /// Calculate exponential backoff delay with jitter
   Duration calculateRetryDelay(int retryCount) {

@@ -42,8 +42,9 @@ class EnhancedCard extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             (backgroundColor ?? AppColors.surfaceColor).withValues(alpha: 0.6),
-            (backgroundColor ?? AppColors.surfaceColorSoft)
-                .withValues(alpha: 0.4),
+            (backgroundColor ?? AppColors.surfaceColorSoft).withValues(
+              alpha: 0.4,
+            ),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -51,8 +52,9 @@ class EnhancedCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(borderRadius),
         border: showBorder
             ? Border.all(
-                color: (borderColor ?? AppColors.borderColor)
-                    .withValues(alpha: 0.2),
+                color: (borderColor ?? AppColors.borderColor).withValues(
+                  alpha: 0.2,
+                ),
                 width: 1,
               )
             : null,
@@ -95,10 +97,7 @@ class EnhancedCard extends StatelessWidget {
                 ),
               ),
             )
-          : Padding(
-              padding: padding ?? EdgeInsets.zero,
-              child: child,
-            ),
+          : Padding(padding: padding ?? EdgeInsets.zero, child: child),
     );
   }
 }

@@ -8,7 +8,7 @@ class StatsRepository {
   final ApiService _apiService;
 
   StatsRepository({ApiService? apiService})
-      : _apiService = apiService ?? ApiService();
+    : _apiService = apiService ?? ApiService();
 
   /// Get daily trends data for charts
   Future<StatsApiResponse<DailyTrendsResponse>> getDailyTrends({
@@ -187,7 +187,8 @@ class DailyTrendsResponse {
       period: json['period'] ?? '',
       startDate: DateTime.parse(json['start_date']),
       endDate: DateTime.parse(json['end_date']),
-      data: (json['data'] as List<dynamic>?)
+      data:
+          (json['data'] as List<dynamic>?)
               ?.map((item) => DailyTrendData.fromJson(item))
               .toList() ??
           [],
@@ -324,7 +325,8 @@ class LiquidTypesResponse {
     return LiquidTypesResponse(
       period: json['period'] ?? '',
       totals: Map<String, int>.from(json['totals'] ?? {}),
-      breakdown: (json['breakdown'] as List<dynamic>?)
+      breakdown:
+          (json['breakdown'] as List<dynamic>?)
               ?.map((item) => LiquidTypeBreakdown.fromJson(item))
               .toList() ??
           [],
@@ -385,7 +387,8 @@ class GoalProgressResponse {
       averages: Map<String, double>.from(
         json['averages']?.map((k, v) => MapEntry(k, v.toDouble())) ?? {},
       ),
-      dailyData: (json['daily_data'] as List<dynamic>?)
+      dailyData:
+          (json['daily_data'] as List<dynamic>?)
               ?.map((item) => DailyGoalData.fromJson(item))
               .toList() ??
           [],
@@ -411,8 +414,8 @@ class GoalInfo {
       dailyGoalMl: json['daily_goal_ml'] ?? 2000,
       totalDaysAnalyzed: json['total_days_analyzed'] ?? 0,
       daysAchieved: json['days_achieved'] ?? 0,
-      achievementRatePercentage:
-          (json['achievement_rate_percentage'] ?? 0).toDouble(),
+      achievementRatePercentage: (json['achievement_rate_percentage'] ?? 0)
+          .toDouble(),
     );
   }
 }
@@ -478,7 +481,8 @@ class InsightsResponse {
 
   factory InsightsResponse.fromJson(Map<String, dynamic> json) {
     return InsightsResponse(
-      insights: (json['insights'] as List<dynamic>?)
+      insights:
+          (json['insights'] as List<dynamic>?)
               ?.map((item) => InsightItem.fromJson(item))
               .toList() ??
           [],

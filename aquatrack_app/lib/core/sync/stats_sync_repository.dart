@@ -13,7 +13,7 @@ class StatsSyncRepository {
   static const String _tag = 'StatsSyncRepository';
 
   final StatsRepository
-      _statsRepository; // TODO: Use when implementing local storage access
+  _statsRepository; // TODO: Use when implementing local storage access
   final SyncService _syncService;
   final ConflictResolver _conflictResolver;
   final Uuid _uuid = const Uuid();
@@ -22,9 +22,9 @@ class StatsSyncRepository {
     required StatsRepository statsRepository,
     required SyncService syncService,
     required ConflictResolver conflictResolver,
-  })  : _statsRepository = statsRepository,
-        _syncService = syncService,
-        _conflictResolver = conflictResolver;
+  }) : _statsRepository = statsRepository,
+       _syncService = syncService,
+       _conflictResolver = conflictResolver;
 
   /// Sync intake logs incrementally
   Future<SyncResult> syncIntakeLogs({DateTime? since}) async {
@@ -116,11 +116,7 @@ class StatsSyncRepository {
           uploadedCount++;
         } catch (e) {
           errors.add('Failed to upload summary: $e');
-          AppLogger.error(
-            _tag,
-            'Failed to upload daily summary',
-            e,
-          );
+          AppLogger.error(_tag, 'Failed to upload daily summary', e);
         }
       }
 
@@ -362,10 +358,7 @@ class StatsSyncRepository {
     DailySummary localSummary,
     Map<String, dynamic> remoteData,
   ) async {
-    AppLogger.info(
-      _tag,
-      'Handling daily summary conflict',
-    );
+    AppLogger.info(_tag, 'Handling daily summary conflict');
 
     final conflict = SyncConflict(
       id: _uuid.v4(),

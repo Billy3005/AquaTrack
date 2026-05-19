@@ -19,6 +19,7 @@ from app.schemas.conversation import (ChatMessageRequest, ChatMessageResponse,
                                       ConversationSessionListResponse,
                                       MessageCreate, MessageResponse,
                                       QuickReplyActionRequest)
+from app.services.ai_coach_service import ai_coach_service
 
 router = APIRouter()
 
@@ -75,9 +76,15 @@ async def chat_with_coach(
     total_today = today_stats["total_effective_ml"]
     log_count_today = today_stats["log_count"]
 
-    # Generate contextual response
-    response = await _generate_coach_response(
-        user_message, context, total_today, log_count_today, current_hour, recent_logs
+    # Generate contextual response using AI Coach service
+    response = await ai_coach_service.generate_coach_response(
+        user_message=user_message,
+        user_context=context,
+        hydration_data={
+            "total_today": total_today,
+            "log_count": log_count_today,
+            "current_hour": current_hour
+        }
     )
 
     return response
@@ -394,14 +401,15 @@ async def send_conversation_message(
         today = date.today()
         today_stats = intake_log_crud.get_daily_stats(db, current_user_id, today)
 
-        # Generate AI response
-        ai_response = await _generate_coach_response(
-            request.content.lower().strip(),
-            request.context or {},
-            today_stats["total_effective_ml"],
-            today_stats["log_count"],
-            datetime.now().hour,
-            [],
+        # Generate AI response using AI Coach service
+        ai_response = await ai_coach_service.generate_coach_response(
+            user_message=request.content.strip(),
+            user_context=request.context or {},
+            hydration_data={
+                "total_today": today_stats["total_effective_ml"],
+                "log_count": today_stats["log_count"],
+                "current_hour": datetime.now().hour
+            }
         )
 
         # Prepare quick replies for storage

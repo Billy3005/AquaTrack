@@ -123,22 +123,19 @@ class SyncDatabase {
   Future<void> upsertSyncMetadata(SyncMetadata metadata) async {
     final db = await database;
 
-    await db.insert(
-        _syncMetadataTable,
-        {
-          'id': metadata.id,
-          'data_type': metadata.dataType.name,
-          'operation': metadata.operation.name,
-          'local_id': metadata.localId,
-          'remote_id': metadata.remoteId,
-          'payload': metadata.payload.toString(),
-          'created_at': metadata.createdAt.millisecondsSinceEpoch,
-          'last_sync_attempt': metadata.lastSyncAttempt?.millisecondsSinceEpoch,
-          'retry_count': metadata.retryCount,
-          'status': metadata.status.name,
-          'error': metadata.error,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert(_syncMetadataTable, {
+      'id': metadata.id,
+      'data_type': metadata.dataType.name,
+      'operation': metadata.operation.name,
+      'local_id': metadata.localId,
+      'remote_id': metadata.remoteId,
+      'payload': metadata.payload.toString(),
+      'created_at': metadata.createdAt.millisecondsSinceEpoch,
+      'last_sync_attempt': metadata.lastSyncAttempt?.millisecondsSinceEpoch,
+      'retry_count': metadata.retryCount,
+      'status': metadata.status.name,
+      'error': metadata.error,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   /// Get pending sync metadata
@@ -344,15 +341,16 @@ class SyncDatabase {
 
     double averageDuration = maps.isNotEmpty
         ? maps.fold(0.0, (sum, m) => sum + (m['duration_ms'] as int)) /
-            maps.length
+              maps.length
         : 0.0;
 
     return {
       'total_syncs': totalSyncs,
       'successful_syncs': successfulSyncs,
       'failed_syncs': failedSyncs,
-      'success_rate':
-          totalSyncs > 0 ? (successfulSyncs / totalSyncs) * 100 : 0.0,
+      'success_rate': totalSyncs > 0
+          ? (successfulSyncs / totalSyncs) * 100
+          : 0.0,
       'total_records_synced': totalRecords,
       'average_duration_ms': averageDuration,
     };

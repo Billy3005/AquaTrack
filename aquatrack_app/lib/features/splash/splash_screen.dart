@@ -85,6 +85,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       final isAuthenticated = await AppService().isUserAuthenticated();
       AppLogger.info('Splash', 'User authenticated: $isAuthenticated');
 
+      // Debug: Check token details
+      final authService = AppService().authService;
+      final accessToken = await authService.getAccessToken();
+      final userData = await authService.getUserData();
+      AppLogger.info('Splash', 'Access token exists: ${accessToken != null}');
+      AppLogger.info('Splash', 'User data exists: ${userData != null}');
+      if (userData != null) {
+        AppLogger.info('Splash', 'User data: $userData');
+      }
+
       if (!mounted) return;
 
       if (isAuthenticated) {

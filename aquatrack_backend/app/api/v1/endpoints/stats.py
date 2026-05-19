@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud.daily_summary import daily_summary_crud
 from app.crud.intake_log import intake_log_crud
+from app.crud.user import user_crud
 from app.models.daily_summary import DailySummary
 from app.models.intake_log import IntakeLog
 
@@ -21,14 +22,26 @@ async def get_dashboard_stats(
     db: Session = Depends(get_db),
 ):
     """
-    Get comprehensive dashboard statistics
+    Get comprehensive dashboard statistics with real user data
     """
+    # Get user for daily goal and streak data
+    user = user_crud.get(db, id=current_user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
     today = date.today()
     week_ago = today - timedelta(days=7)
     month_ago = today - timedelta(days=30)
 
     # Today's stats
     today_stats = intake_log_crud.get_daily_stats(db, current_user_id, today)
+
+    # Calculate today's progress vs user's daily goal
+    today_volume = today_stats["total_effective_ml"]
+    daily_goal = user.daily_goal_ml
+    progress_percentage = min(100, round((today_volume / daily_goal) * 100, 1)) if daily_goal > 0 else 0
 
     # This week's stats
     week_logs = intake_log_crud.get_by_user_date_range(
@@ -50,15 +63,16 @@ async def get_dashboard_stats(
     week_avg_daily = week_total / 7 if week_total > 0 else 0
     month_avg_daily = month_total / 30 if month_total > 0 else 0
 
-    # Current streak calculation
-    current_streak = await _calculate_current_streak(db, current_user_id)
+    # Real streak calculation based on goal achievement
+    current_streak = await _calculate_current_streak(db, current_user_id, daily_goal)
 
     return {
         "today": {
-            "total_effective_ml": today_stats["total_effective_ml"],
+            "total_effective_ml": today_volume,
             "log_count": today_stats["log_count"],
             "total_xp_earned": today_stats["total_xp_earned"],
-            "progress_percentage": 0,  # TODO: Calculate vs goal when user goals implemented
+            "progress_percentage": progress_percentage,  # Real progress vs user goal!
+            "daily_goal_ml": daily_goal,  # Include user's daily goal
         },
         "week": {
             "total_effective_ml": week_total,
@@ -73,8 +87,8 @@ async def get_dashboard_stats(
             "days_with_intake": len(set(log.logged_at.date() for log in month_logs)),
         },
         "streaks": {
-            "current_streak": current_streak,
-            "longest_streak": 0,  # TODO: Implement longest streak calculation
+            "current_streak": current_streak,  # Real streak based on goal achievement
+            "longest_streak": user.longest_streak,  # From user model!
         },
     }
 
@@ -298,8 +312,13 @@ async def get_goal_progress(
     end_date = date.today()
     start_date = end_date - timedelta(days=days - 1)
 
-    # TODO: Get user's daily goal from user settings (default 2000ml for now)
-    daily_goal_ml = 2000
+    # Get user's daily goal from database
+    user = user_crud.get(db, id=current_user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    daily_goal_ml = user.daily_goal_ml
 
     # Get daily summaries or calculate them
     daily_data = []
@@ -363,22 +382,27 @@ async def get_streak_analytics(
     db: Session = Depends(get_db),
 ):
     """
-    Get detailed streak analytics
+    Get detailed streak analytics with real user data
     """
-    # Current streak
-    current_streak = await _calculate_current_streak(db, current_user_id)
+    # Get user for daily goal and streak data
+    user = user_crud.get(db, id=current_user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
-    # TODO: Implement comprehensive streak calculation
-    # This would involve analyzing all daily summaries to find:
-    # - Longest streak ever
-    # - Recent streaks
-    # - Streak patterns
+    # Current streak based on goal achievement
+    current_streak = await _calculate_current_streak(db, current_user_id, user.daily_goal_ml)
+
+    # Real longest streak from user model
+    longest_streak = user.longest_streak
 
     return {
         "current_streak": current_streak,
-        "longest_streak": 0,  # TODO: Implement
+        "longest_streak": longest_streak,  # Real data from user model!
         "streaks_this_month": 0,  # TODO: Implement
         "streak_history": [],  # TODO: Implement
+        "daily_goal_ml": user.daily_goal_ml,  # Include user's goal for reference
     }
 
 
@@ -477,23 +501,27 @@ async def get_ai_insights(
 
 
 # Helper functions
-async def _calculate_current_streak(db: Session, user_id: str) -> int:
-    """Calculate current consecutive days streak"""
+async def _calculate_current_streak(db: Session, user_id: str, daily_goal_ml: int) -> int:
+    """Calculate current consecutive days streak based on goal achievement"""
     today = date.today()
     streak = 0
     current_date = today
 
-    # TODO: This should check daily summaries with goal achievement
-    # For now, just check if user has any logs each day
+    # Check each day working backwards from today
     while True:
-        day_logs = intake_log_crud.get_by_user_and_date(db, user_id, current_date)
-        if day_logs:
+        # Get daily stats for this date
+        day_stats = intake_log_crud.get_daily_stats(db, user_id, current_date)
+        daily_volume = day_stats["total_effective_ml"]
+
+        # Check if user achieved their daily goal
+        if daily_volume >= daily_goal_ml:
             streak += 1
             current_date -= timedelta(days=1)
         else:
+            # Streak broken - stop counting
             break
 
-        # Prevent infinite loop
+        # Prevent infinite loop (max 1 year streak)
         if streak > 365:
             break
 

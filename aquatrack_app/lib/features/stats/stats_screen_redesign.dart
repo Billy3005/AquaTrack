@@ -4,6 +4,8 @@ import 'dart:math' as math;
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../shared/widgets/coin_badge.dart';
+import 'providers/stats_provider.dart';
 
 /// Stats Screen - Complete redesign matching aquatrack/project/components/stats.jsx
 class StatsScreenRedesign extends ConsumerStatefulWidget {
@@ -15,21 +17,14 @@ class StatsScreenRedesign extends ConsumerStatefulWidget {
 }
 
 class _StatsScreenRedesignState extends ConsumerState<StatsScreenRedesign> {
-  String _selectedPeriod = 'week';
-
-  // Sample data for demonstration (in real app, this would come from provider)
-  final List<DayData> weekData = [
-    DayData(day: 'T2', pct: 102),
-    DayData(day: 'T3', pct: 88),
-    DayData(day: 'T4', pct: 100),
-    DayData(day: 'T5', pct: 92),
-    DayData(day: 'T6', pct: 67),
-    DayData(day: 'T7', pct: 80),
-    DayData(day: 'CN', pct: 78),
-  ];
+  StatsPeriod _selectedPeriod = StatsPeriod.week;
 
   @override
   Widget build(BuildContext context) {
+    // Watch stats data from provider
+    final statsAsync = ref.watch(statsNotifierProvider);
+    final statsState = ref.watch(statsNotifierProvider.notifier);
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -43,22 +38,27 @@ class _StatsScreenRedesignState extends ConsumerState<StatsScreenRedesign> {
 
               // Scrollable content
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Wave chart section
-                      _buildWaveChartSection(),
-                      const SizedBox(height: 16),
+                child: statsAsync.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) => _buildErrorState(error.toString()),
+                  data: (statsData) => SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Wave chart section
+                        _buildWaveChartSection(statsData),
+                        const SizedBox(height: 16),
 
-                      // Metric row
-                      _buildMetricRow(),
-                      const SizedBox(height: 18),
+                        // Metric row
+                        _buildMetricRow(),
+                        const SizedBox(height: 18),
 
-                      // AI insights
-                      _buildAIInsights(),
-                    ],
+                        // AI insights
+                        _buildAIInsights(),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -107,7 +107,7 @@ class _StatsScreenRedesignState extends ConsumerState<StatsScreenRedesign> {
               // Controls
               Row(
                 children: [
-                  _buildCoinBadge(1240),
+                  const CoinBadge(amount: 1240),
                   const SizedBox(width: 8),
                   _buildPeriodToggle(),
                 ],
@@ -115,99 +115,6 @@ class _StatsScreenRedesignState extends ConsumerState<StatsScreenRedesign> {
             ],
           ),
           const SizedBox(height: 14),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCoinBadge(int amount) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(6, 4, 9, 4),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0x2DFBBF24), // rgba(251,191,36,0.18)
-            Color(0x0FF59E0B), // rgba(245,158,11,0.06)
-          ],
-        ),
-        border: Border.all(
-          color: const Color(0x73FBBF24), // rgba(251,191,36,0.45)
-        ),
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.06),
-            blurRadius: 0,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildCoinIcon(13),
-          const SizedBox(width: 5),
-          Text(
-            amount.toString(),
-            style: const TextStyle(
-              fontFamily: 'SF Pro Rounded',
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFFFDE68A),
-              fontFeatures: [FontFeature.tabularFigures()],
-              letterSpacing: 0.01,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCoinIcon(double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        gradient: const RadialGradient(
-          center: Alignment(0.35, 0.3),
-          radius: 0.75,
-          colors: [
-            Color(0xFFFEF3C7), // 0%
-            Color(0xFFFBBF24), // 55%
-            Color(0xFFB45309), // 100%
-          ],
-          stops: [0.0, 0.55, 1.0],
-        ),
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFF78350F),
-          width: 0.6,
-        ),
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Inner circle
-          Container(
-            width: size * 0.7,
-            height: size * 0.7,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0xFFFDE68A).withValues(alpha: 0.7),
-                width: 0.8,
-              ),
-            ),
-          ),
-          // Dollar sign
-          Text(
-            '\$',
-            style: TextStyle(
-              fontSize: size * 0.5,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF78350F),
-            ),
-          ),
         ],
       ),
     );
@@ -231,12 +138,13 @@ class _StatsScreenRedesignState extends ConsumerState<StatsScreenRedesign> {
   }
 
   Widget _buildPeriodButton(String value, String label) {
-    final isSelected = _selectedPeriod == value;
+    final period = value == 'week' ? StatsPeriod.week : StatsPeriod.month;
+    final isSelected = _selectedPeriod == period;
 
     return GestureDetector(
       onTap: () {
         setState(() {
-          _selectedPeriod = value;
+          _selectedPeriod = period;
         });
       },
       child: Container(
@@ -250,8 +158,9 @@ class _StatsScreenRedesignState extends ConsumerState<StatsScreenRedesign> {
           style: TextStyle(
             fontSize: 11.5,
             fontWeight: FontWeight.w600,
-            color:
-                isSelected ? const Color(0xFF082F49) : AppColors.textSecondary,
+            color: isSelected
+                ? const Color(0xFF082F49)
+                : AppColors.textSecondary,
             fontFamily: 'SF Pro Text',
           ),
         ),
@@ -259,7 +168,7 @@ class _StatsScreenRedesignState extends ConsumerState<StatsScreenRedesign> {
     );
   }
 
-  Widget _buildWaveChartSection() {
+  Widget _buildWaveChartSection(StatsData statsData) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -328,36 +237,46 @@ class _StatsScreenRedesignState extends ConsumerState<StatsScreenRedesign> {
           const SizedBox(height: 8),
 
           // Wave chart
-          _buildWaveChart(),
+          _buildWaveChart(statsData),
           const SizedBox(height: 6),
 
           // Day labels
-          _buildDayLabels(),
+          _buildDayLabels(statsData),
         ],
       ),
     );
   }
 
-  Widget _buildWaveChart() {
+  Widget _buildWaveChart(StatsData statsData) {
     return SizedBox(
       width: double.infinity,
       height: 120,
       child: CustomPaint(
-        painter: WaveChartPainter(weekData),
+        painter: WaveChartPainter(_convertToWaveData(statsData.chartData)),
       ),
     );
   }
 
-  Widget _buildDayLabels() {
+  Widget _buildDayLabels(StatsData statsData) {
+    // Mock day labels for now
+    final dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
     return Row(
-      children: weekData.asMap().entries.map((entry) {
+      children: dayLabels.asMap().entries.map((entry) {
         final index = entry.key;
-        final data = entry.value;
+        final day = entry.value;
+
+        // Calculate mock percentage from chart data if available
+        final mockPct = index < statsData.chartData.length
+            ? (statsData.chartData[index].value /
+                  statsData.chartData[index].goal *
+                  100)
+            : 50.0;
 
         Color labelColor;
-        if (data.pct >= 100) {
+        if (mockPct >= 100) {
           labelColor = const Color(0xFF86EFAC);
-        } else if (data.pct < 80) {
+        } else if (mockPct < 80) {
           labelColor = const Color(0xFFFCA5A5);
         } else {
           labelColor = AppColors.textSecondary;
@@ -367,7 +286,7 @@ class _StatsScreenRedesignState extends ConsumerState<StatsScreenRedesign> {
           child: Column(
             children: [
               Text(
-                data.day,
+                day,
                 style: TextStyle(
                   fontSize: 10,
                   color: labelColor.withValues(alpha: 0.7),
@@ -375,7 +294,7 @@ class _StatsScreenRedesignState extends ConsumerState<StatsScreenRedesign> {
               ),
               const SizedBox(height: 2),
               Text(
-                '${data.pct}%',
+                '${mockPct.round()}%',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -394,23 +313,35 @@ class _StatsScreenRedesignState extends ConsumerState<StatsScreenRedesign> {
     return Row(
       children: [
         Expanded(
-            child: _buildMetricCard(
-                '84%', 'đạt mục tiêu', const Color(0xFF38BDF8))),
+          child: _buildMetricCard(
+            '84%',
+            'đạt mục tiêu',
+            const Color(0xFF38BDF8),
+          ),
+        ),
         const SizedBox(width: 8),
         Expanded(
-            child: _buildMetricCard(
-                '12', 'ngày streak', const Color(0xFFF97316),
-                suffix: '🔥')),
+          child: _buildMetricCard(
+            '12',
+            'ngày streak',
+            const Color(0xFFF97316),
+            suffix: '🔥',
+          ),
+        ),
         const SizedBox(width: 8),
         Expanded(
-            child:
-                _buildMetricCard('14.7L', 'tuần này', const Color(0xFFA78BFA))),
+          child: _buildMetricCard('14.7L', 'tuần này', const Color(0xFFA78BFA)),
+        ),
       ],
     );
   }
 
-  Widget _buildMetricCard(String value, String label, Color accent,
-      {String? suffix}) {
+  Widget _buildMetricCard(
+    String value,
+    String label,
+    Color accent, {
+    String? suffix,
+  }) {
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
       decoration: BoxDecoration(
@@ -461,11 +392,7 @@ class _StatsScreenRedesignState extends ConsumerState<StatsScreenRedesign> {
       children: [
         Row(
           children: [
-            const Icon(
-              Icons.auto_awesome,
-              color: Color(0xFF38BDF8),
-              size: 14,
-            ),
+            const Icon(Icons.auto_awesome, color: Color(0xFF38BDF8), size: 14),
             const SizedBox(width: 6),
             Text(
               'Gợi ý từ AI',
@@ -566,6 +493,65 @@ class _StatsScreenRedesignState extends ConsumerState<StatsScreenRedesign> {
       ),
     );
   }
+
+  /// Convert ChartDataPoint to DayData format for WaveChartPainter
+  List<DayData> _convertToWaveData(List<ChartDataPoint> chartData) {
+    final dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+    return List.generate(7, (index) {
+      if (index < chartData.length) {
+        final point = chartData[index];
+        final pct = ((point.value / point.goal) * 100).round();
+        return DayData(day: dayLabels[index], pct: pct);
+      } else {
+        // Fill missing days with 0%
+        return DayData(day: dayLabels[index], pct: 0);
+      }
+    });
+  }
+
+  /// Build error state widget
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: AppColors.textSecondary),
+            const SizedBox(height: 16),
+            Text(
+              'Không thể tải dữ liệu',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error,
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                // Trigger refresh
+                ref
+                    .read(statsNotifierProvider.notifier)
+                    .setPeriod(_selectedPeriod);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.cyanAccent,
+              ),
+              child: const Text('Thử lại'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class DayData {
@@ -588,7 +574,9 @@ class WaveChartPainter extends CustomPainter {
 
     // Calculate points
     final xs = List.generate(
-        data.length, (i) => P + i * ((W - 2 * P) / (data.length - 1)));
+      data.length,
+      (i) => P + i * ((W - 2 * P) / (data.length - 1)),
+    );
     final ys = data.map((d) {
       final v = math.min(120, d.pct);
       return H - 8 - v / 120 * (H - 18);
@@ -599,7 +587,8 @@ class WaveChartPainter extends CustomPainter {
 
     // Draw goal line (dashed)
     final goalPaint = Paint()
-      ..color = const Color(0x7338BDF8) // rgba(56,189,248,0.45)
+      ..color =
+          const Color(0x7338BDF8) // rgba(56,189,248,0.45)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 

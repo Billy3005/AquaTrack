@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
+import '../../shared/widgets/coin_badge.dart';
+import 'providers/level_provider.dart';
+import 'widgets/achievement_badges_grid.dart';
+import 'widgets/avatar_collection_showcase.dart';
 
 /// Level Screen - Complete redesign matching aquatrack/project/components/level.jsx
 class LevelScreenRedesign extends ConsumerStatefulWidget {
@@ -15,48 +17,150 @@ class LevelScreenRedesign extends ConsumerStatefulWidget {
 }
 
 class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
+  /// Get level name from level number
+  String _getLevelName(int level) {
+    if (level >= 15) return 'Huyền thoại Hydrate';
+    if (level >= 10) return 'Bậc thầy Đại dương';
+    if (level >= 7) return 'Chiến binh Nước';
+    if (level >= 5) return 'Hiệp sĩ Nước';
+    if (level >= 3) return 'Người bắt đầu';
+    return 'Giọt nước nhỏ';
+  }
+
+  /// Convert IconData to emoji string for achievement display
+  String _getAchievementIcon(IconData icon) {
+    if (icon == Icons.star) return '⭐';
+    if (icon == Icons.military_tech) return '🔥';
+    if (icon == Icons.emoji_events) return '🏆';
+    if (icon == Icons.water_drop) return '💧';
+    if (icon == Icons.local_fire_department) return '🔥';
+    if (icon == Icons.trending_up) return '📈';
+    if (icon == Icons.repeat) return '🔄';
+    return '🎖️'; // Default achievement icon
+  }
+
+  /// Get color for avatar based on its id
+  Color _getAvatarColor(String avatarId) {
+    switch (avatarId) {
+      case 'water_drop':
+        return const Color(0xFF38BDF8);
+      case 'wave':
+        return const Color(0xFF0EA5E9);
+      case 'ocean':
+        return const Color(0xFF0284C7);
+      case 'glacier':
+        return const Color(0xFFA78BFA);
+      case 'cloud':
+        return const Color(0xFF94A3B8);
+      case 'rain':
+        return const Color(0xFF60A5FA);
+      case 'storm':
+        return const Color(0xFF6366F1);
+      default:
+        return const Color(0xFF38BDF8); // Default blue color
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final levelState = ref.watch(levelNotifierProvider);
+
     return Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
         color: AppColors.nightBase,
         child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              _buildHeader(),
+          child: levelState.when(
+            loading: () => _buildLoadingState(),
+            error: (error, stack) => _buildErrorState(error),
+            data: (levelData) => Column(
+              children: [
+                // Header
+                _buildHeader(levelData),
 
-              // Scrollable content
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Level card
-                      _buildLevelCard(),
-                      const SizedBox(height: 16),
+                // Scrollable content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Level card
+                        _buildLevelCard(levelData),
+                        const SizedBox(height: 16),
 
-                      // Achievements
-                      _buildAchievementsSection(),
-                      const SizedBox(height: 18),
+                        // Achievements
+                        _buildAchievementsSection(levelData),
+                        const SizedBox(height: 18),
 
-                      // Rewards
-                      _buildRewardsSection(),
-                    ],
+                        // Rewards
+                        _buildRewardsSection(levelData),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.cyanAccent),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Đang tải dữ liệu cấp độ...',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(Object error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, color: Colors.red, size: 48),
+          const SizedBox(height: 16),
+          Text(
+            'Có lỗi khi tải dữ liệu',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error.toString(),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => ref.refresh(levelNotifierProvider),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.cyanAccent,
+            ),
+            child: const Text('Thử lại'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(LevelState levelData) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 54, 20, 12),
       child: Row(
@@ -90,107 +194,14 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
             ],
           ),
 
-          // Coin badge
-          _buildCoinBadge(1240),
+          // Coin badge - use XP as coins for now
+          CoinBadge(amount: levelData.currentXP),
         ],
       ),
     );
   }
 
-  Widget _buildCoinBadge(int amount) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(6, 4, 9, 4),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0x2DFBBF24), // rgba(251,191,36,0.18)
-            Color(0x0FF59E0B), // rgba(245,158,11,0.06)
-          ],
-        ),
-        border: Border.all(
-          color: const Color(0x73FBBF24), // rgba(251,191,36,0.45)
-        ),
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.06),
-            blurRadius: 0,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildCoinIcon(13),
-          const SizedBox(width: 5),
-          Text(
-            amount.toString(),
-            style: const TextStyle(
-              fontFamily: 'SF Pro Rounded',
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFFFDE68A),
-              fontFeatures: [FontFeature.tabularFigures()],
-              letterSpacing: 0.01,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCoinIcon(double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        gradient: const RadialGradient(
-          center: Alignment(0.35, 0.3),
-          radius: 0.75,
-          colors: [
-            Color(0xFFFEF3C7), // 0%
-            Color(0xFFFBBF24), // 55%
-            Color(0xFFB45309), // 100%
-          ],
-          stops: [0.0, 0.55, 1.0],
-        ),
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFF78350F),
-          width: 0.6,
-        ),
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Inner circle
-          Container(
-            width: size * 0.7,
-            height: size * 0.7,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0xFFFDE68A).withValues(alpha: 0.7),
-                width: 0.8,
-              ),
-            ),
-          ),
-          // Dollar sign
-          Text(
-            '\$',
-            style: TextStyle(
-              fontSize: size * 0.5,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF78350F),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLevelCard() {
+  Widget _buildLevelCard(LevelState levelData) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -245,9 +256,9 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
-                          'Chiến binh Nước',
-                          style: TextStyle(
+                        Text(
+                          _getLevelName(levelData.currentLevel),
+                          style: const TextStyle(
                             fontSize: 30,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -257,10 +268,10 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Còn 760 XP để lên Lv 8',
-                          style: TextStyle(
+                          'Còn ${levelData.nextLevelXP - levelData.currentXP} XP để lên Lv ${levelData.currentLevel + 1}',
+                          style: const TextStyle(
                             fontSize: 12,
-                            color: const Color(0xFFC7D2FE),
+                            color: Color(0xFFC7D2FE),
                             fontFamily: 'SF Pro Text',
                           ),
                         ),
@@ -280,9 +291,9 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
                         ),
                       ],
                     ),
-                    child: const Text(
-                      'LV 7',
-                      style: TextStyle(
+                    child: Text(
+                      'LV ${levelData.currentLevel}',
+                      style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFFE0E7FF),
@@ -296,11 +307,11 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
               const SizedBox(height: 18),
 
               // XP Bar
-              _buildXPBar(),
+              _buildXPBar(levelData),
               const SizedBox(height: 14),
 
               // Level ladder
-              _buildLevelLadder(),
+              _buildLevelLadder(levelData),
             ],
           ),
         ],
@@ -308,12 +319,12 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
     );
   }
 
-  Widget _buildXPBar() {
-    const xp = 1240;
-    const xpMax = 2000;
-    const level = 7;
-    const levelName = 'Chiến binh Nước';
-    final pct = (xp / xpMax * 100).clamp(0, 100);
+  Widget _buildXPBar(LevelState levelData) {
+    final xp = levelData.currentXP;
+    final xpMax = levelData.nextLevelXP;
+    final level = levelData.currentLevel;
+    final levelName = _getLevelName(level);
+    final pct = xpMax > 0 ? (xp / xpMax * 100).clamp(0, 100) : 0.0;
 
     return Column(
       children: [
@@ -323,9 +334,9 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
           children: [
             Row(
               children: [
-                const Text(
-                  'LV 7',
-                  style: TextStyle(
+                Text(
+                  'LV $level',
+                  style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: AppColors.purpleXP,
@@ -334,18 +345,18 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
                   ),
                 ),
                 const SizedBox(width: 6),
-                const Text(
-                  '· Chiến binh Nước',
-                  style: TextStyle(
+                Text(
+                  '· $levelName',
+                  style: const TextStyle(
                     fontSize: 11,
                     color: AppColors.textSecondary,
                   ),
                 ),
               ],
             ),
-            const Text(
-              '1240 / 2000 XP',
-              style: TextStyle(
+            Text(
+              '$xp / $xpMax XP',
+              style: const TextStyle(
                 fontSize: 10,
                 color: AppColors.textMuted,
                 fontFeatures: [FontFeature.tabularFigures()],
@@ -385,12 +396,29 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
     );
   }
 
-  Widget _buildLevelLadder() {
+  Widget _buildLevelLadder(LevelState levelData) {
+    final currentLevel = levelData.currentLevel;
     final levels = [
-      LevelInfo(lv: 5, name: 'Hiệp sĩ Nước', isCurrent: false),
-      LevelInfo(lv: 7, name: 'Chiến binh Nước', isCurrent: true),
-      LevelInfo(lv: 10, name: 'Bậc thầy Đại dương', isCurrent: false),
-      LevelInfo(lv: 15, name: 'Huyền thoại Hydrate', isCurrent: false),
+      LevelInfo(
+        lv: currentLevel - 2 > 0 ? currentLevel - 2 : 1,
+        name: _getLevelName(currentLevel - 2 > 0 ? currentLevel - 2 : 1),
+        isCurrent: false,
+      ),
+      LevelInfo(
+        lv: currentLevel,
+        name: _getLevelName(currentLevel),
+        isCurrent: true,
+      ),
+      LevelInfo(
+        lv: currentLevel + 3,
+        name: _getLevelName(currentLevel + 3),
+        isCurrent: false,
+      ),
+      LevelInfo(
+        lv: currentLevel + 8,
+        name: _getLevelName(currentLevel + 8),
+        isCurrent: false,
+      ),
     ];
 
     return Row(
@@ -431,7 +459,7 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
     );
   }
 
-  Widget _buildAchievementsSection() {
+  Widget _buildAchievementsSection(LevelState levelData) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -445,43 +473,26 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
           ),
         ),
         const SizedBox(height: 10),
-        GridView.count(
-          crossAxisCount: 2,
+        GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.1,
+          ),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 1.1,
-          children: [
-            _buildAchievementCard(
-              icon: '🔥',
-              name: 'Streak 7 ngày',
-              condition: 'Streak 7 ngày liên tiếp',
-              reward: '+50 XP',
-              unlocked: true,
-            ),
-            _buildAchievementCard(
-              icon: '⭐',
-              name: 'Đủ nước 5 lần',
-              condition: '5× đạt mục tiêu',
-              reward: 'Mở khoá theme',
-              unlocked: true,
-            ),
-            _buildAchievementCard(
-              icon: '🌊',
-              name: 'Tuần 14L',
-              condition: '2.000ml × 7 ngày',
-              reward: 'Khung avatar',
-              unlocked: false,
-            ),
-            _buildAchievementCard(
-              icon: '🏆',
-              name: 'Top 10% tuần',
-              condition: 'Bảng xếp hạng',
-              reward: 'Huy hiệu đặc biệt',
-              unlocked: false,
-            ),
-          ],
+          itemCount: levelData.achievements.length,
+          itemBuilder: (context, index) {
+            final achievement = levelData.achievements[index];
+            return _buildAchievementCard(
+              icon: _getAchievementIcon(achievement.icon),
+              name: achievement.title,
+              condition: achievement.description,
+              reward: '+${achievement.requiredValue ~/ 10} XP',
+              unlocked: achievement.isUnlocked,
+            );
+          },
         ),
       ],
     );
@@ -567,7 +578,7 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
     );
   }
 
-  Widget _buildRewardsSection() {
+  Widget _buildRewardsSection(LevelState levelData) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -601,7 +612,7 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
             ),
           ),
           const SizedBox(height: 8),
-          _buildAvatarGrid(),
+          _buildAvatarGrid(levelData),
           const SizedBox(height: 14),
 
           // Themes section
@@ -622,20 +633,13 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
     );
   }
 
-  Widget _buildAvatarGrid() {
-    final avatars = [
-      AvatarInfo(color: const Color(0xFF38BDF8), name: 'Drop', unlocked: true),
-      AvatarInfo(color: const Color(0xFF0EA5E9), name: 'Wave', unlocked: true),
-      AvatarInfo(
-          color: const Color(0xFF0284C7), name: 'Ocean', unlocked: false),
-      AvatarInfo(
-          color: const Color(0xFFA78BFA), name: 'Glacier', unlocked: false),
-      AvatarInfo(
-          color: const Color(0xFF94A3B8), name: 'Cloud', unlocked: false),
-    ];
+  Widget _buildAvatarGrid(LevelState levelData) {
+    // Take first 5 avatars from levelData or show all if less than 5
+    final avatars = levelData.avatars.take(5).toList();
 
     return Row(
       children: avatars.map((avatar) {
+        final avatarColor = _getAvatarColor(avatar.id);
         return Expanded(
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 5),
@@ -645,31 +649,31 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
                   aspectRatio: 1,
                   child: Container(
                     decoration: BoxDecoration(
-                      gradient: avatar.unlocked
+                      gradient: avatar.isUnlocked
                           ? RadialGradient(
                               center: const Alignment(0.3, 0.3),
                               colors: [
-                                avatar.color.withValues(alpha: 0.87),
-                                avatar.color.withValues(alpha: 0.4),
+                                avatarColor.withValues(alpha: 0.87),
+                                avatarColor.withValues(alpha: 0.4),
                               ],
                             )
                           : null,
-                      color: avatar.unlocked
+                      color: avatar.isUnlocked
                           ? null
                           : Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
-                      border: avatar.unlocked
+                      border: avatar.isUnlocked
                           ? Border.all(
-                              color: avatar.color.withValues(alpha: 0.53),
+                              color: avatarColor.withValues(alpha: 0.53),
                             )
                           : Border.all(
                               color: Colors.white.withValues(alpha: 0.15),
                               style: BorderStyle.solid,
                             ),
-                      boxShadow: avatar.unlocked
+                      boxShadow: avatar.isUnlocked
                           ? [
                               BoxShadow(
-                                color: avatar.color.withValues(alpha: 0.2),
+                                color: avatarColor.withValues(alpha: 0.2),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
@@ -677,13 +681,12 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
                           : null,
                     ),
                     child: Center(
-                      child: avatar.unlocked
-                          ? const Icon(
-                              Icons.water_drop,
-                              color: Colors.white,
-                              size: 18,
+                      child: avatar.isUnlocked
+                          ? Text(
+                              avatar.emoji,
+                              style: const TextStyle(fontSize: 18),
                             )
-                          : Text(
+                          : const Text(
                               '🔒',
                               style: TextStyle(
                                 fontSize: 11,
@@ -696,7 +699,7 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
                 const SizedBox(height: 4),
                 Text(
                   avatar.name,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 9.5,
                     color: AppColors.textSecondary,
                     fontFamily: 'SF Pro Rounded',
@@ -768,10 +771,7 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
                     gradient: theme.gradient,
                     borderRadius: BorderRadius.circular(8),
                     border: theme.current
-                        ? Border.all(
-                            color: const Color(0xFFFBBF24),
-                            width: 2,
-                          )
+                        ? Border.all(color: const Color(0xFFFBBF24), width: 2)
                         : Border.all(
                             color: Colors.white.withValues(alpha: 0.1),
                           ),
@@ -780,10 +780,7 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
                       ? const Center(
                           child: Text(
                             '🔒',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.white,
-                            ),
+                            style: TextStyle(fontSize: 10, color: Colors.white),
                           ),
                         )
                       : null,
@@ -812,11 +809,7 @@ class LevelInfo {
   final String name;
   final bool isCurrent;
 
-  LevelInfo({
-    required this.lv,
-    required this.name,
-    required this.isCurrent,
-  });
+  LevelInfo({required this.lv, required this.name, required this.isCurrent});
 }
 
 class AvatarInfo {
@@ -824,11 +817,7 @@ class AvatarInfo {
   final String name;
   final bool unlocked;
 
-  AvatarInfo({
-    required this.color,
-    required this.name,
-    required this.unlocked,
-  });
+  AvatarInfo({required this.color, required this.name, required this.unlocked});
 }
 
 class ThemeInfo {

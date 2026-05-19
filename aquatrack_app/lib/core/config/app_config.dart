@@ -3,12 +3,12 @@ class AppConfig {
   // Private constructor to prevent instantiation
   AppConfig._();
 
-  // API Configuration (temporary port 8001 for testing)
-  static const String apiBaseUrl = 'http://localhost:8001';
+  // API Configuration (updated to working port 8002)
+  static const String apiBaseUrl = 'http://localhost:8004';
   static const String apiVersion = 'v1';
 
   // Simple endpoints for CORS testing
-  static const String simpleLoginUrl = 'http://localhost:8001/simple-login';
+  static const String simpleLoginUrl = 'http://localhost:8003/simple-login';
   static const Duration apiTimeout = Duration(seconds: 30);
   static const Duration connectTimeout = Duration(seconds: 10);
   static const Duration receiveTimeout = Duration(seconds: 30);
@@ -62,10 +62,10 @@ class AppConfig {
 
   /// Get configuration based on environment
   static Map<String, dynamic> get config => {
-        'apiBaseUrl': apiBaseUrl,
-        'apiTimeout': apiTimeout.inMilliseconds,
-        'enableLogging': enableLogging && isDebug,
-        'enableAnalytics': enableAnalytics && isProduction,
-        'maxRetries': maxRetries,
-      };
+    'apiBaseUrl': apiBaseUrl,
+    'apiTimeout': apiTimeout.inMilliseconds,
+    'enableLogging': enableLogging && isDebug,
+    'enableAnalytics': enableAnalytics && isProduction,
+    'maxRetries': maxRetries,
+  };
 }

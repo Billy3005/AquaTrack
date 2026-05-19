@@ -9,7 +9,7 @@ class IntakeRepository {
   final ApiService _apiService;
 
   IntakeRepository({ApiService? apiService})
-      : _apiService = apiService ?? ApiService();
+    : _apiService = apiService ?? ApiService();
 
   /// Create new intake log entry
   Future<IntakeLog> createIntakeLog({

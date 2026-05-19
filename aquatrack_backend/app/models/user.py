@@ -62,6 +62,20 @@ class User(Base):
     achievements = relationship(
         "Achievement", back_populates="user", cascade="all, delete-orphan"
     )
+    scan_history = relationship(
+        "ScanHistory", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    # Social relationships
+    friends = relationship(
+        "Friend", foreign_keys="Friend.user_id", back_populates="user", cascade="all, delete-orphan"
+    )
+    leaderboard_entries = relationship(
+        "LeaderboardEntry", back_populates="user", cascade="all, delete-orphan"
+    )
+    insights = relationship(
+        "UserInsight", back_populates="user", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, username={self.username})>"

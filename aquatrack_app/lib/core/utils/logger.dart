@@ -110,8 +110,9 @@ class AppLogger {
   static void userAction(String action, [Map<String, dynamic>? properties]) {
     if (!AppConfig.enableAnalytics) return;
 
-    final message =
-        properties != null ? '$action: ${properties.toString()}' : action;
+    final message = properties != null
+        ? '$action: ${properties.toString()}'
+        : action;
 
     info('UserAction', message);
   }

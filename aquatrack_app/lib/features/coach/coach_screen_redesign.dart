@@ -5,7 +5,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../shared/models/daily_summary.dart';
 import '../home/providers/home_provider.dart';
+import 'models/chat_message.dart';
+import 'providers/coach_chat_provider.dart';
 
 /// Coach Screen - Complete redesign matching aquatrack/project/components/coach.jsx
 class CoachScreenRedesign extends ConsumerStatefulWidget {
@@ -23,32 +26,7 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
   late AnimationController _typingController;
   late Animation<double> _typingAnimation;
 
-  // Sample messages to demonstrate the UI (in real app, this would come from provider)
-  List<ChatMessage> messages = [
-    ChatMessage(
-      from: MessageSender.ai,
-      text:
-          'Chào buổi chiều! Bạn vừa log một ly cà phê đá 180ml — cà phê có tính lợi tiểu nhẹ ☕',
-      time: '14:46',
-    ),
-    ChatMessage(
-      from: MessageSender.ai,
-      text: 'Mình đề xuất uống thêm +250ml trong 30 phút tới để bù lại nhé.',
-      time: '14:46',
-      quickReplies: ['Uống 250ml ngay', 'Xem tiến độ', 'Đặt nhắc nhở'],
-    ),
-    ChatMessage(
-      from: MessageSender.user,
-      text: 'Trời nóng lắm hôm nay 😅',
-      time: '14:48',
-    ),
-    ChatMessage(
-      from: MessageSender.ai,
-      text:
-          'Đúng rồi — HCMC đang 34°C. Mình đã tự động tăng goal hôm nay từ 2,500ml lên 2,800ml. Bạn còn 1,350ml nữa.',
-      time: '14:48',
-    ),
-  ];
+  // Messages are now handled by provider
 
   @override
   void initState() {
@@ -59,13 +37,9 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-    _typingAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _typingController,
-      curve: Curves.easeInOut,
-    ));
+    _typingAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _typingController, curve: Curves.easeInOut),
+    );
 
     _typingController.repeat(reverse: true);
   }
@@ -78,45 +52,26 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
     super.dispose();
   }
 
-  void _sendMessage(String text) {
+  Future<void> _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
-    final now = TimeOfDay.now();
-    final timeString =
-        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    _textController.clear();
 
-    setState(() {
-      messages.add(ChatMessage(
-        from: MessageSender.user,
-        text: text,
-        time: timeString,
-      ));
-      _textController.clear();
-    });
-
-    // Simulate AI response
-    Future.delayed(const Duration(milliseconds: 700), () {
-      if (mounted) {
-        setState(() {
-          messages.add(ChatMessage(
-            from: MessageSender.ai,
-            text: 'Mình hiểu rồi — sẽ điều chỉnh lịch nhắc cho phù hợp 💙',
-            time: timeString,
-          ));
-        });
-        _scrollToBottom();
-      }
-    });
+    // Send message via provider
+    await ref.read(coachChatNotifierProvider.notifier).sendMessage(text);
 
     _scrollToBottom();
   }
 
-  void _handleQuickReply(String reply) {
+  Future<void> _handleQuickReply(String reply) async {
+    // Handle special actions
     if (reply == 'Uống 250ml ngay') {
       // Log water
-      ref.read(homeNotifierProvider.notifier).quickLog(250);
+      await ref.read(homeNotifierProvider.notifier).quickLog(250);
     }
-    _sendMessage(reply);
+
+    // Send as message via provider
+    await ref.read(coachChatNotifierProvider.notifier).sendMessage(reply);
   }
 
   void _scrollToBottom() {
@@ -131,9 +86,56 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
     });
   }
 
+  /// Build empty state when no messages
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.cyanAccent.withValues(alpha: 0.2),
+                  AppColors.cyanAccent.withValues(alpha: 0.1),
+                ],
+              ),
+              border: Border.all(
+                color: AppColors.cyanAccent.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Icon(
+              Icons.chat_bubble_outline,
+              size: 32,
+              color: AppColors.cyanAccent,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Bắt đầu cuộc trò chuyện',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'AQUA AI Coach sẵn sàng hỗ trợ bạn!',
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final homeSummaryAsync = ref.watch(homeNotifierProvider);
+    final conversationState = ref.watch(coachChatNotifierProvider);
 
     return Scaffold(
       body: Container(
@@ -158,13 +160,17 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
 
                       // Message list
                       Expanded(
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          itemCount: messages.length,
-                          itemBuilder: (context, index) {
-                            return _buildMessageBubble(messages[index]);
-                          },
-                        ),
+                        child: conversationState.messages.isEmpty
+                            ? _buildEmptyState()
+                            : ListView.builder(
+                                controller: _scrollController,
+                                itemCount: conversationState.messages.length,
+                                itemBuilder: (context, index) {
+                                  return _buildMessageBubble(
+                                    conversationState.messages[index],
+                                  );
+                                },
+                              ),
                       ),
                     ],
                   ),
@@ -180,11 +186,11 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
     );
   }
 
-  Widget _buildHeader(dynamic homeSummaryAsync) {
+  Widget _buildHeader(AsyncValue<DailySummary> homeSummaryAsync) {
     return homeSummaryAsync.when(
       data: (summary) {
-        final current = summary?.totalEffectiveMl ?? 1450;
-        final goal = summary?.dailyGoalMl ?? 2800;
+        final current = summary.totalEffectiveMl;
+        final goal = summary.dailyGoalMl;
         final percent = ((current / goal) * 100).clamp(0, 100).round();
 
         return Container(
@@ -213,8 +219,9 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color:
-                              const Color(0x9938BDF8), // rgba(56,189,248,0.6)
+                          color: const Color(
+                            0x9938BDF8,
+                          ), // rgba(56,189,248,0.6)
                           blurRadius: 20,
                         ),
                       ],
@@ -276,7 +283,9 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
                     onTap: () => context.go('/'),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.06),
                         border: Border.all(
@@ -360,14 +369,15 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
                                   gradient: const LinearGradient(
                                     colors: [
                                       Color(0xFF0EA5E9),
-                                      Color(0xFF38BDF8)
+                                      Color(0xFF38BDF8),
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(999),
                                   boxShadow: [
                                     BoxShadow(
                                       color: const Color(
-                                          0x9938BDF8), // rgba(56,189,248,0.6)
+                                        0x9938BDF8,
+                                      ), // rgba(56,189,248,0.6)
                                       blurRadius: 8,
                                     ),
                                   ],
@@ -400,9 +410,7 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
         ),
       ),
       padding: const EdgeInsets.fromLTRB(16, 50, 16, 14),
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
+      child: const Center(child: CircularProgressIndicator()),
     );
   }
 
@@ -437,13 +445,14 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
   }
 
   Widget _buildMessageBubble(ChatMessage message) {
-    final isAi = message.from == MessageSender.ai;
+    final isAi = !message.isFromUser;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
-        crossAxisAlignment:
-            isAi ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+        crossAxisAlignment: isAi
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.end,
         children: [
           Container(
             constraints: BoxConstraints(
@@ -476,7 +485,7 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
                     ],
             ),
             child: Text(
-              message.text,
+              message.content,
               style: TextStyle(
                 fontSize: 13.5,
                 height: 1.45,
@@ -487,7 +496,7 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
           ),
 
           // Quick replies
-          if (message.quickReplies != null && message.quickReplies!.isNotEmpty)
+          if (message.quickReplies.isNotEmpty)
             Container(
               margin: const EdgeInsets.only(top: 8),
               constraints: BoxConstraints(
@@ -496,21 +505,22 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
               child: Wrap(
                 spacing: 6,
                 runSpacing: 6,
-                children: message.quickReplies!.map((reply) {
+                children: message.quickReplies.map((reply) {
                   return GestureDetector(
-                    onTap: () => _handleQuickReply(reply),
+                    onTap: () => _handleQuickReply(reply.text),
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
                       decoration: BoxDecoration(
                         color: const Color(0x1F38BDF8), // rgba(56,189,248,0.12)
                         border: Border.all(
-                          color:
-                              const Color(0x4D38BDF8), // rgba(56,189,248,0.3)
+                          color: const Color(
+                            0x4D38BDF8,
+                          ), // rgba(56,189,248,0.3)
                         ),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        reply,
+                        reply.text,
                         style: const TextStyle(
                           fontSize: 11.5,
                           fontFamily: 'SF Pro Text',
@@ -529,7 +539,7 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
             margin: const EdgeInsets.only(top: 4),
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
-              message.time,
+              message.timeDisplay,
               style: TextStyle(
                 fontSize: 9.5,
                 color: AppColors.textMuted,
@@ -623,18 +633,15 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
                         ? [
                             BoxShadow(
                               color: const Color(
-                                  0x660EA5E9), // rgba(14,165,233,0.4)
+                                0x660EA5E9,
+                              ), // rgba(14,165,233,0.4)
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
                           ]
                         : null,
                   ),
-                  child: const Icon(
-                    Icons.send,
-                    color: Colors.white,
-                    size: 18,
-                  ),
+                  child: const Icon(Icons.send, color: Colors.white, size: 18),
                 ),
               ),
             ],
@@ -646,18 +653,4 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
 }
 
 // Message model
-class ChatMessage {
-  final MessageSender from;
-  final String text;
-  final String time;
-  final List<String>? quickReplies;
-
-  ChatMessage({
-    required this.from,
-    required this.text,
-    required this.time,
-    this.quickReplies,
-  });
-}
-
-enum MessageSender { ai, user }
+// Local classes removed - using models/chat_message.dart instead

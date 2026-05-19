@@ -39,6 +39,7 @@ class BottomNavigationWrapper extends StatelessWidget {
 
       // FAB for Smart Scan (floating camera button)
       floatingActionButton: FloatingActionButton(
+        heroTag: "smart_scan_fab", // Unique hero tag to prevent conflicts
         onPressed: () => context.push('/smart-scan'),
         backgroundColor: AppColors.cyan,
         foregroundColor: AppColors.textPrimary,

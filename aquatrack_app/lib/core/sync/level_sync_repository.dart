@@ -17,8 +17,8 @@ class LevelSyncRepository {
   LevelSyncRepository({
     required SyncService syncService,
     required ConflictResolver conflictResolver,
-  })  : _syncService = syncService,
-        _conflictResolver = conflictResolver;
+  }) : _syncService = syncService,
+       _conflictResolver = conflictResolver;
 
   /// Sync user level and XP incrementally
   Future<LevelSyncResult> syncUserLevel({DateTime? since}) async {

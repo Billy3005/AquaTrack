@@ -78,9 +78,7 @@ class CoachNotifier extends _$CoachNotifier {
   Future<ConversationState> _loadConversationFromApi() async {
     try {
       // Try to get recent conversation session
-      final sessions = await _coachRepository.getConversationSessions(
-        limit: 1,
-      );
+      final sessions = await _coachRepository.getConversationSessions(limit: 1);
 
       if (sessions == null) {
         throw Exception('Failed to load sessions');
@@ -109,7 +107,8 @@ class CoachNotifier extends _$CoachNotifier {
       debugPrint('❌ Failed to load conversation from API: $e');
 
       // Only fallback to local storage for genuine connectivity issues
-      final isConnectivityError = e.toString().contains('SocketException') ||
+      final isConnectivityError =
+          e.toString().contains('SocketException') ||
           e.toString().contains('HttpException') ||
           e.toString().contains('TimeoutException') ||
           e.toString().contains('Connection refused') ||
@@ -186,8 +185,9 @@ class CoachNotifier extends _$CoachNotifier {
     // Try to load existing conversation
     final savedConversation = storage.loadCoachConversation();
     if (savedConversation != null && savedConversation.isNotEmpty) {
-      final messages =
-          savedConversation.map((json) => ChatMessage.fromJson(json)).toList();
+      final messages = savedConversation
+          .map((json) => ChatMessage.fromJson(json))
+          .toList();
 
       return ConversationState(messages: messages, lastUpdated: DateTime.now());
     }
@@ -250,8 +250,9 @@ class CoachNotifier extends _$CoachNotifier {
       todayIntake: todaysSummary?.totalEffectiveMl ?? 0,
       dailyGoal: todaysSummary?.dailyGoalMl ?? 2000,
       recentAchievements: recentAchievements,
-      overallHealthStatus:
-          ref.read(bodyMapNotifierProvider.notifier).overallHealthMessage,
+      overallHealthStatus: ref
+          .read(bodyMapNotifierProvider.notifier)
+          .overallHealthMessage,
     );
   }
 
@@ -338,8 +339,9 @@ class CoachNotifier extends _$CoachNotifier {
   Future<void> _saveConversationLocal() async {
     state.whenData((currentState) async {
       final storage = HiveStorageService.instance;
-      final messagesJson =
-          currentState.messages.map((msg) => msg.toJson()).toList();
+      final messagesJson = currentState.messages
+          .map((msg) => msg.toJson())
+          .toList();
       await storage.saveCoachConversation(messagesJson);
     });
   }
@@ -756,8 +758,9 @@ class CoachNotifier extends _$CoachNotifier {
   Future<void> _saveConversation() async {
     state.whenData((currentState) async {
       final storage = HiveStorageService.instance;
-      final messagesJson =
-          currentState.messages.map((msg) => msg.toJson()).toList();
+      final messagesJson = currentState.messages
+          .map((msg) => msg.toJson())
+          .toList();
       await storage.saveCoachConversation(messagesJson);
     });
   }

@@ -123,7 +123,8 @@ class InsightsCards extends StatelessWidget {
           icon: Icons.local_fire_department,
           iconColor: AppColors.streakOrange,
           title: 'Streak Master! 🔥',
-          message: '${statsData.streakDays} ngày liên tiếp! '
+          message:
+              '${statsData.streakDays} ngày liên tiếp! '
               'Bạn đang xây dựng thói quen lành mạnh bền vững. Cứ tiếp tục như vậy nhé!',
           type: InsightType.achievement,
         ),
@@ -134,7 +135,8 @@ class InsightsCards extends StatelessWidget {
           icon: Icons.trending_up,
           iconColor: AppColors.success,
           title: 'Momentum tốt!',
-          message: '${statsData.streakDays} ngày liên tiếp đạt mục tiêu. '
+          message:
+              '${statsData.streakDays} ngày liên tiếp đạt mục tiêu. '
               'Chỉ cần thêm vài ngày nữa là bạn sẽ tạo thói quen bền vững!',
           type: InsightType.encouraging,
         ),

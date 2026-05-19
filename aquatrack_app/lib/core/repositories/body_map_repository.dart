@@ -8,7 +8,7 @@ class BodyMapRepository {
   final ApiService _apiService;
 
   BodyMapRepository({ApiService? apiService})
-      : _apiService = apiService ?? ApiService();
+    : _apiService = apiService ?? ApiService();
 
   /// Get current hydration status for body map
   Future<BodyMapApiResponse<HydrationStatus>> getHydrationStatus() async {
@@ -50,8 +50,9 @@ class BodyMapRepository {
       }
 
       final trendsData = response.data!['data'] as List<dynamic>;
-      final hydrationTrends =
-          trendsData.map((item) => DailyHydrationData.fromJson(item)).toList();
+      final hydrationTrends = trendsData
+          .map((item) => DailyHydrationData.fromJson(item))
+          .toList();
 
       return BodyMapApiResponse.success(hydrationTrends);
     } catch (e) {
@@ -239,12 +240,12 @@ class GoalProgressData {
       dailyGoalML: goalInfo['daily_goal_ml'] ?? 2000,
       daysAchieved: goalInfo['days_achieved'] ?? 0,
       totalDaysAnalyzed: goalInfo['total_days_analyzed'] ?? 0,
-      achievementRatePercentage:
-          (goalInfo['achievement_rate_percentage'] ?? 0).toDouble(),
-      averageProgressPercentage:
-          (averages['average_progress_percentage'] ?? 0).toDouble(),
-      averageDailyIntakeML:
-          (averages['average_daily_intake_ml'] ?? 0).toDouble(),
+      achievementRatePercentage: (goalInfo['achievement_rate_percentage'] ?? 0)
+          .toDouble(),
+      averageProgressPercentage: (averages['average_progress_percentage'] ?? 0)
+          .toDouble(),
+      averageDailyIntakeML: (averages['average_daily_intake_ml'] ?? 0)
+          .toDouble(),
       dailyData: dailyDataList
           .map((item) => DailyGoalProgress.fromJson(item))
           .toList(),

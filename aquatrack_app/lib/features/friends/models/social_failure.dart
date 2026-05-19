@@ -39,9 +39,8 @@ class SocialFailure with _$SocialFailure {
     String? details,
   }) = _ServerFailure;
 
-  const factory SocialFailure.timeout({
-    required String message,
-  }) = _TimeoutFailure;
+  const factory SocialFailure.timeout({required String message}) =
+      _TimeoutFailure;
 
   const factory SocialFailure.unknown({
     required String message,
@@ -73,10 +72,7 @@ class SocialFailure with _$SocialFailure {
           statusCode: statusCode,
         );
       case 404:
-        return SocialFailure.notFound(
-          message: message,
-          statusCode: statusCode,
-        );
+        return SocialFailure.notFound(message: message, statusCode: statusCode);
       case >= 500:
         return SocialFailure.server(
           message: message,

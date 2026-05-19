@@ -189,11 +189,11 @@ class _SmartScanScreenState extends ConsumerState<SmartScanScreen>
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (context) => const LogDrinkScreen()))
         .then((_) {
-      // Close Smart Scan screen when returning from Log Drink
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-    });
+          // Close Smart Scan screen when returning from Log Drink
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+        });
   }
 
   @override

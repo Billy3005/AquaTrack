@@ -31,7 +31,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     super.initState();
     // Pre-fill demo credentials
     _emailController.text = 'minh@aquatrack.app';
-    _passwordController.text = '••••••••';
+    _passwordController.text = 'password123';
 
     _bubbleController = AnimationController(
       duration: const Duration(seconds: 4),
@@ -117,9 +117,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             // Hero section
             _buildHeroSection(),
             // Form section
-            Expanded(
-              child: _buildFormSection(),
-            ),
+            Expanded(child: _buildFormSection()),
           ],
         ),
       ),
@@ -191,8 +189,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           final opacity = animValue < 0.3
               ? animValue / 0.3 * 0.8
               : animValue > 0.7
-                  ? (1.0 - animValue) / 0.3 * 0.8
-                  : 0.8;
+              ? (1.0 - animValue) / 0.3 * 0.8
+              : 0.8;
           final yOffset = animValue * -120.0;
 
           return Positioned(
@@ -216,9 +214,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     return Container(
       width: 110,
       height: 110 * 1.13,
-      child: CustomPaint(
-        painter: LivingDropPainter(percent: 70),
-      ),
+      child: CustomPaint(painter: LivingDropPainter(percent: 70)),
     );
   }
 
@@ -348,11 +344,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Icon(
-                  icon,
-                  color: const Color(0xFF64748B),
-                  size: 16,
-                ),
+                Icon(icon, color: const Color(0xFF64748B), size: 16),
                 const SizedBox(width: 10),
                 Expanded(
                   child: TextFormField(
@@ -378,8 +370,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         if (value == null || value.trim().isEmpty) {
                           return 'Vui lòng nhập email';
                         }
-                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
-                            .hasMatch(value.trim())) {
+                        if (!RegExp(
+                          r'^[^@]+@[^@]+\.[^@]+',
+                        ).hasMatch(value.trim())) {
                           return 'Email không hợp lệ';
                         }
                       } else if (label == 'Mật khẩu') {
@@ -437,11 +430,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     ),
                   ),
                   child: _rememberMe
-                      ? const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 10,
-                        )
+                      ? const Icon(Icons.check, color: Colors.white, size: 10)
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -485,8 +474,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       child: ElevatedButton(
         onPressed: canSubmit && !_isLoading ? _login : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor:
-              canSubmit ? Colors.transparent : const Color(0x0DFFFFFF),
+          backgroundColor: canSubmit
+              ? Colors.transparent
+              : const Color(0x0DFFFFFF),
           shadowColor: Colors.transparent,
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           shape: RoundedRectangleBorder(
@@ -555,12 +545,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       margin: const EdgeInsets.fromLTRB(0, 0, 0, 14),
       child: Row(
         children: [
-          const Expanded(
-            child: Divider(
-              height: 1,
-              color: Color(0x14FFFFFF),
-            ),
-          ),
+          const Expanded(child: Divider(height: 1, color: Color(0x14FFFFFF))),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 10),
             child: const Text(
@@ -573,12 +558,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               ),
             ),
           ),
-          const Expanded(
-            child: Divider(
-              height: 1,
-              color: Color(0x14FFFFFF),
-            ),
-          ),
+          const Expanded(child: Divider(height: 1, color: Color(0x14FFFFFF))),
         ],
       ),
     );
@@ -644,11 +624,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: iconColor ?? Colors.white,
-              size: 16,
-            ),
+            Icon(icon, color: iconColor ?? Colors.white, size: 16),
             const SizedBox(width: 6),
             Text(
               label,
@@ -713,7 +689,13 @@ class LivingDropPainter extends CustomPainter {
 
     dropPath.moveTo(w * 0.5, h * 0.05);
     dropPath.cubicTo(
-        w * 0.12, h * 0.55, w * 0.12, h * 0.76, w * 0.12, h * 0.76);
+      w * 0.12,
+      h * 0.55,
+      w * 0.12,
+      h * 0.76,
+      w * 0.12,
+      h * 0.76,
+    );
     dropPath.cubicTo(w * 0.12, h * 0.96, w * 0.3, h * 1.08, w * 0.5, h * 1.08);
     dropPath.cubicTo(w * 0.7, h * 1.08, w * 0.88, h * 0.96, w * 0.88, h * 0.76);
     dropPath.cubicTo(w * 0.88, h * 0.55, w * 0.5, h * 0.05, w * 0.5, h * 0.05);
@@ -738,14 +720,12 @@ class LivingDropPainter extends CustomPainter {
       final gradient = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFF38BDF8),
-          const Color(0xFF0EA5E9),
-        ],
+        colors: [const Color(0xFF38BDF8), const Color(0xFF0EA5E9)],
       );
 
-      paint.shader =
-          gradient.createShader(Rect.fromLTWH(0, fillY, w, fillHeight));
+      paint.shader = gradient.createShader(
+        Rect.fromLTWH(0, fillY, w, fillHeight),
+      );
       canvas.drawRect(Rect.fromLTWH(0, fillY, w, fillHeight), paint);
 
       canvas.restore();

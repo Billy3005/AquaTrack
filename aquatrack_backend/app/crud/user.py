@@ -28,6 +28,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             hashed_password=get_password_hash(obj_in.password),
             username=obj_in.username or "Aqua Warrior",
             full_name=obj_in.full_name,
+            daily_goal_ml=obj_in.daily_goal_ml or 2000,  # User's custom daily goal!
         )
         db.add(db_obj)
         db.commit()
@@ -127,6 +128,40 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             db.commit()
             db.refresh(user)
         return user
+
+    def get_active_users(self, db: Session, *, skip: int = 0, limit: int = 1000):
+        """Get all active users"""
+        return (
+            db.query(User)
+            .filter(User.is_active == True)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    def get_by_level_range(
+        self,
+        db: Session,
+        *,
+        min_level: int,
+        max_level: int,
+        exclude_user_id: str,
+        skip: int = 0,
+        limit: int = 50,
+    ):
+        """Get users within a level range, excluding specified user"""
+        return (
+            db.query(User)
+            .filter(
+                User.current_level >= min_level,
+                User.current_level <= max_level,
+                User.id != exclude_user_id,
+                User.is_active == True,
+            )
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
 
 # Global instance

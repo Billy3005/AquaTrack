@@ -7,10 +7,7 @@ import '../models/friend_model.dart';
 class WeeklyLeaderboard extends StatelessWidget {
   final List<WeeklyLeaderboardEntry> entries;
 
-  const WeeklyLeaderboard({
-    super.key,
-    required this.entries,
-  });
+  const WeeklyLeaderboard({super.key, required this.entries});
 
   @override
   Widget build(BuildContext context) {
@@ -27,9 +24,7 @@ class WeeklyLeaderboard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,13 +72,14 @@ class WeeklyLeaderboard extends StatelessWidget {
   }
 
   /// Build individual leaderboard item
-  Widget _buildLeaderboardItem(WeeklyLeaderboardEntry entry, int index,
-      {bool isFirst = false, bool isLast = false}) {
+  Widget _buildLeaderboardItem(
+    WeeklyLeaderboardEntry entry,
+    int index, {
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
     return Container(
-      margin: EdgeInsets.only(
-        left: isFirst ? 0 : 4,
-        right: isLast ? 0 : 4,
-      ),
+      margin: EdgeInsets.only(left: isFirst ? 0 : 4, right: isLast ? 0 : 4),
       child: Column(
         children: [
           // Avatar với rank
@@ -135,10 +131,7 @@ class WeeklyLeaderboard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: _getRankColor(index),
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.surfaceColor,
-                      width: 2,
-                    ),
+                    border: Border.all(color: AppColors.surfaceColor, width: 2),
                   ),
                   child: Center(
                     child: Text(
@@ -192,9 +185,7 @@ class WeeklyLeaderboard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: [

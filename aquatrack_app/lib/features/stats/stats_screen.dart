@@ -87,10 +87,7 @@ class _StatsScreenState extends State<StatsScreen> {
             ],
           ),
           child: Row(
-            children: [
-              _buildPeriodButton('Tuần'),
-              _buildPeriodButton('Tháng'),
-            ],
+            children: [_buildPeriodButton('Tuần'), _buildPeriodButton('Tháng')],
           ),
         ),
       ],
@@ -325,7 +322,7 @@ class _StatsScreenState extends State<StatsScreen> {
                         gradient: LinearGradient(
                           colors: [
                             AppColors.success,
-                            AppColors.success.withValues(alpha: 0.6)
+                            AppColors.success.withValues(alpha: 0.6),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -469,8 +466,10 @@ class _StatsScreenState extends State<StatsScreen> {
           Row(
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: accentColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
@@ -490,11 +489,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 ),
               ),
               const Spacer(),
-              Icon(
-                icon,
-                color: accentColor,
-                size: 22,
-              ),
+              Icon(icon, color: accentColor, size: 22),
             ],
           ),
           const SizedBox(height: 16),

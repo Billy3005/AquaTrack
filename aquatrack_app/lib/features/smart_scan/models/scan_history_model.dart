@@ -7,7 +7,7 @@ class ScanHistoryRecord {
   final String imagePath; // Path to captured image
   final VisionResult aiResult; // Original AI prediction
   final int?
-      userConfirmedVolume; // Volume user actually confirmed (null if cancelled)
+  userConfirmedVolume; // Volume user actually confirmed (null if cancelled)
   final String? userFeedback; // 'accurate', 'adjusted', 'wrong'
   final double accuracyScore; // How close AI was to user's final choice
 
