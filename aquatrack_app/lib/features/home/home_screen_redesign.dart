@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/living_drop.dart';
+import '../../shared/widgets/coin_badge.dart';
 import 'providers/home_provider.dart';
 
 /// Home Screen - Complete redesign matching aquatrack/project/components/home.jsx
@@ -33,10 +34,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
     _xpAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _xpController,
-      curve: Curves.easeOut,
-    ));
+    ).animate(CurvedAnimation(parent: _xpController, curve: Curves.easeOut));
   }
 
   @override
@@ -255,8 +253,9 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
                             color: const Color(0xFFFDE68A),
                             shadows: [
                               Shadow(
-                                color: const Color(0xFFFBBF24)
-                                    .withValues(alpha: 0.6),
+                                color: const Color(
+                                  0xFFFBBF24,
+                                ).withValues(alpha: 0.6),
                                 blurRadius: 12,
                               ),
                             ],
@@ -288,8 +287,8 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
               hot
                   ? Icons.wb_sunny
                   : isNight
-                      ? Icons.nightlight_round
-                      : Icons.water_drop,
+                  ? Icons.nightlight_round
+                  : Icons.water_drop,
               size: 14,
               color: hot ? const Color(0xFFFBBF24) : const Color(0xFF7DD3FC),
             ),
@@ -298,8 +297,8 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
               hot
                   ? 'HCMC · 34°C'
                   : isNight
-                      ? 'Đêm · 22°C'
-                      : 'HCMC · 28°C',
+                  ? 'Đêm · 22°C'
+                  : 'HCMC · 28°C',
               style: TextStyle(
                 fontSize: 12,
                 color: const Color(0xFFBAE6FD).withValues(alpha: 0.85),
@@ -312,108 +311,12 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
         // Coin and streak badges
         Row(
           children: [
-            _buildCoinBadge(1240),
+            const CoinBadge(amount: 1240),
             const SizedBox(width: 6),
             _buildStreakBadge(12),
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildCoinBadge(int amount) {
-    return GestureDetector(
-      onTap: () => context.push('/shop'),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(6, 4, 9, 4),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              Color(0x2DFBBF24), // rgba(251,191,36,0.18)
-              Color(0x0FF59E0B), // rgba(245,158,11,0.06)
-            ],
-          ),
-          border: Border.all(
-            color: const Color(0x73FBBF24), // rgba(251,191,36,0.45)
-          ),
-          borderRadius: BorderRadius.circular(999),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.white.withValues(alpha: 0.06),
-              blurRadius: 0,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildCoinIcon(13),
-            const SizedBox(width: 5),
-            Text(
-              amount.toString(),
-              style: const TextStyle(
-                fontFamily: 'SF Pro Rounded',
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFFDE68A),
-                fontFeatures: [FontFeature.tabularFigures()],
-                letterSpacing: 0.01,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCoinIcon(double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        gradient: const RadialGradient(
-          center: Alignment(0.35, 0.3),
-          radius: 0.75,
-          colors: [
-            Color(0xFFFEF3C7), // 0%
-            Color(0xFFFBBF24), // 55%
-            Color(0xFFB45309), // 100%
-          ],
-          stops: [0.0, 0.55, 1.0],
-        ),
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFF78350F),
-          width: 0.6,
-        ),
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Inner circle
-          Container(
-            width: size * 0.7,
-            height: size * 0.7,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0xFFFDE68A).withValues(alpha: 0.7),
-                width: 0.8,
-              ),
-            ),
-          ),
-          // Dollar sign
-          Text(
-            '\$',
-            style: TextStyle(
-              fontSize: size * 0.5,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF78350F),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -522,10 +425,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
         ),
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 12,
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 12),
         ],
       ),
       child: Column(
@@ -618,10 +518,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
             ),
             Text(
               'Giữ để nạp liên tục',
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.textMuted,
-              ),
+              style: TextStyle(fontSize: 11, color: AppColors.textMuted),
             ),
           ],
         ),
@@ -688,8 +585,9 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color:
-                    isActive ? const Color(0xFFE0F2FE) : AppColors.textPrimary,
+                color: isActive
+                    ? const Color(0xFFE0F2FE)
+                    : AppColors.textPrimary,
                 fontFamily: 'SF Pro Rounded',
                 letterSpacing: -0.01,
               ),
@@ -731,11 +629,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.add,
-              color: AppColors.textSecondary,
-              size: 14,
-            ),
+            Icon(Icons.add, color: AppColors.textSecondary, size: 14),
             const SizedBox(height: 4),
             Text(
               'Khác',
@@ -856,11 +750,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
             ),
 
             // Arrow
-            Icon(
-              Icons.chevron_right,
-              color: AppColors.textMuted,
-              size: 16,
-            ),
+            Icon(Icons.chevron_right, color: AppColors.textMuted, size: 16),
           ],
         ),
       ),
@@ -891,10 +781,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
             ),
             Text(
               '${todayEntries.length} lần · ${currentMl}ml',
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.textMuted,
-              ),
+              style: TextStyle(fontSize: 11, color: AppColors.textMuted),
             ),
           ],
         ),
@@ -1000,16 +887,10 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
       height: 34,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.13),
-        border: Border.all(
-          color: color.withValues(alpha: 0.27),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.27)),
         shape: BoxShape.circle,
       ),
-      child: Icon(
-        icon,
-        size: 18,
-        color: color,
-      ),
+      child: Icon(icon, size: 18, color: color),
     );
   }
 
@@ -1025,9 +906,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
             colors: [Color(0xFF38BDF8), Color(0xFF0EA5E9)],
           ),
           shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.2),
-          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           boxShadow: [
             BoxShadow(
               color: const Color(0x800EA5E9), // rgba(14,165,233,0.5)
@@ -1041,11 +920,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
             ),
           ],
         ),
-        child: const Icon(
-          Icons.camera_alt,
-          color: Colors.white,
-          size: 24,
-        ),
+        child: const Icon(Icons.camera_alt, color: Colors.white, size: 24),
       ),
     );
   }
@@ -1055,11 +930,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: AppColors.error,
-          ),
+          const Icon(Icons.error_outline, size: 64, color: AppColors.error),
           const SizedBox(height: 16),
           const Text(
             'Có lỗi xảy ra khi tải dữ liệu',
@@ -1073,18 +944,13 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
           const SizedBox(height: 8),
           Text(
             error.toString(),
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () => ref.refresh(homeNotifierProvider),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             child: const Text('Thử lại'),
           ),
         ],

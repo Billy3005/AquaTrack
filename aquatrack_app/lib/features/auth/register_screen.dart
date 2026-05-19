@@ -58,24 +58,32 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       _isLoading = true;
     });
 
+    print('🔄 Starting registration for: $email');
+
     try {
       // Call register API
+      print('📡 Calling register API...');
       final authResponse = await _authRepository.register(
         email: email,
         password: password,
         fullName: fullName.isEmpty ? null : fullName,
       );
 
+      print('✅ Registration API success: ${authResponse.user.email}');
+
       AppLogger.info(
         'Register',
         'Registration successful: ${authResponse.user.email}',
       );
 
-      // Navigate to home
+      // Navigate to onboarding for new users
+      print('🚀 Attempting navigation to /onboarding');
       if (mounted) {
-        context.go('/');
+        context.go('/onboarding');
+        print('✅ Navigation called successfully');
       }
     } catch (e) {
+      print('❌ Registration failed: $e');
       AppLogger.error('Register', 'Registration failed', e);
     } finally {
       if (mounted) {
@@ -103,9 +111,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
             // Hero section
             _buildHeroSection(),
             // Form section
-            Expanded(
-              child: _buildFormSection(),
-            ),
+            Expanded(child: _buildFormSection()),
           ],
         ),
       ),
@@ -200,8 +206,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
           final opacity = animValue < 0.3
               ? animValue / 0.3 * 0.8
               : animValue > 0.7
-                  ? (1.0 - animValue) / 0.3 * 0.8
-                  : 0.8;
+              ? (1.0 - animValue) / 0.3 * 0.8
+              : 0.8;
           final yOffset = animValue * -120.0;
 
           return Positioned(
@@ -225,9 +231,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     return Container(
       width: 92,
       height: 92 * 1.13,
-      child: CustomPaint(
-        painter: LivingDropPainter(percent: 50),
-      ),
+      child: CustomPaint(painter: LivingDropPainter(percent: 50)),
     );
   }
 
@@ -377,11 +381,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Icon(
-                  icon,
-                  color: const Color(0xFF64748B),
-                  size: 16,
-                ),
+                Icon(icon, color: const Color(0xFF64748B), size: 16),
                 const SizedBox(width: 10),
                 Expanded(
                   child: TextFormField(
@@ -413,8 +413,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                         if (value == null || value.trim().isEmpty) {
                           return 'Vui lòng nhập email';
                         }
-                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
-                            .hasMatch(value.trim())) {
+                        if (!RegExp(
+                          r'^[^@]+@[^@]+\.[^@]+',
+                        ).hasMatch(value.trim())) {
                           return 'Email không hợp lệ';
                         }
                       } else if (label == 'Mật khẩu') {
@@ -458,7 +459,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     ];
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(0, -6, 0, 12),
+      margin: const EdgeInsets.fromLTRB(0, 0, 0, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -469,8 +470,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                   height: 3,
                   margin: EdgeInsets.only(right: index < 3 ? 4 : 0),
                   decoration: BoxDecoration(
-                    color:
-                        index < score ? colors[score] : const Color(0x0FFFFFFF),
+                    color: index < score
+                        ? colors[score]
+                        : const Color(0x0FFFFFFF),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -532,11 +534,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                 ),
               ),
               child: _agreed
-                  ? const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 10,
-                    )
+                  ? const Icon(Icons.check, color: Colors.white, size: 10)
                   : null,
             ),
             const SizedBox(width: 8),
@@ -578,7 +576,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   }
 
   Widget _buildSubmitButton() {
-    final canSubmit = _emailController.text.isNotEmpty &&
+    final canSubmit =
+        _emailController.text.isNotEmpty &&
         _passwordController.text.isNotEmpty &&
         _confirmPasswordController.text.isNotEmpty &&
         _nameController.text.isNotEmpty &&
@@ -591,8 +590,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       child: ElevatedButton(
         onPressed: canSubmit && !_isLoading ? _register : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor:
-              canSubmit ? Colors.transparent : const Color(0x0DFFFFFF),
+          backgroundColor: canSubmit
+              ? Colors.transparent
+              : const Color(0x0DFFFFFF),
           shadowColor: Colors.transparent,
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           shape: RoundedRectangleBorder(
@@ -661,12 +661,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       margin: const EdgeInsets.fromLTRB(0, 0, 0, 14),
       child: const Row(
         children: [
-          Expanded(
-            child: Divider(
-              height: 1,
-              color: Color(0x14FFFFFF),
-            ),
-          ),
+          Expanded(child: Divider(height: 1, color: Color(0x14FFFFFF))),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 10),
             child: Text(
@@ -679,12 +674,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
               ),
             ),
           ),
-          Expanded(
-            child: Divider(
-              height: 1,
-              color: Color(0x14FFFFFF),
-            ),
-          ),
+          Expanded(child: Divider(height: 1, color: Color(0x14FFFFFF))),
         ],
       ),
     );
@@ -750,11 +740,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: iconColor ?? Colors.white,
-              size: 16,
-            ),
+            Icon(icon, color: iconColor ?? Colors.white, size: 16),
             const SizedBox(width: 6),
             Text(
               label,
@@ -819,7 +805,13 @@ class LivingDropPainter extends CustomPainter {
 
     dropPath.moveTo(w * 0.5, h * 0.05);
     dropPath.cubicTo(
-        w * 0.12, h * 0.55, w * 0.12, h * 0.76, w * 0.12, h * 0.76);
+      w * 0.12,
+      h * 0.55,
+      w * 0.12,
+      h * 0.76,
+      w * 0.12,
+      h * 0.76,
+    );
     dropPath.cubicTo(w * 0.12, h * 0.96, w * 0.3, h * 1.08, w * 0.5, h * 1.08);
     dropPath.cubicTo(w * 0.7, h * 1.08, w * 0.88, h * 0.96, w * 0.88, h * 0.76);
     dropPath.cubicTo(w * 0.88, h * 0.55, w * 0.5, h * 0.05, w * 0.5, h * 0.05);
@@ -841,14 +833,12 @@ class LivingDropPainter extends CustomPainter {
       final gradient = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFF38BDF8),
-          const Color(0xFF0EA5E9),
-        ],
+        colors: [const Color(0xFF38BDF8), const Color(0xFF0EA5E9)],
       );
 
-      paint.shader =
-          gradient.createShader(Rect.fromLTWH(0, fillY, w, fillHeight));
+      paint.shader = gradient.createShader(
+        Rect.fromLTWH(0, fillY, w, fillHeight),
+      );
       canvas.drawRect(Rect.fromLTWH(0, fillY, w, fillHeight), paint);
 
       canvas.restore();

@@ -68,10 +68,11 @@ class ScanControls extends StatelessWidget {
                         : AppColors.cyanAccent,
                     boxShadow: [
                       BoxShadow(
-                        color: (isScanning
-                                ? AppColors.textSecondary
-                                : AppColors.cyanAccent)
-                            .withValues(alpha: 0.3),
+                        color:
+                            (isScanning
+                                    ? AppColors.textSecondary
+                                    : AppColors.cyanAccent)
+                                .withValues(alpha: 0.3),
                         blurRadius: 16,
                         spreadRadius: 4,
                       ),

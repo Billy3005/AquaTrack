@@ -147,8 +147,10 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2> {
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.purpleXP.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(16),
@@ -159,8 +161,11 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.star_rounded,
-                          size: 16, color: AppColors.purpleXP),
+                      Icon(
+                        Icons.star_rounded,
+                        size: 16,
+                        color: AppColors.purpleXP,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'Level ${summary?.currentLevel ?? 1} • ${summary?.xpToday ?? 0}XP',
@@ -234,10 +239,7 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2> {
           stops: const [0.0, 0.5, 1.0],
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: AppColors.border,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: AppColors.cyanDeep.withValues(alpha: 0.1),
@@ -280,10 +282,7 @@ class _HomeScreenV2State extends ConsumerState<HomeScreenV2> {
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [
-                        AppColors.cyanLight,
-                        AppColors.cyanAccent,
-                      ],
+                      colors: [AppColors.cyanLight, AppColors.cyanAccent],
                     ),
                     boxShadow: [
                       BoxShadow(

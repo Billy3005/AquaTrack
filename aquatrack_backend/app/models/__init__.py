@@ -2,8 +2,13 @@
 from .achievement import Achievement
 from .conversation import Conversation, ConversationSession
 from .daily_summary import DailySummary
+from .friend import Friend
+from .friend_request import FriendRequest, FriendRequestStatus
 from .intake_log import IntakeLog
+from .leaderboard import LeaderboardEntry
+from .scan_history import ScanHistory
 from .user import User
+from .user_insights import UserInsight, InsightType, PriorityLevel
 
 __all__ = [
     "User",
@@ -12,4 +17,12 @@ __all__ = [
     "Achievement",
     "Conversation",
     "ConversationSession",
+    "ScanHistory",
+    "Friend",
+    "FriendRequest",
+    "FriendRequestStatus",
+    "LeaderboardEntry",
+    "UserInsight",
+    "InsightType",
+    "PriorityLevel",
 ]

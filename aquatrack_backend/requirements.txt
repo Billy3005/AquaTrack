@@ -21,7 +21,15 @@ fastapi-cors==0.0.6
 # AI Integration
 openai==1.6.1
 anthropic==0.7.8
+ollama==0.3.0  # Free local AI
+
+# Production Features
+psutil==5.9.6  # System monitoring
+jinja2==3.1.2  # Email templates
 
 # Utils
 python-dotenv==1.0.0
 httpx==0.25.2
+
+# Image processing
+Pillow==10.1.0

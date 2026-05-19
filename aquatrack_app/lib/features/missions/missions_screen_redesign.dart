@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../shared/widgets/coin_badge.dart';
 
 /// Missions Screen với Daily & Weekly missions
 class MissionsScreenRedesign extends StatefulWidget {
@@ -26,13 +27,9 @@ class _MissionsScreenRedesignState extends State<MissionsScreenRedesign>
       duration: const Duration(milliseconds: 280),
       vsync: this,
     );
-    _slideAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _slideAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -109,65 +106,12 @@ class _MissionsScreenRedesignState extends State<MissionsScreenRedesign>
           ),
           Row(
             children: [
-              _buildCoinBadge(),
+              const CoinBadge(amount: 1240),
               const SizedBox(width: 6),
               _buildStreakBadge(),
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCoinBadge() {
-    return GestureDetector(
-      onTap: () {
-        // Navigate to shop
-        HapticFeedback.lightImpact();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          gradient: LinearGradient(
-            colors: [
-              const Color(0xFFFBBF24).withValues(alpha: 0.18),
-              const Color(0xFFF59E0B).withValues(alpha: 0.06),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          border: Border.all(
-            color: const Color(0xFFFBBF24).withValues(alpha: 0.45),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 16,
-              height: 16,
-              decoration: const BoxDecoration(
-                color: Color(0xFFFBBF24),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.monetization_on,
-                size: 12,
-                color: Color(0xFF451A03),
-              ),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              '1,240',
-              style: AppTextStyles.caption.copyWith(
-                color: const Color(0xFFFDE68A),
-                fontWeight: FontWeight.w700,
-                fontFeatures: [const FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -185,18 +129,12 @@ class _MissionsScreenRedesignState extends State<MissionsScreenRedesign>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(
-          color: AppColors.amber.withValues(alpha: 0.45),
-        ),
+        border: Border.all(color: AppColors.amber.withValues(alpha: 0.45)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.local_fire_department,
-            size: 16,
-            color: AppColors.amber,
-          ),
+          Icon(Icons.local_fire_department, size: 16, color: AppColors.amber),
           const SizedBox(width: 4),
           Text(
             '12',
@@ -344,10 +282,12 @@ class _DailyView extends StatelessWidget {
         const SizedBox(height: 14),
 
         // Mission Cards
-        ...missions.map((mission) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _MissionCard(mission: mission),
-            )),
+        ...missions.map(
+          (mission) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _MissionCard(mission: mission),
+          ),
+        ),
 
         // Footer - Refresh Notice
         _buildRefreshNotice(),
@@ -452,20 +392,24 @@ class _DailyView extends StatelessWidget {
                           icon: Icons.monetization_on,
                           text: '+40 đã nhận',
                           color: const Color(0xFFFDE68A),
-                          backgroundColor:
-                              const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                          borderColor:
-                              const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                          backgroundColor: const Color(
+                            0xFFF59E0B,
+                          ).withValues(alpha: 0.15),
+                          borderColor: const Color(
+                            0xFFF59E0B,
+                          ).withValues(alpha: 0.35),
                         ),
                         if (claimable > 0)
                           _RewardPill(
                             icon: Icons.monetization_on,
                             text: '+$claimable sẵn sàng nhận',
                             color: const Color(0xFFFDE68A),
-                            backgroundColor:
-                                const Color(0xFFFBBF24).withValues(alpha: 0.18),
-                            borderColor:
-                                const Color(0xFFFBBF24).withValues(alpha: 0.5),
+                            backgroundColor: const Color(
+                              0xFFFBBF24,
+                            ).withValues(alpha: 0.18),
+                            borderColor: const Color(
+                              0xFFFBBF24,
+                            ).withValues(alpha: 0.5),
                             pulse: true,
                           ),
                       ],
@@ -486,11 +430,7 @@ class _DailyView extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.access_time,
-            size: 12,
-            color: AppColors.textMuted,
-          ),
+          Icon(Icons.access_time, size: 12, color: AppColors.textMuted),
           const SizedBox(width: 6),
           Text(
             'Làm mới sau 11h 24p',
@@ -514,17 +454,24 @@ class _WeeklyView extends StatelessWidget {
     final missions = _getWeeklyMissions();
     final weeklyDone = missions.where((m) => m.progress >= m.target).length;
     final totalReward = missions.fold(0, (sum, m) => sum + m.reward);
-    final weekProgress = ((missions.fold(0.0,
-                    (sum, m) => sum + math.min(1.0, m.progress / m.target)) /
-                missions.length) *
-            100)
-        .round();
+    final weekProgress =
+        ((missions.fold(
+                      0.0,
+                      (sum, m) => sum + math.min(1.0, m.progress / m.target),
+                    ) /
+                    missions.length) *
+                100)
+            .round();
 
     return Column(
       children: [
         // Weekly Chest Card
         _buildWeeklyChest(
-            weeklyDone, missions.length, weekProgress, totalReward),
+          weeklyDone,
+          missions.length,
+          weekProgress,
+          totalReward,
+        ),
         const SizedBox(height: 14),
 
         // 7-Day Progress Strip
@@ -532,10 +479,12 @@ class _WeeklyView extends StatelessWidget {
         const SizedBox(height: 14),
 
         // Weekly Mission Cards
-        ...missions.map((mission) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _MissionCard(mission: mission, isWeekly: true),
-            )),
+        ...missions.map(
+          (mission) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _MissionCard(mission: mission, isWeekly: true),
+          ),
+        ),
       ],
     );
   }
@@ -627,14 +576,15 @@ class _WeeklyView extends StatelessWidget {
                                   colors: [
                                     Color(0xFFFBBF24),
                                     Color(0xFFF59E0B),
-                                    Color(0xFFA78BFA)
+                                    Color(0xFFA78BFA),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(999),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFFFBBF24)
-                                        .withValues(alpha: 0.5),
+                                    color: const Color(
+                                      0xFFFBBF24,
+                                    ).withValues(alpha: 0.5),
                                     blurRadius: 12,
                                   ),
                                 ],
@@ -660,7 +610,7 @@ class _WeeklyView extends StatelessWidget {
                                 color: AppColors.textSecondary,
                                 fontSize: 10.5,
                                 fontFeatures: [
-                                  const FontFeature.tabularFigures()
+                                  const FontFeature.tabularFigures(),
                                 ],
                               ),
                             ),
@@ -718,9 +668,7 @@ class _WeeklyView extends StatelessWidget {
           ),
           Row(
             children: days.map((day) {
-              return Expanded(
-                child: _WeekDayItem(day: day),
-              );
+              return Expanded(child: _WeekDayItem(day: day));
             }).toList(),
           ),
         ],
@@ -820,10 +768,7 @@ class _WeekDayItem extends StatelessWidget {
               else
                 Text(
                   '·',
-                  style: TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 11,
-                  ),
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 11),
                 ),
             ],
           ),
@@ -838,15 +783,14 @@ class _MissionCard extends StatelessWidget {
   final Mission mission;
   final bool isWeekly;
 
-  const _MissionCard({
-    required this.mission,
-    this.isWeekly = false,
-  });
+  const _MissionCard({required this.mission, this.isWeekly = false});
 
   @override
   Widget build(BuildContext context) {
-    final progress =
-        math.min(100, ((mission.progress / mission.target) * 100).round());
+    final progress = math.min(
+      100,
+      ((mission.progress / mission.target) * 100).round(),
+    );
     final isDone = mission.progress >= mission.target;
     final isClaimable = isDone && !mission.claimed;
 
@@ -855,14 +799,14 @@ class _MissionCard extends StatelessWidget {
         color: mission.claimed
             ? const Color(0xFF0F1A2E).withValues(alpha: 0.5)
             : isClaimable
-                ? const Color(0xFFFBBF24).withValues(alpha: 0.10)
-                : AppColors.nightSurface,
+            ? const Color(0xFFFBBF24).withValues(alpha: 0.10)
+            : AppColors.nightSurface,
         border: Border.all(
           color: mission.claimed
               ? Colors.white.withValues(alpha: 0.08)
               : isClaimable
-                  ? const Color(0xFFFBBF24).withValues(alpha: 0.5)
-                  : AppColors.nightCard,
+              ? const Color(0xFFFBBF24).withValues(alpha: 0.5)
+              : AppColors.nightCard,
         ),
         borderRadius: BorderRadius.circular(14),
       ),
@@ -900,17 +844,20 @@ class _MissionCard extends StatelessWidget {
                     center: const Alignment(-0.3, -0.3),
                     colors: [
                       Color(
-                          int.parse(mission.glowColor.substring(1), radix: 16) +
-                              0x33000000),
+                        int.parse(mission.glowColor.substring(1), radix: 16) +
+                            0x33000000,
+                      ),
                       Color(
-                          int.parse(mission.glowColor.substring(1), radix: 16) +
-                              0x11000000),
+                        int.parse(mission.glowColor.substring(1), radix: 16) +
+                            0x11000000,
+                      ),
                     ],
                   ),
                   border: Border.all(
                     color: Color(
-                        int.parse(mission.glowColor.substring(1), radix: 16) +
-                            0x44000000),
+                      int.parse(mission.glowColor.substring(1), radix: 16) +
+                          0x44000000,
+                    ),
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -964,8 +911,9 @@ class _MissionCard extends StatelessWidget {
                                         vertical: 1,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFA78BFA)
-                                            .withValues(alpha: 0.18),
+                                        color: const Color(
+                                          0xFFA78BFA,
+                                        ).withValues(alpha: 0.18),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
@@ -1019,17 +967,21 @@ class _MissionCard extends StatelessWidget {
                                 color: mission.claimed
                                     ? Colors.white.withValues(alpha: 0.18)
                                     : isDone
-                                        ? const Color(0xFFFBBF24)
-                                        : Color(int.parse(
-                                                mission.glowColor.substring(1),
-                                                radix: 16) +
-                                            0xFF000000),
+                                    ? const Color(0xFFFBBF24)
+                                    : Color(
+                                        int.parse(
+                                              mission.glowColor.substring(1),
+                                              radix: 16,
+                                            ) +
+                                            0xFF000000,
+                                      ),
                                 borderRadius: BorderRadius.circular(999),
                                 boxShadow: isDone && !mission.claimed
                                     ? [
                                         BoxShadow(
-                                          color: const Color(0xFFFBBF24)
-                                              .withValues(alpha: 0.6),
+                                          color: const Color(
+                                            0xFFFBBF24,
+                                          ).withValues(alpha: 0.6),
                                           blurRadius: 8,
                                         ),
                                       ]
@@ -1046,14 +998,17 @@ class _MissionCard extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              _formatProgress(mission.progress, mission.target,
-                                  mission.unit),
+                              _formatProgress(
+                                mission.progress,
+                                mission.target,
+                                mission.unit,
+                              ),
                               style: AppTextStyles.caption.copyWith(
                                 color: AppColors.textMuted,
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w500,
                                 fontFeatures: [
-                                  const FontFeature.tabularFigures()
+                                  const FontFeature.tabularFigures(),
                                 ],
                               ),
                             ),
@@ -1072,14 +1027,15 @@ class _MissionCard extends StatelessWidget {
                                     gradient: const LinearGradient(
                                       colors: [
                                         Color(0xFFFBBF24),
-                                        Color(0xFFF59E0B)
+                                        Color(0xFFF59E0B),
                                       ],
                                     ),
                                     borderRadius: BorderRadius.circular(8),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: const Color(0xFFF59E0B)
-                                            .withValues(alpha: 0.4),
+                                        color: const Color(
+                                          0xFFF59E0B,
+                                        ).withValues(alpha: 0.4),
                                         blurRadius: 8,
                                         offset: const Offset(0, 2),
                                       ),
@@ -1110,14 +1066,17 @@ class _MissionCard extends StatelessWidget {
                               Text(
                                 '$progress%',
                                 style: AppTextStyles.caption.copyWith(
-                                  color: Color(int.parse(
+                                  color: Color(
+                                    int.parse(
                                           mission.glowColor.substring(1),
-                                          radix: 16) +
-                                      0xFF000000),
+                                          radix: 16,
+                                        ) +
+                                        0xFF000000,
+                                  ),
                                   fontWeight: FontWeight.w600,
                                   fontSize: 10.5,
                                   fontFeatures: [
-                                    const FontFeature.tabularFigures()
+                                    const FontFeature.tabularFigures(),
                                   ],
                                 ),
                               ),
@@ -1138,7 +1097,9 @@ class _MissionCard extends StatelessWidget {
   String _formatProgress(int progress, int target, String unit) {
     final formatNumber = (int n) => target >= 1000
         ? n.toString().replaceAllMapped(
-            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')
+            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+            (Match m) => '${m[1]},',
+          )
         : n.toString();
     return '${formatNumber(progress)}/${formatNumber(target)}${unit.isNotEmpty ? ' $unit' : ''}';
   }
@@ -1211,11 +1172,7 @@ class _RewardChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.bolt,
-              size: 10,
-              color: const Color(0xFFA5B4FC),
-            ),
+            Icon(Icons.bolt, size: 10, color: const Color(0xFFA5B4FC)),
             const SizedBox(width: 4),
             Text(
               '+${mission.reward}',
@@ -1387,9 +1344,10 @@ class _RewardPillState extends State<_RewardPill>
         duration: const Duration(milliseconds: 1800),
         vsync: this,
       )..repeat();
-      _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-      );
+      _animation = Tween<double>(
+        begin: 0.0,
+        end: 1.0,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     }
   }
 
@@ -1413,11 +1371,7 @@ class _RewardPillState extends State<_RewardPill>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            widget.icon,
-            size: 11,
-            color: widget.color,
-          ),
+          Icon(widget.icon, size: 11, color: widget.color),
           const SizedBox(width: 5),
           Text(
             widget.text,
@@ -1440,8 +1394,9 @@ class _RewardPillState extends State<_RewardPill>
             borderRadius: BorderRadius.circular(999),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF38BDF8)
-                    .withValues(alpha: 0.5 * (1 - _animation.value)),
+                color: const Color(
+                  0xFF38BDF8,
+                ).withValues(alpha: 0.5 * (1 - _animation.value)),
                 blurRadius: 8 * _animation.value,
                 spreadRadius: 0,
               ),
@@ -1511,7 +1466,12 @@ class _ChestPainter extends CustomPainter {
     paint.color = const Color(0xFF92400E);
     canvas.drawRRect(
       RRect.fromLTRBR(
-          2, 10, size.width - 2, size.height - 2, const Radius.circular(2)),
+        2,
+        10,
+        size.width - 2,
+        size.height - 2,
+        const Radius.circular(2),
+      ),
       paint,
     );
 
@@ -1525,8 +1485,13 @@ class _ChestPainter extends CustomPainter {
     // Lock area
     paint.color = const Color(0xFFFBBF24);
     canvas.drawRRect(
-      RRect.fromLTRBR(size.width / 2 - 4, 11, size.width / 2 + 4, 23,
-          const Radius.circular(1)),
+      RRect.fromLTRBR(
+        size.width / 2 - 4,
+        11,
+        size.width / 2 + 4,
+        23,
+        const Radius.circular(1),
+      ),
       paint,
     );
 

@@ -11,15 +11,17 @@ import '../../../shared/models/daily_summary.dart';
 import '../../../shared/models/intake_log.dart';
 import '../../../shared/storage/hive_storage_service.dart';
 import '../../level/providers/level_provider.dart';
+import '../../stats/providers/stats_provider.dart';
 
 part 'home_provider.g.dart';
 
 /// Provider for Stats Sync Repository dependency injection
+/// Returns null to indicate sync is not available - app works offline-only
 @riverpod
-StatsSyncRepository statsSyncRepository(Ref ref) {
-  // In real implementation, get SyncService and ConflictResolver from providers
-  // For now, return a mock or handle gracefully
-  throw UnimplementedError('StatsSyncRepository not configured yet');
+StatsSyncRepository? statsSyncRepositoryNullable(Ref ref) {
+  // Sync not configured - app works in offline-only mode
+  debugPrint('⚠️ Sync not configured, running offline-only mode');
+  return null;
 }
 
 /// Home screen state notifier với enhanced offline-first sync
@@ -30,11 +32,9 @@ class HomeNotifier extends _$HomeNotifier {
   @override
   Future<DailySummary> build() async {
     // Initialize sync repository if available
-    try {
-      _statsSyncRepository = ref.read(statsSyncRepositoryProvider);
-    } catch (e) {
-      // Continue without sync if not available
-      _statsSyncRepository = null;
+    _statsSyncRepository = ref.read(statsSyncRepositoryNullableProvider);
+    if (_statsSyncRepository == null) {
+      debugPrint('💾 HomeProvider: Running in offline-only mode');
     }
 
     // Load from local storage first, then trigger background sync

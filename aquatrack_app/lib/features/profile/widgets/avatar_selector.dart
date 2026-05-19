@@ -92,120 +92,124 @@ class AvatarSelector extends StatelessWidget {
     final requiredLevel = _avatarUnlockLevels[avatarKey] ?? 1;
 
     return GestureDetector(
-      onTap: isUnlocked ? () => onAvatarSelected?.call(avatarKey) : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.cyan
-                : isUnlocked
+          onTap: isUnlocked ? () => onAvatarSelected?.call(avatarKey) : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected
+                    ? AppColors.cyan
+                    : isUnlocked
                     ? AppColors.surface.withValues(alpha: 0.5)
                     : AppColors.textSecondary.withValues(alpha: 0.3),
-            width: isSelected ? 2 : 1,
-          ),
-          gradient: isSelected
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.cyan.withValues(alpha: 0.2),
-                    AppColors.xpPurple.withValues(alpha: 0.1),
-                  ],
-                )
-              : null,
-          color: !isSelected ? AppColors.surface.withValues(alpha: 0.1) : null,
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.cyan.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Stack(
-          children: [
-            // Avatar display
-            Center(
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  color: isUnlocked
-                      ? _getAvatarColor(avatarKey)
-                      : AppColors.textSecondary.withValues(alpha: 0.3),
-                ),
-                child: Icon(
-                  _getAvatarIcon(avatarKey),
-                  color: isUnlocked ? Colors.white : AppColors.textSecondary,
-                  size: 24,
-                ),
+                width: isSelected ? 2 : 1,
               ),
-            ),
-
-            // Lock overlay for locked avatars
-            if (!isUnlocked)
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: AppColors.background.withValues(alpha: 0.7),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.lock_outlined,
-                        color: AppColors.textSecondary,
-                        size: 20,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Lv.$requiredLevel',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-            // Selection indicator
-            if (isSelected)
-              Positioned(
-                top: 4,
-                right: 4,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: AppColors.cyan,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
+              gradient: isSelected
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.cyan.withValues(alpha: 0.2),
+                        AppColors.xpPurple.withValues(alpha: 0.1),
+                      ],
+                    )
+                  : null,
+              color: !isSelected
+                  ? AppColors.surface.withValues(alpha: 0.1)
+                  : null,
+              boxShadow: isSelected
+                  ? [
                       BoxShadow(
-                        color: AppColors.cyan.withValues(alpha: 0.5),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
+                        color: AppColors.cyan.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 12,
+                    ]
+                  : null,
+            ),
+            child: Stack(
+              children: [
+                // Avatar display
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      color: isUnlocked
+                          ? _getAvatarColor(avatarKey)
+                          : AppColors.textSecondary.withValues(alpha: 0.3),
+                    ),
+                    child: Icon(
+                      _getAvatarIcon(avatarKey),
+                      color: isUnlocked
+                          ? Colors.white
+                          : AppColors.textSecondary,
+                      size: 24,
+                    ),
                   ),
                 ),
-              ),
-          ],
-        ),
-      ),
-    )
+
+                // Lock overlay for locked avatars
+                if (!isUnlocked)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: AppColors.background.withValues(alpha: 0.7),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.lock_outlined,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Lv.$requiredLevel',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                // Selection indicator
+                if (isSelected)
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: AppColors.cyan,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.cyan.withValues(alpha: 0.5),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 12,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        )
         .animate(
           delay: Duration(
             milliseconds:

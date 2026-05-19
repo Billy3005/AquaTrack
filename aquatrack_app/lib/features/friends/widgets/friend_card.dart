@@ -10,11 +10,7 @@ class FriendCard extends ConsumerWidget {
   final Friend friend;
   final VoidCallback? onTap;
 
-  const FriendCard({
-    super.key,
-    required this.friend,
-    this.onTap,
-  });
+  const FriendCard({super.key, required this.friend, this.onTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,9 +19,7 @@ class FriendCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderColor.withOpacity(0.1),
-        ),
+        border: Border.all(color: AppColors.borderColor.withOpacity(0.1)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -121,8 +115,11 @@ class FriendCard extends ConsumerWidget {
                           Text(
                             friend.status.displayName,
                             style: AppTextStyles.labelSmall.copyWith(
-                              color: Color(int.parse(
-                                  '0xff${friend.status.colorHex.substring(1)}')),
+                              color: Color(
+                                int.parse(
+                                  '0xff${friend.status.colorHex.substring(1)}',
+                                ),
+                              ),
                             ),
                           ),
                           if (friend.currentStreak > 0) ...[
@@ -191,8 +188,9 @@ class FriendCard extends ConsumerWidget {
                       child: ElevatedButton(
                         onPressed: () => _sendReminder(ref),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              AppColors.cyanAccent.withOpacity(0.1),
+                          backgroundColor: AppColors.cyanAccent.withOpacity(
+                            0.1,
+                          ),
                           foregroundColor: AppColors.cyanAccent,
                           padding: EdgeInsets.zero,
                           elevation: 0,

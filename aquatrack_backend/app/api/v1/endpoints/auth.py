@@ -16,10 +16,10 @@ router = APIRouter()
 security = HTTPBearer()
 
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register")
 async def register_user(user_create: UserCreate, db: Session = Depends(get_db)):
     """
-    Register new user with real database integration
+    Register new user with real database integration and auto-login
     """
     # Check if user already exists
     existing_user = user_crud.get_by_email(db, email=user_create.email)
@@ -39,7 +39,36 @@ async def register_user(user_create: UserCreate, db: Session = Depends(get_db)):
     try:
         # Create new user
         user = user_crud.create(db, obj_in=user_create)
-        return user
+
+        # Generate JWT tokens for auto-login
+        access_token = create_access_token(subject=user.id)
+        refresh_token = create_refresh_token(subject=user.id)
+
+        # Return same format as login for Flutter compatibility
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "expires_in": 1800,  # 30 minutes
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "username": user.username,
+                "full_name": user.full_name,
+                "avatar_id": user.avatar_id,
+                "level": user.current_level,
+                "total_xp": user.total_xp,
+                "daily_goal_ml": user.daily_goal_ml,
+                "notifications_enabled": user.notifications_enabled,
+                "theme_preference": user.theme_preference,
+                "language_preference": user.language_preference,
+                "sound_enabled": user.sound_enabled,
+                "timezone": user.timezone,
+                "created_at": user.created_at.isoformat() if user.created_at else None,
+                "last_active_at": user.last_login.isoformat() if user.last_login else None,
+                "is_active": user.is_active,
+            },
+        }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -47,13 +76,24 @@ async def register_user(user_create: UserCreate, db: Session = Depends(get_db)):
         )
 
 
+@router.post("/test-login")
+async def test_login(request: UserLogin):
+    """
+    Test endpoint to debug schema parsing
+    """
+    return {"email": request.email, "password": request.password, "status": "received"}
+
+
 @router.post("/login")
-async def login(request: dict):
+async def login(request: UserLogin, db: Session = Depends(get_db)):
     """
-    Temporary working login endpoint for CORS testing
+    Real user authentication with database integration
     """
-    email = request.get("email", "")
-    password = request.get("password", "")
+    email = request.email
+    password = request.password
+
+    # Debug logging
+    print(f"DEBUG: Login attempt - email: {email}, password: {password}")
 
     # Simple validation to avoid 500 errors
     if not email or not password:
@@ -62,41 +102,53 @@ async def login(request: dict):
             detail="Email and password required",
         )
 
-    # Mock authentication for demo user
-    if email == "demo@aquatrack.com" and password == "demo123":
-        # Generate real JWT tokens for demo user
-        demo_user_id = "demo-user-123"
-        access_token = create_access_token(subject=demo_user_id)
-        refresh_token = create_refresh_token(subject=demo_user_id)
-
-        return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer",
-            "expires_in": 1800,
-            "user": {
-                "id": "demo-user-123",
-                "email": "demo@aquatrack.com",
-                "username": "Demo User",
-                "full_name": "Demo User",
-                "avatar_id": "avatar_1",
-                "level": 1,
-                "total_xp": 0,
-                "daily_goal_ml": 2000,
-                "notifications_enabled": True,
-                "theme_preference": "auto",
-                "language_preference": "vi",
-                "sound_enabled": True,
-                "timezone": "Asia/Ho_Chi_Minh",
-                "created_at": "2026-05-04T15:00:00Z",
-                "last_active_at": None,
-                "is_active": True,
-            },
-        }
-    else:
+    # Authenticate user with database
+    user = user_crud.authenticate(db, email=email, password=password)
+    print(f"DEBUG: Authentication result: {user is not None}")
+    if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password"
         )
+
+    # Check if user is active
+    if not user_crud.is_active(user):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Account is deactivated"
+        )
+
+    # Update last login timestamp
+    user_crud.update_last_login(db, user_id=user.id)
+
+    # Generate JWT tokens
+    access_token = create_access_token(subject=user.id)
+    refresh_token = create_refresh_token(subject=user.id)
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "expires_in": 1800,  # 30 minutes
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "username": user.username,
+            "full_name": user.full_name,
+            "avatar_id": user.avatar_id,
+            "level": user.current_level,
+            "total_xp": user.total_xp,
+            "daily_goal_ml": user.daily_goal_ml,  # Dynamic goal per user!
+            "notifications_enabled": user.notifications_enabled,
+            "theme_preference": user.theme_preference,
+            "language_preference": user.language_preference,
+            "sound_enabled": user.sound_enabled,
+            "timezone": user.timezone,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "last_active_at": user.last_login.isoformat() if user.last_login else None,
+            "is_active": user.is_active,
+        },
+    }
 
 
 @router.post("/refresh", response_model=TokenRefreshResponse)

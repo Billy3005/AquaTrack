@@ -60,8 +60,9 @@ void main() {
         ), // Goal met
       ];
 
-      final completedDays =
-          chartData.where((point) => point.value >= point.goal).length;
+      final completedDays = chartData
+          .where((point) => point.value >= point.goal)
+          .length;
       final completionRate = completedDays / chartData.length;
 
       expect(completionRate, closeTo(0.67, 0.01)); // 2/3 ≈ 0.67

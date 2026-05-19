@@ -143,8 +143,9 @@ class FriendsScreen extends ConsumerWidget {
             Text(
               title,
               style: AppTextStyles.bodyMedium.copyWith(
-                color:
-                    isActive ? AppColors.cyanAccent : AppColors.textSecondary,
+                color: isActive
+                    ? AppColors.cyanAccent
+                    : AppColors.textSecondary,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
@@ -153,8 +154,9 @@ class FriendsScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color:
-                      isActive ? AppColors.cyanAccent : AppColors.textTertiary,
+                  color: isActive
+                      ? AppColors.cyanAccent
+                      : AppColors.textTertiary,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -177,7 +179,10 @@ class FriendsScreen extends ConsumerWidget {
 
   /// Build main content
   Widget _buildContent(
-      BuildContext context, WidgetRef ref, FriendsState state) {
+    BuildContext context,
+    WidgetRef ref,
+    FriendsState state,
+  ) {
     return RefreshIndicator(
       onRefresh: () => ref.read(friendsNotifierProvider.notifier).refresh(),
       color: AppColors.cyanAccent,
@@ -191,14 +196,10 @@ class FriendsScreen extends ConsumerWidget {
             ),
 
           // Status filters
-          const SliverToBoxAdapter(
-            child: StatusFilters(),
-          ),
+          const SliverToBoxAdapter(child: StatusFilters()),
 
           // Friends section header
-          SliverToBoxAdapter(
-            child: _buildFriendsHeader(state),
-          ),
+          SliverToBoxAdapter(child: _buildFriendsHeader(state)),
 
           // Friends list
           _buildFriendsList(state),
@@ -243,23 +244,20 @@ class FriendsScreen extends ConsumerWidget {
     }
 
     return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final friend = filteredFriends[index];
-          return Padding(
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              bottom: index == filteredFriends.length - 1 ? 100 : 0,
-            ),
-            child: FriendCard(
-              friend: friend,
-              onTap: () => _showFriendProfile(friend),
-            ),
-          );
-        },
-        childCount: filteredFriends.length,
-      ),
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final friend = filteredFriends[index];
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            bottom: index == filteredFriends.length - 1 ? 100 : 0,
+          ),
+          child: FriendCard(
+            friend: friend,
+            onTap: () => _showFriendProfile(friend),
+          ),
+        );
+      }, childCount: filteredFriends.length),
     );
   }
 
@@ -296,11 +294,7 @@ class FriendsScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: 64,
-            color: AppColors.textTertiary,
-          ),
+          Icon(icon, size: 64, color: AppColors.textTertiary),
           const SizedBox(height: 16),
           Text(
             title,
@@ -329,10 +323,7 @@ class FriendsScreen extends ConsumerWidget {
         children: [
           CircularProgressIndicator(color: AppColors.cyanAccent),
           SizedBox(height: 16),
-          Text(
-            'Đang tải danh sách bạn bè...',
-            style: AppTextStyles.bodyMedium,
-          ),
+          Text('Đang tải danh sách bạn bè...', style: AppTextStyles.bodyMedium),
         ],
       ),
     );
@@ -346,11 +337,7 @@ class FriendsScreen extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppColors.error,
-            ),
+            const Icon(Icons.error_outline, size: 64, color: AppColors.error),
             const SizedBox(height: 16),
             Text(
               'Không thể tải danh sách bạn bè',
@@ -394,11 +381,9 @@ class FriendsScreen extends ConsumerWidget {
 
   /// Navigate to friend search
   void _navigateToSearch(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const FriendSearch(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const FriendSearch()));
   }
 
   /// Show add friend options
@@ -453,7 +438,9 @@ class FriendsScreen extends ConsumerWidget {
 
   /// Show pending friend requests
   void _showPendingRequests(
-      WidgetRef ref, AsyncValue<FriendsState> friendsState) {
+    WidgetRef ref,
+    AsyncValue<FriendsState> friendsState,
+  ) {
     // TODO: Implement pending requests modal
     debugPrint('Show pending requests');
   }

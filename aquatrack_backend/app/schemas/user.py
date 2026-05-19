@@ -18,6 +18,7 @@ class UserCreate(BaseModel):
     password: str = Field(..., min_length=6, max_length=100)
     username: Optional[str] = Field(None, max_length=50)
     full_name: Optional[str] = Field(None, max_length=100)
+    daily_goal_ml: Optional[int] = Field(2000, ge=1000, le=5000, description="Daily hydration goal in ml")
 
     @validator("username")
     def username_alphanumeric(cls, v):

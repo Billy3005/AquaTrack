@@ -63,9 +63,7 @@ class _FriendSearchState extends ConsumerState<FriendSearch> {
           if (_searchQuery.isEmpty) _buildSearchInstructions(),
 
           // Search results
-          Expanded(
-            child: _buildSearchResults(),
-          ),
+          Expanded(child: _buildSearchResults()),
         ],
       ),
     );
@@ -84,10 +82,7 @@ class _FriendSearchState extends ConsumerState<FriendSearch> {
           color: AppColors.textTertiary,
         ),
         border: InputBorder.none,
-        prefixIcon: const Icon(
-          Icons.search,
-          color: AppColors.textTertiary,
-        ),
+        prefixIcon: const Icon(Icons.search, color: AppColors.textTertiary),
       ),
     );
   }
@@ -159,17 +154,16 @@ class _FriendSearchState extends ConsumerState<FriendSearch> {
       decoration: BoxDecoration(
         color: AppColors.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.1)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
         leading: CircleAvatar(
           radius: 24,
           backgroundColor: AppColors.cyanAccent.withValues(alpha: 0.1),
-          backgroundImage:
-              user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+          backgroundImage: user.avatarUrl != null
+              ? NetworkImage(user.avatarUrl!)
+              : null,
           child: user.avatarUrl == null
               ? Text(
                   user.displayName.isNotEmpty
@@ -208,9 +202,7 @@ class _FriendSearchState extends ConsumerState<FriendSearch> {
         backgroundColor: AppColors.cyanAccent,
         foregroundColor: AppColors.primaryBackground,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       child: Text(
         'Kết bạn',
@@ -228,14 +220,9 @@ class _FriendSearchState extends ConsumerState<FriendSearch> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            color: AppColors.cyanAccent,
-          ),
+          CircularProgressIndicator(color: AppColors.cyanAccent),
           SizedBox(height: 16),
-          Text(
-            'Đang tìm kiếm...',
-            style: AppTextStyles.bodyMedium,
-          ),
+          Text('Đang tìm kiếm...', style: AppTextStyles.bodyMedium),
         ],
       ),
     );
@@ -247,11 +234,7 @@ class _FriendSearchState extends ConsumerState<FriendSearch> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.person_off,
-            size: 64,
-            color: AppColors.textTertiary,
-          ),
+          const Icon(Icons.person_off, size: 64, color: AppColors.textTertiary),
           const SizedBox(height: 16),
           Text(
             'Không tìm thấy người dùng',

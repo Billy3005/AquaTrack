@@ -269,6 +269,10 @@ async def get_leaderboard(
     for rank, entry in enumerate(leaderboard_query, 1):
         user_level = _calculate_level_from_xp(entry.total_xp)["level"]
 
+        # Get real user data
+        user = user_crud.get(db, id=entry.user_id)
+        real_username = user.username if user else "Unknown User"
+
         # Check if this is current user
         is_current_user = entry.user_id == current_user_id
 
@@ -276,7 +280,8 @@ async def get_leaderboard(
             {
                 "rank": rank,
                 "user_id": entry.user_id,
-                "username": f"User{entry.user_id[:6]}",  # TODO: Get actual username
+                "username": real_username,  # Real username from database!
+                "avatar_id": user.avatar_id if user else "avatar_1",  # Include user avatar
                 "total_xp": entry.total_xp,
                 "level": user_level,
                 "total_logs": entry.total_logs,
@@ -524,8 +529,9 @@ async def _update_achievements_progress(
 
     current_level = _calculate_level_from_xp(total_xp)["level"]
 
-    # TODO: Calculate current streak
-    current_streak = 1  # Placeholder
+    # Get real current streak from user model
+    user = user_crud.get(db, id=user_id)
+    current_streak = user.current_streak if user else 0
 
     # Update each achievement
     for achievement in achievements:

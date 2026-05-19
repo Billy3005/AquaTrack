@@ -49,18 +49,11 @@ class _LivingDropState extends State<LivingDrop> with TickerProviderStateMixin {
     _waveAnimation = Tween<double>(
       begin: 0.0,
       end: 2 * math.pi,
-    ).animate(CurvedAnimation(
-      parent: _waveController,
-      curve: Curves.linear,
-    ));
+    ).animate(CurvedAnimation(parent: _waveController, curve: Curves.linear));
 
-    _breathingAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _breathingController,
-      curve: Curves.easeInOut,
-    ));
+    _breathingAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _breathingController, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -266,12 +259,14 @@ class LivingDropPainter extends CustomPainter {
       wavePath.moveTo(-waveWidth, fillLevel);
 
       for (double x = -waveWidth; x <= size.width + waveWidth; x += 1) {
-        final y = fillLevel +
+        final y =
+            fillLevel +
             waveHeight * math.sin((x / waveWidth) * 2 * math.pi + waveOffset) +
             waveHeight *
                 0.5 *
                 math.sin(
-                    (x / (waveWidth * 0.7)) * 2 * math.pi + waveOffset * 1.3);
+                  (x / (waveWidth * 0.7)) * 2 * math.pi + waveOffset * 1.3,
+                );
         wavePath.lineTo(x, y);
       }
 
@@ -294,7 +289,8 @@ class LivingDropPainter extends CustomPainter {
       highlightPath.moveTo(-waveWidth, fillLevel - 2);
 
       for (double x = -waveWidth; x <= size.width + waveWidth; x += 1) {
-        final y = fillLevel -
+        final y =
+            fillLevel -
             2 +
             (waveHeight * 0.3) *
                 math.sin((x / waveWidth) * 2 * math.pi + waveOffset);

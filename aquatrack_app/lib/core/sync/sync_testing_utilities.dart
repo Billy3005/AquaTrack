@@ -22,10 +22,10 @@ class SyncTestingUtilities {
     required SyncDatabase syncDatabase,
     required SyncRetryManager retryManager,
     required ConflictResolver conflictResolver,
-  })  : _syncService = syncService,
-        _syncDatabase = syncDatabase,
-        _retryManager = retryManager,
-        _conflictResolver = conflictResolver;
+  }) : _syncService = syncService,
+       _syncDatabase = syncDatabase,
+       _retryManager = retryManager,
+       _conflictResolver = conflictResolver;
 
   /// Simulate offline/online transition testing
   Future<OfflineTestResult> simulateOfflineOnlineTransition({
@@ -153,7 +153,8 @@ class SyncTestingUtilities {
 
       result.averageLatency /= chunkResults.length.toDouble();
       result.totalDuration = stopwatch.elapsed;
-      result.throughputOpsPerSecond = result.totalOperations.toDouble() /
+      result.throughputOpsPerSecond =
+          result.totalOperations.toDouble() /
           result.totalDuration.inSeconds.toDouble();
       result.successRate = result.totalOperations > 0
           ? (result.successfulOperations / result.totalOperations) * 100

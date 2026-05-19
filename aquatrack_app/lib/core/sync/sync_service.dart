@@ -72,8 +72,8 @@ class SyncService {
   SyncService({
     required SyncDatabase syncDatabase,
     required SyncStorage syncStorage,
-  })  : _syncDatabase = syncDatabase,
-        _syncStorage = syncStorage;
+  }) : _syncDatabase = syncDatabase,
+       _syncStorage = syncStorage;
 
   /// Stream of sync state changes
   Stream<SyncState> get syncStateStream => _syncStateController.stream;
@@ -305,8 +305,9 @@ class SyncService {
         error: lastError,
       );
 
-      final finalStatus =
-          lastError == null ? SyncStatus.success : SyncStatus.failed;
+      final finalStatus = lastError == null
+          ? SyncStatus.success
+          : SyncStatus.failed;
       _updateSyncState(status: finalStatus, error: lastError);
 
       AppLogger.info(

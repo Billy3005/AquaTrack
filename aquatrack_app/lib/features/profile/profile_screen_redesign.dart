@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/services/auth_service.dart';
+import '../../shared/widgets/coin_badge.dart';
 
 /// Profile Screen - Complete redesign matching aquatrack/project/components/profile.jsx
 class ProfileScreenRedesign extends ConsumerStatefulWidget {
@@ -21,21 +24,35 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
 
   final List<ReminderData> _reminders = [
     ReminderData(
-        time: '08:00',
-        tone: 'Năng động',
-        label: 'Khởi động ngày mới',
-        isOn: true),
+      time: '08:00',
+      tone: 'Năng động',
+      label: 'Khởi động ngày mới',
+      isOn: true,
+    ),
     ReminderData(
-        time: '12:00', tone: 'Thân thiện', label: 'Nhắc giữa trưa', isOn: true),
+      time: '12:00',
+      tone: 'Thân thiện',
+      label: 'Nhắc giữa trưa',
+      isOn: true,
+    ),
     ReminderData(
-        time: '15:00',
-        tone: 'Nhẹ nhàng',
-        label: 'Buổi chiều dễ quên',
-        isOn: true),
+      time: '15:00',
+      tone: 'Nhẹ nhàng',
+      label: 'Buổi chiều dễ quên',
+      isOn: true,
+    ),
     ReminderData(
-        time: '18:30', tone: 'Thân thiện', label: 'Sau giờ làm', isOn: false),
+      time: '18:30',
+      tone: 'Thân thiện',
+      label: 'Sau giờ làm',
+      isOn: false,
+    ),
     ReminderData(
-        time: '20:00', tone: 'Bình yên', label: 'Cuối ngày', isOn: true),
+      time: '20:00',
+      tone: 'Bình yên',
+      label: 'Cuối ngày',
+      isOn: true,
+    ),
   ];
 
   @override
@@ -160,7 +177,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                     ),
                     Row(
                       children: [
-                        _buildCoinBadge(1240),
+                        const CoinBadge(amount: 1240),
                         const SizedBox(width: 8),
                         _buildSettingsButton(),
                       ],
@@ -203,13 +220,15 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                                 ),
                               ),
                               Container(
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 6),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                ),
                                 width: 3,
                                 height: 3,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFA5B4FC)
-                                      .withValues(alpha: 0.6),
+                                  color: const Color(
+                                    0xFFA5B4FC,
+                                  ).withValues(alpha: 0.6),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -239,115 +258,16 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
     );
   }
 
-  Widget _buildCoinBadge(int amount) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(6, 4, 9, 4),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0x2DFBBF24), // rgba(251,191,36,0.18)
-            Color(0x0FF59E0B), // rgba(245,158,11,0.06)
-          ],
-        ),
-        border: Border.all(
-          color: const Color(0x73FBBF24), // rgba(251,191,36,0.45)
-        ),
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.06),
-            blurRadius: 0,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildCoinIcon(13),
-          const SizedBox(width: 5),
-          Text(
-            amount.toString(),
-            style: const TextStyle(
-              fontFamily: 'SF Pro Rounded',
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFFFDE68A),
-              fontFeatures: [FontFeature.tabularFigures()],
-              letterSpacing: 0.01,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCoinIcon(double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        gradient: const RadialGradient(
-          center: Alignment(0.35, 0.3),
-          radius: 0.75,
-          colors: [
-            Color(0xFFFEF3C7), // 0%
-            Color(0xFFFBBF24), // 55%
-            Color(0xFFB45309), // 100%
-          ],
-          stops: [0.0, 0.55, 1.0],
-        ),
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFF78350F),
-          width: 0.6,
-        ),
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Inner circle
-          Container(
-            width: size * 0.7,
-            height: size * 0.7,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0xFFFDE68A).withValues(alpha: 0.7),
-                width: 0.8,
-              ),
-            ),
-          ),
-          // Dollar sign
-          Text(
-            '\$',
-            style: TextStyle(
-              fontSize: size * 0.5,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF78350F),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSettingsButton() {
     return Container(
       width: 36,
       height: 36,
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.06),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         shape: BoxShape.circle,
       ),
-      child: const Icon(
-        Icons.settings,
-        color: Colors.white,
-        size: 16,
-      ),
+      child: const Icon(Icons.settings, color: Colors.white, size: 16),
     );
   }
 
@@ -383,16 +303,9 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                 colors: [Color(0xFF7DD3FC), Color(0xFF0284C7)],
               ),
               shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.nightBase,
-                width: 2,
-              ),
+              border: Border.all(color: AppColors.nightBase, width: 2),
             ),
-            child: const Icon(
-              Icons.water_drop,
-              color: Colors.white,
-              size: 32,
-            ),
+            child: const Icon(Icons.water_drop, color: Colors.white, size: 32),
           ),
         ),
         Positioned(
@@ -403,10 +316,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
             decoration: BoxDecoration(
               color: const Color(0xFF4F46E5),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: AppColors.nightBase,
-                width: 2,
-              ),
+              border: Border.all(color: AppColors.nightBase, width: 2),
             ),
             child: const Text(
               'LV 7',
@@ -504,8 +414,11 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
       children: [
         Expanded(
           child: _buildLifetimeStatCard(
-            icon: const Icon(Icons.water_drop,
-                color: Color(0xFF38BDF8), size: 16),
+            icon: const Icon(
+              Icons.water_drop,
+              color: Color(0xFF38BDF8),
+              size: 16,
+            ),
             value: '284L',
             label: 'Tổng nước',
           ),
@@ -513,8 +426,11 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
         const SizedBox(width: 8),
         Expanded(
           child: _buildLifetimeStatCard(
-            icon: const Icon(Icons.local_fire_department,
-                color: Color(0xFFF97316), size: 16),
+            icon: const Icon(
+              Icons.local_fire_department,
+              color: Color(0xFFF97316),
+              size: 16,
+            ),
             value: '21',
             label: 'Streak dài nhất',
             subtitle: 'ngày',
@@ -523,8 +439,11 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
         const SizedBox(width: 8),
         Expanded(
           child: _buildLifetimeStatCard(
-            icon: const Icon(Icons.calendar_today,
-                color: Color(0xFFA78BFA), size: 16),
+            icon: const Icon(
+              Icons.calendar_today,
+              color: Color(0xFFA78BFA),
+              size: 16,
+            ),
             value: '84',
             label: 'Ngày hoạt động',
             subtitle: 'trên 90',
@@ -545,16 +464,11 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
       decoration: BoxDecoration(
         color: AppColors.nightCard,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.04),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [icon],
-          ),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [icon]),
           const SizedBox(height: 6),
           RichText(
             text: TextSpan(
@@ -599,46 +513,49 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
   Widget _buildAvatarCollection() {
     final avatars = [
       AvatarData(
-          color: const Color(0xFF38BDF8),
-          name: 'Drop',
-          unlocked: true,
-          current: true),
+        color: const Color(0xFF38BDF8),
+        name: 'Drop',
+        unlocked: true,
+        current: true,
+      ),
       AvatarData(
-          color: const Color(0xFF0EA5E9),
-          name: 'Wave',
-          unlocked: true,
-          current: false),
+        color: const Color(0xFF0EA5E9),
+        name: 'Wave',
+        unlocked: true,
+        current: false,
+      ),
       AvatarData(
-          color: const Color(0xFFA78BFA),
-          name: 'Glacier',
-          unlocked: true,
-          current: false),
+        color: const Color(0xFFA78BFA),
+        name: 'Glacier',
+        unlocked: true,
+        current: false,
+      ),
       AvatarData(
-          color: const Color(0xFF0284C7),
-          name: 'Ocean',
-          unlocked: false,
-          current: false,
-          level: 'LV 10'),
+        color: const Color(0xFF0284C7),
+        name: 'Ocean',
+        unlocked: false,
+        current: false,
+        level: 'LV 10',
+      ),
       AvatarData(
-          color: const Color(0xFF94A3B8),
-          name: 'Cloud',
-          unlocked: false,
-          current: false,
-          level: 'LV 12'),
+        color: const Color(0xFF94A3B8),
+        name: 'Cloud',
+        unlocked: false,
+        current: false,
+        level: 'LV 12',
+      ),
       AvatarData(
-          color: const Color(0xFF10B981),
-          name: 'Spring',
-          unlocked: false,
-          current: false,
-          level: 'LV 15'),
+        color: const Color(0xFF10B981),
+        name: 'Spring',
+        unlocked: false,
+        current: false,
+        level: 'LV 15',
+      ),
     ];
 
     return Column(
       children: [
-        _buildSectionHeader(
-          title: 'Bộ sưu tập avatar',
-          trailing: '3/5',
-        ),
+        _buildSectionHeader(title: 'Bộ sưu tập avatar', trailing: '3/5'),
         const SizedBox(height: 10),
         SizedBox(
           height: 120,
@@ -649,9 +566,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
               final avatar = avatars[index];
               return Container(
                 width: 84,
-                margin: EdgeInsets.only(
-                  left: index == 0 ? 0 : 10,
-                ),
+                margin: EdgeInsets.only(left: index == 0 ? 0 : 10),
                 child: Column(
                   children: [
                     Container(
@@ -677,13 +592,13 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                                 width: 2,
                               )
                             : avatar.unlocked
-                                ? Border.all(
-                                    color: avatar.color.withValues(alpha: 0.4),
-                                  )
-                                : Border.all(
-                                    color: Colors.white.withValues(alpha: 0.15),
-                                    style: BorderStyle.solid,
-                                  ),
+                            ? Border.all(
+                                color: avatar.color.withValues(alpha: 0.4),
+                              )
+                            : Border.all(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                style: BorderStyle.solid,
+                              ),
                         boxShadow: avatar.unlocked
                             ? [
                                 BoxShadow(
@@ -769,39 +684,44 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
   Widget _buildThemesSection() {
     final themes = [
       ThemeData(
-          name: 'Ocean Night',
-          gradient: const LinearGradient(
-              colors: [Color(0xFF0C4A80), Color(0xFF082F5C)]),
-          current: true,
-          unlocked: true),
+        name: 'Ocean Night',
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0C4A80), Color(0xFF082F5C)],
+        ),
+        current: true,
+        unlocked: true,
+      ),
       ThemeData(
-          name: 'Default Blue',
-          gradient: const LinearGradient(
-              colors: [Color(0xFF38BDF8), Color(0xFF0EA5E9)]),
-          current: false,
-          unlocked: true),
+        name: 'Default Blue',
+        gradient: const LinearGradient(
+          colors: [Color(0xFF38BDF8), Color(0xFF0EA5E9)],
+        ),
+        current: false,
+        unlocked: true,
+      ),
       ThemeData(
-          name: 'Desert Sunset',
-          gradient: const LinearGradient(
-              colors: [Color(0xFFF59E0B), Color(0xFF92400E)]),
-          current: false,
-          unlocked: false,
-          level: 'LV 9'),
+        name: 'Desert Sunset',
+        gradient: const LinearGradient(
+          colors: [Color(0xFFF59E0B), Color(0xFF92400E)],
+        ),
+        current: false,
+        unlocked: false,
+        level: 'LV 9',
+      ),
       ThemeData(
-          name: 'Forest Rain',
-          gradient: const LinearGradient(
-              colors: [Color(0xFF059669), Color(0xFF064E3B)]),
-          current: false,
-          unlocked: false,
-          level: 'LV 11'),
+        name: 'Forest Rain',
+        gradient: const LinearGradient(
+          colors: [Color(0xFF059669), Color(0xFF064E3B)],
+        ),
+        current: false,
+        unlocked: false,
+        level: 'LV 11',
+      ),
     ];
 
     return Column(
       children: [
-        _buildSectionHeader(
-          title: 'Themes',
-          trailing: '2/4',
-        ),
+        _buildSectionHeader(title: 'Themes', trailing: '2/4'),
         const SizedBox(height: 10),
         GridView.builder(
           shrinkWrap: true,
@@ -820,13 +740,8 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
               decoration: BoxDecoration(
                 color: AppColors.nightSurface,
                 border: theme.current
-                    ? Border.all(
-                        color: const Color(0xFFFBBF24),
-                        width: 1.5,
-                      )
-                    : Border.all(
-                        color: Colors.white.withValues(alpha: 0.06),
-                      ),
+                    ? Border.all(color: const Color(0xFFFBBF24), width: 1.5)
+                    : Border.all(color: Colors.white.withValues(alpha: 0.06)),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Opacity(
@@ -843,10 +758,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                       child: theme.unlocked
                           ? null
                           : const Center(
-                              child: Text(
-                                '🔒',
-                                style: TextStyle(fontSize: 13),
-                              ),
+                              child: Text('🔒', style: TextStyle(fontSize: 13)),
                             ),
                     ),
                     const SizedBox(width: 10),
@@ -869,8 +781,8 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                             theme.current
                                 ? 'Đang dùng'
                                 : theme.unlocked
-                                    ? 'Đã mở'
-                                    : theme.level ?? '',
+                                ? 'Đã mở'
+                                : theme.level ?? '',
                             style: TextStyle(
                               fontSize: 10,
                               color: theme.current
@@ -909,11 +821,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
           ),
           child: Row(
             children: [
-              const Icon(
-                Icons.water_drop,
-                color: Color(0xFF38BDF8),
-                size: 22,
-              ),
+              const Icon(Icons.water_drop, color: Color(0xFF38BDF8), size: 22),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -961,8 +869,12 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                                     ),
                                     filled: true,
                                     fillColor: const Color(0x1A38BDF8),
-                                    contentPadding:
-                                        const EdgeInsets.fromLTRB(6, 2, 6, 2),
+                                    contentPadding: const EdgeInsets.fromLTRB(
+                                      6,
+                                      2,
+                                      6,
+                                      2,
+                                    ),
                                   ),
                                   onSubmitted: (_) => _saveGoal(),
                                   onEditingComplete: _saveGoal,
@@ -1065,6 +977,103 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
     });
   }
 
+  /// Handle sign out functionality
+  Future<void> _handleSignOut() async {
+    // Show confirmation dialog
+    final shouldSignOut = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.nightCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Xác nhận đăng xuất',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          'Bạn có chắc chắn muốn đăng xuất khỏi AquaTrack?',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Hủy',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFFCA5A5),
+            ),
+            child: const Text(
+              'Đăng xuất',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldSignOut == true) {
+      try {
+        // Show loading state
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text('Đang đăng xuất...'),
+                ],
+              ),
+              backgroundColor: AppColors.nightSurface,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+
+        // Perform logout
+        await AuthService().logout();
+
+        if (mounted) {
+          // Clear snackbar and navigate to login
+          ScaffoldMessenger.of(context).clearSnackBars();
+
+          // Navigate to login screen and clear all routes
+          context.go('/login');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi khi đăng xuất: ${e.toString()}'),
+              backgroundColor: Colors.red.shade700,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    }
+  }
+
   Widget _buildReminderSection() {
     final activeCount = _reminders.where((r) => r.isOn).length;
 
@@ -1086,7 +1095,10 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
               ...List.generate(_reminders.length, (index) {
                 final reminder = _reminders[index];
                 return _buildReminderRow(
-                    reminder, index, index == _reminders.length - 1);
+                  reminder,
+                  index,
+                  index == _reminders.length - 1,
+                );
               }),
               Container(
                 padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
@@ -1099,11 +1111,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.add,
-                      color: Color(0xFF38BDF8),
-                      size: 14,
-                    ),
+                    const Icon(Icons.add, color: Color(0xFF38BDF8), size: 14),
                     const SizedBox(width: 8),
                     Text(
                       'Thêm slot',
@@ -1131,9 +1139,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
         border: isLast
             ? null
             : Border(
-                bottom: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.04),
-                ),
+                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.04)),
               ),
       ),
       child: Row(
@@ -1215,8 +1221,10 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
     );
   }
 
-  Widget _buildToggleSwitch(
-      {required bool isOn, required VoidCallback onChanged}) {
+  Widget _buildToggleSwitch({
+    required bool isOn,
+    required VoidCallback onChanged,
+  }) {
     return GestureDetector(
       onTap: onChanged,
       child: Container(
@@ -1264,25 +1272,29 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
   Widget _buildBodyDataSection() {
     final bodyData = [
       BodyRowData(
-          label: 'Cân nặng · Chiều cao',
-          value: '62 kg · 168 cm',
-          hint: 'Cập nhật 2 tuần trước'),
+        label: 'Cân nặng · Chiều cao',
+        value: '62 kg · 168 cm',
+        hint: 'Cập nhật 2 tuần trước',
+      ),
       BodyRowData(label: 'Giới tính · Tuổi', value: 'Nam · 28'),
       BodyRowData(
-          label: 'Mức vận động',
-          value: 'Vừa phải',
-          pillColor: const Color(0xFF10B981)),
+        label: 'Mức vận động',
+        value: 'Vừa phải',
+        pillColor: const Color(0xFF10B981),
+      ),
       BodyRowData(
-          label: 'Công việc',
-          value: 'Văn phòng',
-          pillColor: const Color(0xFF38BDF8)),
+        label: 'Công việc',
+        value: 'Văn phòng',
+        pillColor: const Color(0xFF38BDF8),
+      ),
       BodyRowData(label: 'Sức khoẻ đặc biệt', value: 'Không có'),
       BodyRowData(label: 'Cà phê · Rượu bia', value: '1 cốc · 0 đơn vị'),
       BodyRowData(
-          label: 'Climate zone',
-          value: 'Nhiệt đới (HCMC)',
-          pillColor: const Color(0xFFF59E0B),
-          isLast: true),
+        label: 'Climate zone',
+        value: 'Nhiệt đới (HCMC)',
+        pillColor: const Color(0xFFF59E0B),
+        isLast: true,
+      ),
     ];
 
     return Column(
@@ -1303,11 +1315,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.edit,
-                    color: Color(0xFFBAE6FD),
-                    size: 10,
-                  ),
+                  const Icon(Icons.edit, color: Color(0xFFBAE6FD), size: 10),
                   const SizedBox(width: 4),
                   const Text(
                     'Sửa',
@@ -1328,9 +1336,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
           decoration: BoxDecoration(
             color: AppColors.nightCard,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.04),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
           ),
           child: Column(
             children: bodyData.map((data) => _buildBodyRow(data)).toList(),
@@ -1347,9 +1353,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
         border: data.isLast
             ? null
             : Border(
-                bottom: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.04),
-                ),
+                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.04)),
               ),
       ),
       child: Row(
@@ -1412,11 +1416,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
               ),
             ),
           const SizedBox(width: 10),
-          Icon(
-            Icons.chevron_right,
-            color: AppColors.textMuted,
-            size: 14,
-          ),
+          Icon(Icons.chevron_right, color: AppColors.textMuted, size: 14),
         ],
       ),
     );
@@ -1426,9 +1426,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
-          // Handle sign out
-        },
+        onPressed: () => _handleSignOut(),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0x0FEF4444), // rgba(239,68,68,0.06)
           foregroundColor: const Color(0xFFFCA5A5),

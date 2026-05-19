@@ -318,8 +318,9 @@ class BodyMapScreen extends ConsumerWidget {
 
   /// Build critical organs alert
   Widget _buildCriticalOrgansAlert(WidgetRef ref, BodyMapState bodyMapState) {
-    final criticalOrgans =
-        ref.read(bodyMapNotifierProvider.notifier).getCriticalOrgans();
+    final criticalOrgans = ref
+        .read(bodyMapNotifierProvider.notifier)
+        .getCriticalOrgans();
 
     if (criticalOrgans.isEmpty) {
       return const SizedBox.shrink();
@@ -357,7 +358,9 @@ class BodyMapScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          ...criticalOrgans.take(3).map(
+          ...criticalOrgans
+              .take(3)
+              .map(
                 (organHealth) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(

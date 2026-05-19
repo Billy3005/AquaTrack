@@ -54,6 +54,35 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
 
+    # Email Settings (SMTP)
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_USE_TLS: bool = True
+    FROM_EMAIL: str = "noreply@aquatrack.app"
+    FROM_NAME: str = "AquaTrack"
+
+    # Frontend URLs
+    FRONTEND_URL: str = "http://localhost:3000"  # Flutter web or mobile deep link base
+    APP_STORE_URL: str = "https://play.google.com/store/apps/details?id=com.aquatrack.app"
+
+    # Security Settings (Production)
+    ENABLE_RATE_LIMITING: bool = False  # Disabled for development testing
+    BCRYPT_ROUNDS: int = 12
+    SESSION_COOKIE_SECURE: bool = False  # Set True in production with HTTPS
+    SESSION_COOKIE_HTTPONLY: bool = True
+    REQUIRE_EMAIL_VERIFICATION: bool = True
+
+    # File Upload Settings
+    MAX_FILE_SIZE_MB: int = 10
+    ALLOWED_FILE_TYPES: List[str] = ["image/jpeg", "image/png", "image/webp"]
+    UPLOAD_DIRECTORY: str = "./uploads"
+
+    # Rate Limiting Settings
+    RATE_LIMIT_REQUESTS_PER_MINUTE: int = 60
+    RATE_LIMIT_BURST: int = 100
+
     # App specific settings
     DEFAULT_DAILY_GOAL_ML: int = 2000
     MAX_DAILY_GOAL_ML: int = 5000
@@ -63,6 +92,11 @@ class Settings(BaseSettings):
     BASE_XP_PER_LEVEL: int = 100
     XP_MULTIPLIER: float = 1.5
     MAX_LEVEL: int = 50
+
+    # Monitoring Settings
+    ENABLE_MONITORING: bool = True
+    HEALTH_CHECK_INTERVAL_SECONDS: int = 60
+    LOG_LEVEL: str = "INFO"
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=True

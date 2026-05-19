@@ -11,24 +11,72 @@ from app.crud.intake_log import intake_log_crud
 from app.models.intake_log import IntakeLog
 from app.schemas.intake_log import (IntakeLogCreate, IntakeLogResponse,
                                     IntakeLogUpdate)
+from pydantic import BaseModel
+from typing import Any
+
+# Response schemas
+class AchievementUnlocked(BaseModel):
+    achievement_id: str
+    achievement_key: str
+    achievement_type: str
+    title: str
+    description: str
+    icon: str
+    xp_reward: int
+    unlocked_at: Any
+
+class IntakeLogWithAchievements(BaseModel):
+    intake_log: IntakeLogResponse
+    achievements: List[AchievementUnlocked] = []
+    level_progress: Optional[dict] = None
 
 router = APIRouter()
 
 
-@router.post("/", response_model=IntakeLogResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=IntakeLogWithAchievements, status_code=status.HTTP_201_CREATED)
 async def create_intake_log(
     intake_log_data: IntakeLogCreate,
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """
-    Create new intake log entry
+    Create new intake log entry with achievement processing
     """
-    # Create intake log using CRUD with server-side calculations
-    db_intake_log = intake_log_crud.create(
+    # Import achievement service here to avoid circular imports
+    from app.services.achievement_service import achievement_service
+    from app.crud.user import user_crud
+
+    # Create intake log with achievements
+    db_intake_log, achievements = await intake_log_crud.create_with_achievements(
         db=db, obj_in=intake_log_data, user_id=current_user_id
     )
-    return db_intake_log
+
+    # Get updated user level progress
+    user = user_crud.get(db, current_user_id)
+    level_progress = None
+    if user:
+        level_progress = achievement_service.get_level_progress(user.total_xp)
+
+    # Convert achievements to response format
+    achievement_responses = [
+        AchievementUnlocked(
+            achievement_id=ach['achievement_id'],
+            achievement_key=ach['achievement_key'],
+            achievement_type=ach['achievement_type'].value if hasattr(ach['achievement_type'], 'value') else str(ach['achievement_type']),
+            title=ach['title'],
+            description=ach['description'],
+            icon=ach['icon'],
+            xp_reward=ach['xp_reward'],
+            unlocked_at=ach['unlocked_at']
+        )
+        for ach in achievements
+    ]
+
+    return IntakeLogWithAchievements(
+        intake_log=db_intake_log,
+        achievements=achievement_responses,
+        level_progress=level_progress
+    )
 
 
 @router.get("/", response_model=List[IntakeLogResponse])

@@ -144,7 +144,9 @@ class HiveStorageService {
 
     await _appSettingsBox.put('cached_friends', friendsData);
     await _appSettingsBox.put(
-        'friends_cache_time', DateTime.now().millisecondsSinceEpoch);
+      'friends_cache_time',
+      DateTime.now().millisecondsSinceEpoch,
+    );
   }
 
   /// Load cached friends data
@@ -225,7 +227,9 @@ class HiveStorageService {
   /// Cache timestamp for data freshness tracking
   Future<void> cacheSocialDataTimestamp(DateTime timestamp) async {
     await _appSettingsBox.put(
-        'social_data_timestamp', timestamp.millisecondsSinceEpoch);
+      'social_data_timestamp',
+      timestamp.millisecondsSinceEpoch,
+    );
   }
 
   /// Load cached social data timestamp
