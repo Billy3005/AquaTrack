@@ -12,6 +12,7 @@ from app.crud.achievement import achievement_crud
 from app.crud.intake_log import intake_log_crud
 from app.crud.user import user_crud
 from app.models.achievement import Achievement, AchievementType
+from app.models.intake_log import IntakeLog
 
 router = APIRouter()
 

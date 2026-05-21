@@ -1,4 +1,5 @@
 import '../models/intake_log.dart';
+import '../models/intake_log_with_achievements.dart';
 import '../services/api_service.dart';
 import '../utils/logger.dart';
 
@@ -11,8 +12,8 @@ class IntakeRepository {
   IntakeRepository({ApiService? apiService})
     : _apiService = apiService ?? ApiService();
 
-  /// Create new intake log entry
-  Future<IntakeLog> createIntakeLog({
+  /// Create new intake log entry with achievements
+  Future<IntakeLogWithAchievements> createIntakeLog({
     required int volumeMl,
     required String liquidType,
     String? temperature,
@@ -32,18 +33,43 @@ class IntakeRepository {
         source: source,
       );
 
-      final response = await _apiService.post<IntakeLog>(
+      final response = await _apiService.post<dynamic>(
         '/intake/',
         data: request.toJson(),
-        fromJson: (json) => IntakeLog.fromJson(json as Map<String, dynamic>),
+        fromJson: (json) => json,
       );
 
       if (response.data != null) {
+        final raw = response.data;
+        Map<String, dynamic>? payload;
+
+        if (raw is Map<String, dynamic>) {
+          payload = raw['intake_log'] is Map<String, dynamic>
+              ? raw
+              : (raw['data'] is Map<String, dynamic>
+                    ? raw['data'] as Map<String, dynamic>
+                    : null);
+        }
+
+        if (payload == null) {
+          throw Exception('Create intake log response data has invalid format');
+        }
+
+        final parsed = IntakeLogWithAchievements.fromJson(payload);
         AppLogger.info(
           _tag,
-          'Intake log created successfully: ${response.data!.id}',
+          'Intake log created successfully: ${parsed.intakeLog.id}',
         );
-        return response.data!;
+
+        // Log achievements if any
+        if (parsed.hasAchievements) {
+          AppLogger.info(
+            _tag,
+            'Unlocked ${parsed.achievements.length} achievements',
+          );
+        }
+
+        return parsed;
       } else {
         throw Exception('Create intake log response data is null');
       }
@@ -247,7 +273,7 @@ class IntakeRepository {
   }
 
   /// Quick log water with predefined amounts
-  Future<IntakeLog> quickLogWater(int volumeMl) async {
+  Future<IntakeLogWithAchievements> quickLogWater(int volumeMl) async {
     return createIntakeLog(
       volumeMl: volumeMl,
       liquidType: 'water',
@@ -256,7 +282,7 @@ class IntakeRepository {
   }
 
   /// Log water from smart scan
-  Future<IntakeLog> logFromScan({
+  Future<IntakeLogWithAchievements> logFromScan({
     required int volumeMl,
     required double confidenceScore,
     String? deviceInfo,

@@ -209,6 +209,69 @@ class CRUDFriend(CRUDBase[Friend, dict, dict]):
 
         return result
 
+    def get_friend_profile(
+        self, db: Session, *, user_id: str, friend_user_id: str
+    ) -> Optional[dict]:
+        """Get detailed friend profile by friend user ID"""
+        FriendUser = aliased(User)
+
+        friend_data = (
+            db.query(Friend, FriendUser)
+            .join(FriendUser, Friend.friend_user_id == FriendUser.id)
+            .filter(
+                and_(
+                    Friend.user_id == user_id,
+                    Friend.friend_user_id == friend_user_id,
+                    Friend.is_active == True,
+                    Friend.is_blocked == False,
+                )
+            )
+            .first()
+        )
+
+        if not friend_data:
+            return None
+
+        friend, friend_user = friend_data
+
+        # Get friend's recent activity (intake logs)
+        from app.crud.intake_log import intake_log_crud
+        recent_logs = intake_log_crud.get_by_user(
+            db, user_id=friend_user_id, skip=0, limit=5
+        )
+
+        # Calculate friendship duration
+        friendship_duration = (datetime.utcnow() - friend.created_at).days
+
+        # Get friend's weekly stats if available
+        from app.crud.leaderboard import leaderboard_crud
+        current_week_start = leaderboard_crud.get_current_week_start()
+        weekly_stats = leaderboard_crud.get_user_week_stats(
+            db, user_id=friend_user_id, week_start=current_week_start
+        )
+
+        return {
+            "id": friend_user.id,
+            "username": friend_user.username,
+            "display_name": friend_user.full_name,
+            "avatar_url": f"/avatars/{friend_user.avatar_id}" if friend_user.avatar_id else None,
+            "hydration_level": weekly_stats.get("hydration_percentage", 0.0) if weekly_stats else 0.0,
+            "daily_progress": weekly_stats.get("daily_progress", 0.0) if weekly_stats else 0.0,
+            "current_streak": friend_user.current_streak,
+            "is_online": friend_user.is_online if hasattr(friend_user, 'is_online') else False,
+            "status": getattr(friend_user, 'status', 'normal'),
+            "last_active": friend_user.last_login,
+            "weekly_rank": weekly_stats.get("rank", None) if weekly_stats else None,
+            "weekly_score": weekly_stats.get("weekly_score", None) if weekly_stats else None,
+            "friendship_duration_days": friendship_duration,
+            "recent_activity": [{
+                "volume_ml": log.effective_volume_ml,
+                "liquid_type": log.liquid_type,
+                "logged_at": log.logged_at.isoformat(),
+                "xp_earned": log.xp_earned,
+            } for log in recent_logs[:3]],
+        }
+
 
 class CRUDFriendRequest(CRUDBase[FriendRequest, FriendRequestCreate, FriendRequestUpdate]):
     """CRUD operations for FriendRequest model"""

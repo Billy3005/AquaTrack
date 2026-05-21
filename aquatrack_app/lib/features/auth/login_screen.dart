@@ -30,8 +30,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   void initState() {
     super.initState();
     // Pre-fill demo credentials
-    _emailController.text = 'minh@aquatrack.app';
-    _passwordController.text = 'password123';
+    _emailController.text = '';
+    _passwordController.text = '';
 
     _bubbleController = AnimationController(
       duration: const Duration(seconds: 4),
@@ -189,8 +189,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           final opacity = animValue < 0.3
               ? animValue / 0.3 * 0.8
               : animValue > 0.7
-              ? (1.0 - animValue) / 0.3 * 0.8
-              : 0.8;
+                  ? (1.0 - animValue) / 0.3 * 0.8
+                  : 0.8;
           final yOffset = animValue * -120.0;
 
           return Positioned(
@@ -474,9 +474,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       child: ElevatedButton(
         onPressed: canSubmit && !_isLoading ? _login : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: canSubmit
-              ? Colors.transparent
-              : const Color(0x0DFFFFFF),
+          backgroundColor:
+              canSubmit ? Colors.transparent : const Color(0x0DFFFFFF),
           shadowColor: Colors.transparent,
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           shape: RoundedRectangleBorder(

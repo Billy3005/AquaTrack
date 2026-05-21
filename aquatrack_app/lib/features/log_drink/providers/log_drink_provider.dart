@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -69,11 +70,16 @@ class LogDrinkNotifier extends _$LogDrinkNotifier {
       final intakeRepository = IntakeRepository();
 
       // Create intake log with drink type
-      await intakeRepository.createIntakeLog(
+      final result = await intakeRepository.createIntakeLog(
         volumeMl: state.amountMl,
         liquidType: state.selectedDrinkType,
         source: 'manual_log',
       );
+
+      // Log achievements if any
+      if (result.hasAchievements) {
+        debugPrint('🏆 LogDrink: Unlocked ${result.achievements.length} achievements!');
+      }
 
       // Reset form sau khi log thành công
       state = const LogDrinkState();

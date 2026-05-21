@@ -129,6 +129,20 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             db.refresh(user)
         return user
 
+    def update_status(self, db: Session, *, user_id: str, status: str) -> User:
+        """Update user's friend status"""
+        user = self.get(db, user_id)
+        if not user:
+            return None
+
+        # Update status field (we need to add this to User model)
+        user.status = status
+
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
+
     def get_active_users(self, db: Session, *, skip: int = 0, limit: int = 1000):
         """Get all active users"""
         return (
@@ -166,3 +180,9 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
 # Global instance
 user_crud = CRUDUser(User)
+
+
+# Helper functions for API dependencies
+def get_user_by_id(db: Session, user_id: str) -> Optional[User]:
+    """Get user by ID - helper for API dependencies"""
+    return user_crud.get(db, user_id)

@@ -222,13 +222,9 @@ class StatsNotifier extends _$StatsNotifier {
         '📊 StatsProvider: Loading data from local storage (backend integration pending)',
       );
 
-      final allLogs = storage.loadAllIntakeLogs();
-      periodLogs = allLogs
-          .where(
-            (log) =>
-                log.loggedAt.isAfter(startDate) && log.loggedAt.isBefore(now),
-          )
-          .toList();
+      // Use empty logs for now since this is sync method
+      // TODO: Make this async to properly load from storage
+      periodLogs = [];
     } catch (e) {
       debugPrint('📊 StatsProvider: Error loading data: $e');
       periodLogs = []; // Return empty data on error
@@ -326,7 +322,8 @@ class StatsNotifier extends _$StatsNotifier {
     // For now, return a placeholder
     // This should integrate with the existing streak calculation logic
     // In production, this would calculate actual streak from daily summaries
-    return storage.loadSetting<int>('current_streak') ?? 0;
+    // TODO: Make this async to properly load from storage
+    return 0;
   }
 
   /// Get number of days in period

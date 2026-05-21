@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/living_drop.dart';
+import '../../core/providers/user_stats_provider.dart';
 import '../../shared/widgets/coin_badge.dart';
+import '../level/providers/level_provider.dart';
 import 'providers/home_provider.dart';
 
 /// Home Screen - Complete redesign matching aquatrack/project/components/home.jsx
@@ -18,15 +20,17 @@ class HomeScreenRedesign extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late AnimationController _xpController;
   late Animation<double> _xpAnimation;
   int _activeChip = 250;
   bool _showXpPopup = false;
+  bool _hasRefreshedThisBuild = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _xpController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
@@ -39,9 +43,54 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _xpController.dispose();
     super.dispose();
   }
+
+  @override
+  void deactivate() {
+    // Reset refresh flag khi user navigate away
+    _hasRefreshedThisBuild = false;
+    super.deactivate();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refresh user stats when app becomes active
+    if (state == AppLifecycleState.resumed) {
+      _refreshUserStats();
+    }
+  }
+
+  /// Refresh user stats when returning to home screen
+  void _refreshUserStats() {
+    try {
+      // Refresh home provider data từ server
+      ref.read(homeNotifierProvider.notifier).refresh();
+
+      // Refresh user stats counter
+      final refreshNotifier = ref.read(userStatsRefreshProvider.notifier);
+      refreshNotifier.state++;
+
+      debugPrint('🏠 HomeScreen: Triggered data refresh');
+    } catch (e) {
+      debugPrint('❌ HomeScreen: Error refreshing data: $e');
+    }
+  }
+
+  /// Get level name from level number
+  String _getLevelName(int level) {
+    if (level >= 50) return 'Thần nước';
+    if (level >= 40) return 'Chuyên gia hydration';
+    if (level >= 30) return 'Bậc thầy nước';
+    if (level >= 20) return 'Ninja hydration';
+    if (level >= 10) return 'Chiến binh nước';
+    if (level >= 5) return 'Người uống nước';
+    return 'Tân binh';
+  }
+
 
   /// Show XP popup animation
   void _showXpAnimation(int amount) {
@@ -108,6 +157,15 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
   @override
   Widget build(BuildContext context) {
     final homeSummaryAsync = ref.watch(homeNotifierProvider);
+    final levelStateAsync = ref.watch(levelNotifierProvider);
+
+    // Refresh data when screen comes into focus after navigation (once per build)
+    if (!_hasRefreshedThisBuild) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _refreshUserStats();
+      });
+      _hasRefreshedThisBuild = true;
+    }
 
     return Scaffold(
       body: Container(
@@ -116,7 +174,11 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
         color: AppColors.nightBase,
         child: SafeArea(
           child: homeSummaryAsync.when(
-            data: (summary) => _buildMainContent(summary),
+            data: (summary) => levelStateAsync.when(
+              data: (levelState) => _buildMainContent(summary, null, levelState),
+              loading: () => _buildMainContent(summary, null, null),
+              error: (error, stack) => _buildMainContent(summary, null, null),
+            ),
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stack) => _buildErrorState(error),
           ),
@@ -127,21 +189,21 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
     );
   }
 
-  Widget _buildMainContent(dynamic summary) {
-    final current = summary?.totalEffectiveMl ?? 0;
-    final goal = summary?.dailyGoalMl ?? 2000;
-    final percent = ((current / goal) * 100).clamp(0, 100);
+  Widget _buildMainContent(dynamic summary, UserStatsData? userStats, LevelState? levelState) {
+    final current = (summary?.totalEffectiveMl ?? 0).toDouble();
+    final goal = (summary?.dailyGoalMl ?? 2000).toDouble(); // Use goal from summary or default
+    final percent = ((current / goal) * 100.0).clamp(0.0, 100.0);
 
     // Determine state based on current data
-    final isGoal = percent >= 80;
-    final isLow = percent < 31;
+    final isGoal = percent >= 80.0;
+    final isLow = percent < 31.0;
     final hot = false; // Could be determined by weather API
     final isNight = DateTime.now().hour >= 22 || DateTime.now().hour < 6;
 
     return Column(
       children: [
         // Hero section
-        _buildHeroSection(summary, percent, isGoal, isLow, isNight, hot),
+        _buildHeroSection(summary, userStats, levelState, percent, isGoal, isLow, isNight, hot),
 
         // Scrollable content
         Expanded(
@@ -154,7 +216,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
                 const SizedBox(height: 22),
                 _buildAquaAICard(hot, isLow, isGoal, isNight),
                 const SizedBox(height: 18),
-                _buildTodayLogSection(current),
+                _buildTodayLogSection(current.round()),
               ],
             ),
           ),
@@ -165,6 +227,8 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
 
   Widget _buildHeroSection(
     dynamic summary,
+    UserStatsData? userStats,
+    LevelState? levelState,
     double percent,
     bool isGoal,
     bool isLow,
@@ -172,7 +236,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
     bool hot,
   ) {
     final current = summary?.totalEffectiveMl ?? 0;
-    final goal = summary?.dailyGoalMl ?? 2000;
+    final goal = userStats?.dailyGoalMl ?? summary?.dailyGoalMl ?? 2000;
 
     // Hero background based on state
     Gradient heroBg;
@@ -214,7 +278,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
       child: Column(
         children: [
           // Top context row
-          _buildTopContextRow(hot, isNight),
+          _buildTopContextRow(summary, userStats, levelState, hot, isNight),
           const SizedBox(height: 8),
 
           // Greeting
@@ -229,7 +293,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
                 percent: percent,
                 size: 200,
                 label: '${percent.round()}%',
-                sublabel: '${current.toString()} / ${goal.toString()} ml',
+                sublabel: '${current.round()} / ${goal.round()} ml',
                 showGlow: isGoal,
               ),
 
@@ -270,13 +334,13 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
           const SizedBox(height: 16),
 
           // XP bar in hero
-          _buildXPBar(summary),
+          _buildXPBar(summary, userStats, levelState),
         ],
       ),
     );
   }
 
-  Widget _buildTopContextRow(bool hot, bool isNight) {
+  Widget _buildTopContextRow(dynamic summary, UserStatsData? userStats, LevelState? levelState, bool hot, bool isNight) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -308,12 +372,12 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
           ],
         ),
 
-        // Coin and streak badges
+        // Coin and streak badges - use data from level state
         Row(
           children: [
-            const CoinBadge(amount: 1240),
+            CoinBadge(amount: levelState?.currentXP ?? 0),
             const SizedBox(width: 6),
-            _buildStreakBadge(12),
+            _buildStreakBadge(levelState?.currentStreak ?? 0),
           ],
         ),
       ],
@@ -409,12 +473,14 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
     );
   }
 
-  Widget _buildXPBar(dynamic summary) {
-    final xp = summary?.xpToday ?? 1240;
-    final xpMax = 2000;
-    final level = summary?.currentLevel ?? 7;
-    const levelName = 'Chiến binh Nước';
-    final pct = (xp / xpMax * 100).clamp(0, 100);
+  Widget _buildXPBar(dynamic summary, UserStatsData? userStats, LevelState? levelState) {
+    final xp = (levelState?.currentXP ?? 0).toDouble();
+    final level = levelState?.currentLevel ?? 1;
+    final levelName = _getLevelName(level);
+
+    // Use next level XP from level state
+    final xpMax = (levelState?.nextLevelXP ?? level * 100).toDouble();
+    final pct = xpMax > 0 ? (xp / xpMax * 100.0).clamp(0.0, 100.0) : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -457,7 +523,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
                 ],
               ),
               Text(
-                '$xp / $xpMax XP',
+                '${xp.round()} / ${xpMax.round()} XP',
                 style: const TextStyle(
                   fontSize: 10,
                   color: AppColors.textMuted,
@@ -477,7 +543,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
             ),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
-              widthFactor: pct / 100,
+              widthFactor: (pct / 100.0).clamp(0.0, 1.0),
               child: Container(
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(

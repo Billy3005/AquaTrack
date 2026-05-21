@@ -5,8 +5,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/home_state.dart';
 import '../../../core/repositories/intake_repository.dart';
+import '../../../core/models/intake_log_with_achievements.dart';
 import '../../../core/sync/stats_sync_repository.dart';
 import '../../../core/sync/sync_service.dart';
+import '../../../core/providers/user_stats_provider.dart';
+import '../../../core/providers/auth_state_provider.dart';
 import '../../../shared/models/daily_summary.dart';
 import '../../../shared/models/intake_log.dart';
 import '../../../shared/storage/hive_storage_service.dart';
@@ -31,14 +34,39 @@ class HomeNotifier extends _$HomeNotifier {
 
   @override
   Future<DailySummary> build() async {
+    final authState = ref.watch(authStateProvider);
+
+    if (!authState.isAuthenticated) {
+      const dailyGoalMl = 2000;
+      return DailySummary(
+        dailyGoalMl: dailyGoalMl,
+        totalEffectiveMl: 0,
+        logCount: 0,
+        progress: 0.0,
+        remainingMl: dailyGoalMl,
+        streakDays: 0,
+        xpToday: 0,
+        currentLevel: 1,
+        location: 'Home',
+        temperatureCelsius: 25.0,
+        lastUpdated: DateTime.now(),
+      );
+    }
+
+    // Watch user stats refresh counter for auto-refresh when stats change
+    ref.watch(userStatsRefreshProvider);
+
     // Initialize sync repository if available
     _statsSyncRepository = ref.read(statsSyncRepositoryNullableProvider);
     if (_statsSyncRepository == null) {
       debugPrint('💾 HomeProvider: Running in offline-only mode');
     }
 
-    // Load from local storage first, then trigger background sync
+    // Load summary from server first
     final summary = await _loadTodaySummary();
+
+    // Set up listeners for provider changes after build
+    _setupProviderListeners();
 
     // Trigger background sync if available
     _triggerBackgroundSync();
@@ -73,6 +101,9 @@ class HomeNotifier extends _$HomeNotifier {
 
     // Trigger enhanced sync if available
     _triggerEnhancedSync();
+
+    // Refresh user stats to update coins and streak
+    _refreshUserStats();
   }
 
   /// Load today's summary (server first → local fallback)
@@ -83,8 +114,18 @@ class HomeNotifier extends _$HomeNotifier {
       // Try to get fresh data from server first
       final serverSummary = await intakeRepository.getTodaySummary();
 
-      // Calculate additional fields needed for DailySummary
-      const dailyGoalMl = 2000; // Default goal, should come from user settings
+      // Get daily goal from user stats or use default
+      int dailyGoalMl = 2000; // Default fallback
+      try {
+        final userStatsAsync = ref.read(userStatsProvider);
+        userStatsAsync.whenData((userStats) {
+          if (userStats.dailyGoalMl > 0) {
+            dailyGoalMl = userStats.dailyGoalMl;
+          }
+        });
+      } catch (e) {
+        debugPrint('⚠️ Using default goal, user stats unavailable: $e');
+      }
       final remainingMl = (dailyGoalMl - serverSummary.totalEffectiveMl).clamp(
         0,
         dailyGoalMl,
@@ -94,16 +135,16 @@ class HomeNotifier extends _$HomeNotifier {
         1.0,
       );
 
-      // Convert server response to DailySummary
+      // Convert server response to DailySummary (will be synced later by listeners)
       final summary = DailySummary(
         dailyGoalMl: dailyGoalMl,
         totalEffectiveMl: serverSummary.totalEffectiveMl,
         logCount: serverSummary.logCount,
         progress: progress,
         remainingMl: remainingMl,
-        streakDays: 1, // TODO: Get from server or calculate
+        streakDays: 0, // Will be updated by provider listeners
         xpToday: serverSummary.totalXpEarned,
-        currentLevel: 1, // TODO: Get from level provider
+        currentLevel: 1, // Will be updated by provider listeners
         location: 'Home', // Default location
         temperatureCelsius: 25.0, // Default temperature
         lastUpdated: DateTime.now(),
@@ -119,7 +160,7 @@ class HomeNotifier extends _$HomeNotifier {
 
       // Fallback to local storage if server fails
       try {
-        final localSummary = HiveStorageService.instance.loadTodaysSummary();
+        final localSummary = await HiveStorageService.instance.loadTodaysSummary();
         if (localSummary != null) {
           debugPrint('🏠 HomeProvider: Loaded from local storage');
           return localSummary;
@@ -184,11 +225,11 @@ class HomeNotifier extends _$HomeNotifier {
   Future<DailySummary?> _loadFromLocalStorage() async {
     try {
       final storage = HiveStorageService.instance;
-      final localSummary = storage.loadTodaysSummary();
+      final localSummary = await storage.loadTodaysSummary();
 
       if (localSummary != null) {
         // Calculate fresh summary từ stored logs
-        final todaysLogs = storage.loadTodaysLogs();
+        final todaysLogs = await storage.loadTodaysLogs();
         return _recalculateSummaryFromLogs(localSummary, todaysLogs);
       }
 
@@ -256,15 +297,59 @@ class HomeNotifier extends _$HomeNotifier {
       // Add XP từ log
       final hasLeveledUp = await levelNotifier.addXP(log.xpEarned);
 
+      // Calculate new streak if goal achieved today (only once per day)
+      int? newStreak;
+      if (summary.progress >= 1.0) {
+        try {
+          // Check if we already increased streak today
+          final storage = HiveStorageService.instance;
+
+          // DEBUG: Reset streak date for testing (remove in production)
+          // await storage.saveSetting('last_streak_date', null); // Clear for clean test
+
+          final lastStreakDate = await storage.loadSetting<String>('last_streak_date');
+          final currentStoredStreak = await storage.loadSetting<int>('current_streak') ?? 0;
+          final today = DateTime.now().toIso8601String().substring(0, 10); // YYYY-MM-DD
+
+          debugPrint('🔍 Debug: lastStreakDate = $lastStreakDate, today = $today');
+          debugPrint('🔍 Debug: currentStoredStreak = $currentStoredStreak');
+
+          if (lastStreakDate != today) {
+            // First time achieving goal today - increase streak
+            final currentLevelState = await levelNotifier.future;
+            newStreak = currentLevelState.currentStreak + 1;
+
+            debugPrint('🔥 HomeProvider: Goal achieved for the first time today!');
+            debugPrint('🔥 Current level state streak: ${currentLevelState.currentStreak}');
+            debugPrint('🔥 New streak will be: $newStreak');
+          } else {
+            debugPrint('🔥 HomeProvider: Goal already achieved today, streak unchanged');
+          }
+        } catch (e) {
+          // If can't get current streak, start from 1
+          newStreak = 1;
+          debugPrint('🔥 HomeProvider: Goal achieved! Starting new streak: 1 day');
+        }
+      }
+
       // Update các stats khác
       await levelNotifier.updateStats(
         additionalLogs: 1,
         additionalVolume: log.effectiveVolumeMl,
+        newStreak: newStreak,
         achievedGoalToday: summary.progress >= 1.0,
       );
 
+      // Save streak date AFTER successful updateStats
+      if (newStreak != null && summary.progress >= 1.0) {
+        final storage = HiveStorageService.instance;
+        final today = DateTime.now().toIso8601String().substring(0, 10);
+        await storage.saveSetting('last_streak_date', today);
+        debugPrint('💾 HomeProvider: Saved streak date: $today');
+      }
+
       debugPrint(
-        '🎮 HomeProvider: Updated level system: +${log.xpEarned}XP${hasLeveledUp ? ' (LEVEL UP!)' : ''}',
+        '🎮 HomeProvider: Updated level system: +${log.xpEarned}XP${hasLeveledUp ? ' (LEVEL UP!)' : ''}${newStreak != null ? ', Streak: $newStreak' : ''}',
       );
     } catch (e) {
       debugPrint('❌ HomeProvider: Error updating level system: $e');
@@ -275,8 +360,8 @@ class HomeNotifier extends _$HomeNotifier {
     try {
       final intakeRepository = IntakeRepository();
 
-      // Sync this intake log to server
-      await intakeRepository.createIntakeLog(
+      // Sync this intake log to server and get achievements
+      final result = await intakeRepository.createIntakeLog(
         volumeMl: log.volumeMl,
         liquidType: log.liquidType,
         temperature: null, // IntakeLog model doesn't have this field
@@ -286,6 +371,33 @@ class HomeNotifier extends _$HomeNotifier {
       );
 
       debugPrint('🌐 HomeProvider: Successfully synced to server: ${log.id}');
+
+      // Log achievements if any were unlocked
+      if (result.hasAchievements) {
+        debugPrint('🏆 HomeProvider: Unlocked ${result.achievements.length} achievements!');
+        for (final achievement in result.achievements) {
+          debugPrint('🏆 Achievement: ${achievement.title} (+${achievement.xpReward} XP)');
+        }
+      }
+
+      // Log level progress if available and update streak
+      if (result.levelProgress != null) {
+        final progress = result.levelProgress!;
+        debugPrint('📊 Level Progress: Level ${progress.currentLevel} (${progress.currentXp}/${progress.xpForNextLevel} XP)');
+        debugPrint('🔥 Streak Update: ${progress.currentStreak} days (Goal: ${progress.goalAchievedToday})');
+
+        // Update current summary with fresh streak data from backend
+        state.whenData((currentSummary) {
+          final updatedSummary = currentSummary.copyWith(
+            streakDays: progress.currentStreak,
+            currentLevel: progress.currentLevel,
+            xpToday: progress.currentXp,
+          );
+          state = AsyncValue.data(updatedSummary);
+          debugPrint('✅ HomeProvider: Updated streak from backend: ${progress.currentStreak} days');
+        });
+      }
+
     } catch (e) {
       debugPrint('🌐 HomeProvider: Failed to sync to server: $e');
       // Log will remain in local storage and can be synced later
@@ -334,6 +446,73 @@ class HomeNotifier extends _$HomeNotifier {
           debugPrint('⚠️ HomeProvider: Enhanced sync failed: $e');
         }
       });
+    }
+  }
+
+  /// Setup listeners for other providers to sync data
+  void _setupProviderListeners() {
+    // Listen to user stats changes and update current summary
+    ref.listen(userStatsProvider, (previous, next) {
+      next.when(
+        data: (userStats) async {
+          try {
+            final currentSummary = await future;
+            final updatedSummary = currentSummary.copyWith(
+              streakDays: userStats.currentStreak,
+              currentLevel: userStats.currentLevel,
+              // Don't override daily goal if user has custom goal
+              dailyGoalMl: userStats.dailyGoalMl > 0 ? userStats.dailyGoalMl : currentSummary.dailyGoalMl,
+            );
+
+            state = AsyncValue.data(updatedSummary);
+            debugPrint('🏠 HomeProvider: Synced with user stats - Level: ${userStats.currentLevel}, Streak: ${userStats.currentStreak}');
+          } catch (e) {
+            debugPrint('❌ HomeProvider: Error syncing user stats: $e');
+          }
+        },
+        loading: () {},
+        error: (error, stack) {
+          debugPrint('❌ HomeProvider: User stats error: $error');
+        },
+      );
+    });
+
+    // Listen to level provider changes as backup
+    ref.listen(levelNotifierProvider, (previous, next) {
+      next.when(
+        data: (levelState) async {
+          try {
+            final currentSummary = await future;
+            // Only update if user stats haven't provided these values yet
+            if (currentSummary.streakDays == 0 || currentSummary.currentLevel == 1) {
+              final updatedSummary = currentSummary.copyWith(
+                streakDays: currentSummary.streakDays == 0 ? levelState.currentStreak : currentSummary.streakDays,
+                currentLevel: currentSummary.currentLevel == 1 ? levelState.currentLevel : currentSummary.currentLevel,
+              );
+
+              state = AsyncValue.data(updatedSummary);
+              debugPrint('🏠 HomeProvider: Synced with level provider - Level: ${levelState.currentLevel}, Streak: ${levelState.currentStreak}');
+            }
+          } catch (e) {
+            debugPrint('❌ HomeProvider: Error syncing level state: $e');
+          }
+        },
+        loading: () {},
+        error: (error, stack) {},
+      );
+    });
+  }
+
+  /// Refresh user stats and level provider to update UI with latest data
+  void _refreshUserStats() {
+    try {
+      // Just increment refresh counter - level provider will auto-sync
+      final refreshNotifier = ref.read(userStatsRefreshProvider.notifier);
+      refreshNotifier.state++;
+
+      debugPrint('📊 HomeProvider: Refreshed user stats counter');
+    } catch (e) {
+      debugPrint('❌ HomeProvider: Error refreshing providers: $e');
     }
   }
 }

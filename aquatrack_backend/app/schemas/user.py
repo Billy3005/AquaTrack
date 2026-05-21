@@ -40,6 +40,24 @@ class UserUpdate(BaseModel):
     sound_enabled: Optional[bool] = None
     timezone: Optional[str] = Field(None, max_length=50)
 
+    # Onboarding / Body info fields
+    gender: Optional[str] = Field(None, pattern="^(male|female|other)$")
+    age: Optional[int] = Field(None, ge=10, le=100)
+    height: Optional[int] = Field(None, ge=130, le=210, description="Height in cm")
+    weight: Optional[float] = Field(None, ge=30, le=150, description="Weight in kg")
+
+    # Lifestyle fields
+    activity_level: Optional[str] = Field(None, pattern="^(sedentary|light|moderate|active|athlete)$")
+    job_type: Optional[str] = Field(None, pattern="^(office|mixed|field|manual|sport)$")
+
+    # Health conditions (JSON array)
+    health_conditions: Optional[list] = Field(None, description="List of health conditions")
+
+    # Diet fields
+    veggie_intake: Optional[str] = Field(None, pattern="^(low|mid|high)$")
+    coffee_cups_per_day: Optional[int] = Field(None, ge=0, le=10)
+    alcohol_units_per_day: Optional[int] = Field(None, ge=0, le=10)
+
     @validator("username")
     def username_alphanumeric(cls, v):
         if v is not None and not v.replace("_", "").replace("-", "").isalnum():
@@ -65,6 +83,22 @@ class UserResponse(BaseModel):
     language_preference: str
     sound_enabled: bool
     timezone: str
+
+    # Body info / Onboarding data
+    gender: Optional[str]
+    age: Optional[int]
+    height: Optional[int]
+    weight: Optional[float]
+    activity_level: Optional[str]
+    job_type: Optional[str]
+    health_conditions: Optional[list]
+    veggie_intake: Optional[str]
+    coffee_cups_per_day: Optional[int]
+    alcohol_units_per_day: Optional[int]
+
+    # Formula calculation
+    calculated_daily_goal_ml: Optional[int]
+    profile_complete: bool
 
     # Level system
     current_level: int

@@ -164,11 +164,8 @@ class BodyMapNotifier extends _$BodyMapNotifier {
 
   /// Load body map state từ current hydration data
   BodyMapState _loadBodyMapState() {
-    final storage = HiveStorageService.instance;
-
-    // Get today's summary cho hydration level
-    final todaysSummary = storage.loadTodaysSummary();
-    final hydrationLevel = todaysSummary?.progress ?? 0.0;
+    // Default hydration level, will be updated by async load
+    final hydrationLevel = 0.0;
 
     // Calculate organ healths
     final organHealths = DefaultOrgans.all.map((organ) {

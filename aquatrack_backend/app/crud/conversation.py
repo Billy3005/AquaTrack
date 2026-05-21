@@ -9,10 +9,34 @@ from app.crud.base import CRUDBase
 from app.models.conversation import Conversation, ConversationSession
 from app.schemas.conversation import (ConversationSessionCreate,
                                       ConversationSessionUpdate, MessageCreate,
-                                      MessageUpdate)
+                                      MessageUpdate, QuickReplySchema)
 
 
 class CRUDConversation(CRUDBase[Conversation, MessageCreate, MessageUpdate]):
+    def _serialize_quick_replies(self, quick_replies: Optional[List[QuickReplySchema]]) -> Optional[List[Dict]]:
+        """Convert QuickReplySchema objects to JSON serializable format"""
+        if quick_replies is None or len(quick_replies) == 0:
+            return None
+
+        # Handle case where quick_replies might contain non-schema objects
+        serialized = []
+        for qr in quick_replies:
+            if hasattr(qr, 'id') and hasattr(qr, 'text'):
+                # It's a QuickReplySchema object
+                serialized.append({
+                    "id": qr.id,
+                    "text": qr.text,
+                    "action": getattr(qr, 'action', None),
+                })
+            elif isinstance(qr, dict):
+                # It's already a dictionary
+                serialized.append({
+                    "id": qr.get("id", ""),
+                    "text": qr.get("text", ""),
+                    "action": qr.get("action"),
+                })
+
+        return serialized if serialized else None
     def create_message(
         self, db: Session, *, user_id: str, session_id: str, message: MessageCreate
     ) -> Conversation:
@@ -24,7 +48,7 @@ class CRUDConversation(CRUDBase[Conversation, MessageCreate, MessageUpdate]):
             content=message.content,
             message_type=message.message_type,
             ai_message_type=message.ai_message_type,
-            quick_replies=message.quick_replies,
+            quick_replies=self._serialize_quick_replies(message.quick_replies),
             context_data=message.context_data,
         )
         db.add(db_obj)
@@ -55,7 +79,7 @@ class CRUDConversation(CRUDBase[Conversation, MessageCreate, MessageUpdate]):
                 content=user_message.content,
                 message_type=user_message.message_type,
                 ai_message_type=user_message.ai_message_type,
-                quick_replies=user_message.quick_replies,
+                quick_replies=self._serialize_quick_replies(user_message.quick_replies),
                 context_data=user_message.context_data,
             )
             db.add(user_db_obj)
@@ -68,7 +92,7 @@ class CRUDConversation(CRUDBase[Conversation, MessageCreate, MessageUpdate]):
                 content=ai_message.content,
                 message_type=ai_message.message_type,
                 ai_message_type=ai_message.ai_message_type,
-                quick_replies=ai_message.quick_replies,
+                quick_replies=self._serialize_quick_replies(ai_message.quick_replies),
                 context_data=ai_message.context_data,
             )
             db.add(ai_db_obj)

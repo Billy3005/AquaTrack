@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import '../services/api_service.dart';
+import '../services/auth_service.dart';
 import '../utils/logger.dart';
 import '../sync/coach_conversation_sync_repository.dart';
 import '../sync/sync_service.dart';
@@ -8,10 +11,12 @@ import '../../features/coach/models/chat_message.dart';
 /// Enhanced repository for coach conversation với offline-first sync
 class CoachRepository {
   static const String _tag = 'CoachRepository';
+  static int _sessionNonce = 0;
 
   final ApiService _apiService;
   final CoachConversationSyncRepository? _syncRepository;
   final SyncService? _syncService;
+  final AuthService _authService = AuthService();
 
   CoachRepository({
     ApiService? apiService,
@@ -30,19 +35,25 @@ class CoachRepository {
   Future<ChatMessage?> sendMessage({
     required String content,
     String? sessionId,
+    String? userId,
     Map<String, dynamic>? context,
   }) async {
-    AppLogger.info(_tag, 'Sending conversation message với enhanced context');
+    AppLogger.info(_tag, 'Sending personalized conversation message');
 
     try {
       // Enhance context with sync data if available
       final enhancedContext = await _buildEnhancedContext(context);
 
+      // Generate user-scoped session ID if not provided
+      final currentSessionId =
+          sessionId ?? await generateSessionId(userId: userId);
+
+      // Use conversation endpoint for personalized AI coaching
       final response = await _apiService.post<Map<String, dynamic>>(
         '/coach/conversation/send',
         data: {
           'content': content,
-          if (sessionId != null) 'session_id': sessionId,
+          'session_id': currentSessionId,
           'context': enhancedContext,
         },
         fromJson: (json) => json as Map<String, dynamic>,
@@ -52,28 +63,31 @@ class CoachRepository {
         throw Exception('No data received from API');
       }
 
-      // Create AI response message từ API response
+      // Parse ChatMessageResponse format
+      final chatResponse = ChatMessageResponse.fromJson(response.data!);
+      final aiResponseMessage = chatResponse.aiResponse;
+
+      // Create AI response message từ conversation API response
       final aiMessage = ChatMessage(
-        id: 'ai_${DateTime.now().millisecondsSinceEpoch}',
-        content:
-            response.data!['message'] as String? ??
-            'Xin lỗi, tôi không hiểu câu hỏi.',
+        id: aiResponseMessage.messageId,
+        content: aiResponseMessage.content,
         isFromUser: false,
-        timestamp: DateTime.now(),
-        type: MessageType.text,
-        quickReplies: _parseQuickReplies(response.data!['quick_replies']),
+        timestamp: aiResponseMessage.createdAt,
+        type: _parseMessageType(aiResponseMessage.aiMessageType),
+        quickReplies: _parseQuickRepliesFromConversation(
+          aiResponseMessage.quickReplies,
+        ),
         isTyping: false,
       );
 
       // Trigger sync for new message if sync available
       if (_syncRepository != null && _syncService != null) {
-        await _syncRepository!.syncNewMessage(
-          messageId: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-          sessionId:
-              sessionId ?? 'session_${DateTime.now().millisecondsSinceEpoch}',
-          content: content,
-          messageType: 'user_message',
-        );
+          await _syncRepository!.syncNewMessage(
+            messageId: 'msg_${DateTime.now().millisecondsSinceEpoch}',
+            sessionId: currentSessionId,
+            content: content,
+            messageType: 'user_message',
+          );
       }
 
       return aiMessage;
@@ -91,6 +105,38 @@ class CoachRepository {
         isTyping: false,
       );
     }
+  }
+
+  /// Generate user-scoped session ID:
+  /// user_{userId}_session_{timestamp}
+  Future<String> generateSessionId({String? userId}) async {
+    final resolvedUserId = await _resolveUserId(userId);
+    final timestampToken = _buildSessionTimestampToken();
+    return 'user_${_sanitizeSessionPart(resolvedUserId)}_session_$timestampToken';
+  }
+
+  Future<String> _resolveUserId(String? userId) async {
+    if (userId != null && userId.trim().isNotEmpty) {
+      return userId.trim();
+    }
+
+    final authUserId = await _authService.getCurrentUserId();
+    if (authUserId != null && authUserId.trim().isNotEmpty) {
+      return authUserId.trim();
+    }
+
+    return 'anonymous';
+  }
+
+  String _sanitizeSessionPart(String input) {
+    return input.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+  }
+
+  String _buildSessionTimestampToken() {
+    final now = DateTime.now().microsecondsSinceEpoch;
+    _sessionNonce = (_sessionNonce + 1) % 1000;
+    final randomPart = Random().nextInt(1000);
+    return '${now}${_sessionNonce.toString().padLeft(3, '0')}${randomPart.toString().padLeft(3, '0')}';
   }
 
   /// Get conversation history for a session
@@ -388,21 +434,46 @@ class CoachRepository {
     ];
   }
 
-  /// Parse quick replies từ API response
-  List<QuickReply> _parseQuickReplies(dynamic quickRepliesData) {
+  /// Parse message type từ AI message type
+  MessageType _parseMessageType(String? aiMessageType) {
+    switch (aiMessageType) {
+      case 'welcomeCard':
+        return MessageType.welcomeCard;
+      case 'suggestion':
+        return MessageType.suggestion;
+      case 'achievement':
+        return MessageType.achievement;
+      case 'reminder':
+        return MessageType.reminder;
+      case 'encouragement':
+        return MessageType.text;
+      case 'advice':
+        return MessageType.text;
+      default:
+        return MessageType.text;
+    }
+  }
+
+  /// Parse quick replies từ conversation API response
+  List<QuickReply> _parseQuickRepliesFromConversation(
+    List<QuickReplyApi>? quickRepliesData,
+  ) {
     if (quickRepliesData == null) return [];
 
     try {
-      final List<dynamic> repliesJson =
-          quickRepliesData as List<dynamic>? ?? [];
-      return repliesJson
-          .map((json) => QuickReply.fromJson(json as Map<String, dynamic>))
-          .toList();
+      return quickRepliesData.map((apiQuickReply) {
+        return QuickReply(
+          id: apiQuickReply.id,
+          text: apiQuickReply.text,
+          action: apiQuickReply.action,
+        );
+      }).toList();
     } catch (e) {
-      AppLogger.error(_tag, 'Failed to parse quick replies', e);
+      AppLogger.error(_tag, 'Failed to parse conversation quick replies', e);
       return [];
     }
   }
+
 
   /// Get personalized AI insights dựa trên long-term data patterns
   Future<Map<String, dynamic>> getPersonalizedInsights() async {
