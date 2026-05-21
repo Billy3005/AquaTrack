@@ -288,8 +288,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _quickLogWater() async {
     try {
-      final intakeLog = await _intakeRepository.quickLogWater(250);
-      AppLogger.info('HomeScreen', 'Quick logged 250ml water: ${intakeLog.id}');
+      final result = await _intakeRepository.quickLogWater(250);
+      AppLogger.info('HomeScreen', 'Quick logged 250ml water: ${result.intakeLog.id}');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

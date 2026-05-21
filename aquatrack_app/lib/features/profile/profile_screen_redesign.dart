@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../core/services/auth_service.dart';
+import '../../core/repositories/auth_repository.dart';
 import '../../shared/widgets/coin_badge.dart';
 
 /// Profile Screen - Complete redesign matching aquatrack/project/components/profile.jsx
@@ -1050,7 +1050,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
         }
 
         // Perform logout
-        await AuthService().logout();
+        await AuthRepository().logout();
 
         if (mounted) {
           // Clear snackbar and navigate to login

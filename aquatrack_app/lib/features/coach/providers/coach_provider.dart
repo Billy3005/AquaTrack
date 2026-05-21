@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/repositories/coach_repository.dart';
+import '../../../core/providers/auth_state_provider.dart';
 import '../../../shared/storage/hive_storage_service.dart';
 import '../../home/providers/home_provider.dart';
 import '../../level/providers/level_provider.dart';
@@ -60,6 +61,7 @@ class CoachNotifier extends _$CoachNotifier {
   late Timer? _autoSuggestionTimer;
   late final CoachRepository _coachRepository;
   String? _currentSessionId;
+  String? _sessionOwnerUserId;
 
   @override
   Future<ConversationState> build() async {
@@ -77,6 +79,8 @@ class CoachNotifier extends _$CoachNotifier {
   /// Load conversation từ backend API với fallback
   Future<ConversationState> _loadConversationFromApi() async {
     try {
+      _sessionOwnerUserId = _getCurrentUserId();
+
       // Try to get recent conversation session
       final sessions = await _coachRepository.getConversationSessions(limit: 1);
 
@@ -180,17 +184,8 @@ class CoachNotifier extends _$CoachNotifier {
 
   /// Load conversation from storage or create welcome message
   ConversationState _loadConversation() {
-    final storage = HiveStorageService.instance;
-
-    // Try to load existing conversation
-    final savedConversation = storage.loadCoachConversation();
-    if (savedConversation != null && savedConversation.isNotEmpty) {
-      final messages = savedConversation
-          .map((json) => ChatMessage.fromJson(json))
-          .toList();
-
-      return ConversationState(messages: messages, lastUpdated: DateTime.now());
-    }
+    // For now, return default conversation
+    // TODO: Make this async to properly load from storage
 
     // Create welcome conversation
     return _createWelcomeConversation();
@@ -267,6 +262,17 @@ class CoachNotifier extends _$CoachNotifier {
       );
 
       try {
+        final currentUserId = _getCurrentUserId();
+        if (_sessionOwnerUserId != currentUserId) {
+          _currentSessionId = null;
+          _sessionOwnerUserId = currentUserId;
+        }
+
+        // Create one user-scoped session and persist for subsequent messages.
+        _currentSessionId ??= await _coachRepository.generateSessionId(
+          userId: currentUserId,
+        );
+
         // Get context for API call
         final context = _getContext();
         final contextMap = {
@@ -283,6 +289,7 @@ class CoachNotifier extends _$CoachNotifier {
         final aiMessage = await _coachRepository.sendMessage(
           content: content,
           sessionId: _currentSessionId,
+          userId: currentUserId,
           context: contextMap,
         );
 
@@ -306,6 +313,15 @@ class CoachNotifier extends _$CoachNotifier {
         await _handleSendMessageFallback(content);
       }
     });
+  }
+
+  String? _getCurrentUserId() {
+    final authState = ref.read(authStateProvider);
+    final userId = authState.userId?.trim();
+    if (userId == null || userId.isEmpty) {
+      return null;
+    }
+    return userId;
   }
 
   /// Fallback to local AI generation if backend fails
@@ -778,6 +794,7 @@ class CoachNotifier extends _$CoachNotifier {
 
     // Reset session ID and create new welcome conversation
     _currentSessionId = null;
+    _sessionOwnerUserId = _getCurrentUserId();
     state = AsyncValue.data(_createWelcomeConversation());
     await _saveConversation();
   }

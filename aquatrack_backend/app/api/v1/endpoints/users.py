@@ -5,6 +5,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud import user_crud
 from app.schemas.user import UserResponse, UserStats, UserUpdate
+from app.services.onboarding_service import OnboardingService
 
 router = APIRouter()
 
@@ -36,6 +37,7 @@ async def update_user_profile(
     Update user profile and preferences.
 
     Updates user settings like username, avatar, daily goal, notifications, etc.
+    If body info is provided, automatically calculates new daily goal.
     """
     user = user_crud.get(db, id=current_user_id)
     if not user:
@@ -51,9 +53,30 @@ async def update_user_profile(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken"
             )
 
-    # Update user
-    updated_user = user_crud.update(db, db_obj=user, obj_in=user_update)
-    return updated_user
+    # Check if this is an onboarding update (contains body info)
+    onboarding_fields = ['gender', 'age', 'height', 'weight', 'activity_level', 'job_type']
+    is_onboarding_update = any(
+        getattr(user_update, field, None) is not None
+        for field in onboarding_fields
+    )
+
+    if is_onboarding_update:
+        # Convert UserUpdate to dict for onboarding service
+        update_data = user_update.dict(exclude_unset=True)
+
+        # Use onboarding service to calculate goal and update user
+        OnboardingService.update_user_with_onboarding(user, update_data)
+
+        # Commit the changes
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        return user
+    else:
+        # Regular profile update
+        updated_user = user_crud.update(db, db_obj=user, obj_in=user_update)
+        return updated_user
 
 
 @router.get("/stats", response_model=UserStats)

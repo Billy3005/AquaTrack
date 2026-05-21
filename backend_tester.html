@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 AquaTrack Backend Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0D1B2A 0%, #1E3A5F 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 180, 216, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(0, 180, 216, 0.3);
+        }
+
+        .header h1 {
+            color: #00B4D8;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .status-card h3 {
+            color: #00B4D8;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .api-button {
+            background: linear-gradient(135deg, #00B4D8 0%, #0077B6 100%);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .api-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 180, 216, 0.3);
+        }
+
+        .api-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .special-button {
+            background: linear-gradient(135deg, #7B5EA7 0%, #5A4A7A 100%);
+        }
+
+        .danger-button {
+            background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
+        }
+
+        .success-button {
+            background: linear-gradient(135deg, #2ECC71 0%, #27AE60 100%);
+        }
+
+        .response-area {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 180, 216, 0.3);
+            border-radius: 50%;
+            border-top-color: #00B4D8;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .response-content {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .info-box {
+            background: rgba(0, 180, 216, 0.1);
+            border-left: 4px solid #00B4D8;
+            border-radius: 0 10px 10px 0;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .server-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background: #2ECC71;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 AquaTrack Backend Tester</h1>
+            <p>Test Production Features & API Endpoints</p>
+        </div>
+
+        <div class="status-card">
+            <h3>🖥️ Server Status</h3>
+            <div class="server-status">
+                <div class="status-dot"></div>
+                <span><strong>Backend:</strong> http://localhost:8001</span>
+            </div>
+            <div class="server-status">
+                <div class="status-dot"></div>
+                <span><strong>Frontend:</strong> Đang chạy trên trình duyệt</span>
+            </div>
+        </div>
+
+        <div class="status-card">
+            <h3>🔥 Production Features Test</h3>
+
+            <h4 style="margin: 20px 0 10px 0; color: #00B4D8;">📊 Health & Monitoring</h4>
+            <div class="button-grid">
+                <button class="api-button" onclick="testAPI('/')">
+                    🏠 Home Status
+                </button>
+                <button class="api-button" onclick="testAPI('/health')">
+                    💚 Basic Health
+                </button>
+                <button class="api-button" onclick="testAPI('/health/detailed')">
+                    📈 Detailed Health
+                </button>
+                <button class="api-button" onclick="testAPI('/metrics')">
+                    📊 System Metrics
+                </button>
+            </div>
+
+            <h4 style="margin: 20px 0 10px 0; color: #7B5EA7;">🔐 Authentication & Security</h4>
+            <div class="button-grid">
+                <button class="api-button success-button" onclick="testLogin()">
+                    🔑 Demo Login
+                </button>
+                <button class="api-button special-button" onclick="testAPI('/cors-test')">
+                    🌐 CORS Test
+                </button>
+                <button class="api-button" onclick="testAPI('/api/v1/auth/me')">
+                    👤 Get User Profile
+                </button>
+            </div>
+
+            <h4 style="margin: 20px 0 10px 0; color: #E74C3C;">⚡ Production APIs</h4>
+            <div class="button-grid">
+                <button class="api-button danger-button" onclick="testAPI('/api/v1/coach/chat', {message: 'Xin chào!'})">
+                    🤖 AI Coach Chat
+                </button>
+                <button class="api-button special-button" onclick="testAPI('/api/v1/intake-logs/')">
+                    💧 Water Logs
+                </button>
+                <button class="api-button" onclick="openSwaggerDocs()">
+                    📚 API Docs (Swagger)
+                </button>
+            </div>
+        </div>
+
+        <div class="response-area">
+            <div class="response-header">
+                <h3>📄 API Response</h3>
+                <div id="loading" class="loading" style="display: none;"></div>
+            </div>
+            <div id="response-content" class="response-content">
+Chưa test API nào...
+
+💡 Hướng dẫn:
+• Bấm các nút trên để test API endpoints
+• Xem response JSON chi tiết ở đây
+• Backend server phải chạy trên port 8001
+• Mở Swagger docs để xem full API documentation
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h4>💡 Thông tin:</h4>
+            <p>• <strong>Backend:</strong> FastAPI với Production Middlewares (Rate Limiting, Security, Monitoring)</p>
+            <p>• <strong>Features:</strong> Authentication, AI Coach, Smart Scan, Social System, Production Monitoring</p>
+            <p>• <strong>Database:</strong> SQLite (Development) → PostgreSQL (Production)</p>
+            <p>• <strong>Docs:</strong> <a href="http://localhost:8001/docs" target="_blank" style="color: #00B4D8;">http://localhost:8001/docs</a></p>
+        </div>
+    </div>
+
+    <script>
+        const baseUrl = 'http://localhost:8001';
+        let currentToken = null;
+
+        async function testAPI(endpoint, body = null) {
+            const loading = document.getElementById('loading');
+            const responseContent = document.getElementById('response-content');
+
+            loading.style.display = 'block';
+            responseContent.textContent = 'Đang gọi API...';
+
+            try {
+                const options = {
+                    method: body ? 'POST' : 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+
+                if (currentToken) {
+                    options.headers.Authorization = `Bearer ${currentToken}`;
+                }
+
+                const response = await fetch(baseUrl + endpoint, options);
+                const responseData = await response.json();
+
+                const result = `📍 Endpoint: ${endpoint}
+🌐 Status: ${response.status} ${response.statusText}
+⏱️ Time: ${new Date().toLocaleTimeString()}
+🔑 Token: ${currentToken ? 'Có token' : 'Không có token'}
+
+📦 Response:
+${JSON.stringify(responseData, null, 2)}
+
+🔗 Headers:
+${Array.from(response.headers.entries()).map(([key, value]) => `${key}: ${value}`).join('\n')}`;
+
+                responseContent.textContent = result;
+
+            } catch (error) {
+                responseContent.textContent = `❌ Lỗi khi gọi API: ${endpoint}
+
+📝 Chi tiết lỗi:
+${error.message}
+
+💡 Gợi ý:
+• Kiểm tra backend server có chạy không (port 8001)
+• Kiểm tra CORS configuration
+• Xem console để biết thêm chi tiết`;
+            }
+
+            loading.style.display = 'none';
+        }
+
+        async function testLogin() {
+            const loading = document.getElementById('loading');
+            const responseContent = document.getElementById('response-content');
+
+            loading.style.display = 'block';
+            responseContent.textContent = 'Đang login với demo user...';
+
+            try {
+                const response = await fetch(baseUrl + '/simple-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'demo@aquatrack.com',
+                        password: 'demo123'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.access_token) {
+                    currentToken = data.access_token;
+                }
+
+                const result = `🔑 DEMO LOGIN TEST
+
+📍 Endpoint: /simple-login
+🌐 Status: ${response.status}
+⏱️ Time: ${new Date().toLocaleTimeString()}
+
+📦 Response:
+${JSON.stringify(data, null, 2)}
+
+${data.access_token ? '✅ Token đã được lưu để test các API khác' : '❌ Không nhận được token'}`;
+
+                responseContent.textContent = result;
+
+            } catch (error) {
+                responseContent.textContent = `❌ Lỗi login: ${error.message}`;
+            }
+
+            loading.style.display = 'none';
+        }
+
+        function openSwaggerDocs() {
+            window.open('http://localhost:8001/docs', '_blank');
+        }
+
+        // Auto test home endpoint on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testAPI('/');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

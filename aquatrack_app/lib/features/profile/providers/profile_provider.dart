@@ -65,7 +65,7 @@ class ProfileNotifier extends _$ProfileNotifier {
   Future<void> _loadProfile() async {
     try {
       final storage = HiveStorageService.instance;
-      final profileData = storage.loadSetting<Map>('user_profile');
+      final profileData = await storage.loadSetting<Map>('user_profile');
 
       if (profileData != null) {
         final data = Map<String, dynamic>.from(profileData);

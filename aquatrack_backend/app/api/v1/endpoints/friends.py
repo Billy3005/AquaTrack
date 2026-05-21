@@ -26,24 +26,32 @@ router = APIRouter()
 
 # Friend Request endpoints
 @router.post(
-    "/requests",
+    "/request/",
     response_model=dict,
     status_code=status.HTTP_201_CREATED,
 )
 async def send_friend_request(
-    receiver_username: str = Query(..., description="Username of user to send request to"),
-    message: Optional[str] = Query(None, description="Optional message with request"),
+    request_data: dict,
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """
     Send a friend request to another user by username
 
-    - **receiver_username**: Username of the user to send request to
+    - **username**: Username of the user to send request to
     - **message**: Optional message to include with the request
     """
+    username = request_data.get("username")
+    message = request_data.get("message")
+
+    if not username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username is required"
+        )
+
     result = await social_service.send_friend_request(
-        db, sender_id=current_user_id, receiver_username=receiver_username, message=message
+        db, sender_id=current_user_id, receiver_username=username, message=message
     )
 
     if not result["success"]:
@@ -55,7 +63,42 @@ async def send_friend_request(
     return result
 
 
-@router.get("/requests/received", response_model=List[FriendRequestResponse])
+# Flutter-compatible friend request response endpoint
+@router.put("/request/{request_id}/", response_model=dict)
+async def respond_to_friend_request(
+    request_id: str,
+    action_data: dict,
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Respond to friend request (accept/decline) - Flutter compatible"""
+    action = action_data.get("action")
+
+    if action not in ["accept", "decline"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Action must be 'accept' or 'decline'"
+        )
+
+    if action == "accept":
+        result = await social_service.accept_friend_request(
+            db, request_id=request_id, user_id=current_user_id
+        )
+    else:
+        result = await social_service.decline_friend_request(
+            db, request_id=request_id, user_id=current_user_id
+        )
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["message"]
+        )
+
+    return result
+
+
+@router.get("/requests/", response_model=List[FriendRequestResponse])
 async def get_received_requests(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
@@ -160,8 +203,38 @@ async def get_friends(
     return friends
 
 
+@router.delete("/{friend_id}/", response_model=dict)
+async def remove_friend_by_id(
+    friend_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Remove a friend by friend ID (Flutter compatible)"""
+    # Get friend username from user ID
+    from app.crud.user import user_crud
+    friend_user = user_crud.get(db, id=friend_id)
+
+    if not friend_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Friend not found"
+        )
+
+    result = await social_service.remove_friend(
+        db, user_id=current_user_id, friend_username=friend_user.username
+    )
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["message"]
+        )
+
+    return result
+
+
 @router.delete("/", response_model=dict)
-async def remove_friend(
+async def remove_friend_by_username(
     friend_username: str = Query(..., description="Username of friend to remove"),
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
@@ -180,18 +253,28 @@ async def remove_friend(
     return result
 
 
-@router.post("/{friend_username}/remind", response_model=FriendReminderResponse)
+@router.post("/{friend_id}/remind/", response_model=FriendReminderResponse)
 async def send_hydration_reminder(
-    friend_username: str,
+    friend_id: str,
     reminder_data: FriendReminderRequest,
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    """Send hydration reminder to a friend"""
+    """Send hydration reminder to a friend (Flutter compatible)"""
+    # Get friend username from user ID
+    from app.crud.user import user_crud
+    friend_user = user_crud.get(db, id=friend_id)
+
+    if not friend_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Friend not found"
+        )
+
     result = await social_service.send_hydration_reminder(
         db,
         sender_id=current_user_id,
-        friend_username=friend_username,
+        friend_username=friend_user.username,
         message=reminder_data.message,
     )
 
@@ -204,7 +287,7 @@ async def send_hydration_reminder(
     return result
 
 
-# User search endpoint
+# User search endpoint - Must come BEFORE /{friend_id}/ route
 @router.get("/search", response_model=List[UserSearchResult])
 async def search_users(
     q: str = Query(..., min_length=2, description="Search query (username)"),
@@ -218,6 +301,61 @@ async def search_users(
     )
 
     return users
+
+
+@router.get("/{friend_id}/", response_model=FriendResponse)
+async def get_friend_profile(
+    friend_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Get friend profile by friend ID"""
+    # Check if they are friends
+    if not friend_crud.are_friends(db, user_id=current_user_id, other_user_id=friend_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only view profiles of friends"
+        )
+
+    # Get friend data
+    friend_data = friend_crud.get_friend_profile(
+        db, user_id=current_user_id, friend_user_id=friend_id
+    )
+
+    if not friend_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Friend not found"
+        )
+
+    return friend_data
+
+
+@router.put("/me/status/", response_model=dict)
+async def update_my_status(
+    status_data: dict,
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Update current user's friend status"""
+    status_value = status_data.get("status")
+
+    if status_value not in ["normal", "thirsty", "stressed", "offline"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Status must be one of: normal, thirsty, stressed, offline"
+        )
+
+    # Update user status in database
+    from app.crud.user import user_crud
+    user_crud.update_status(db, user_id=current_user_id, status=status_value)
+
+    return {
+        "success": True,
+        "message": f"Status updated to {status_value}",
+        "status": status_value,
+        "updated_at": "datetime.utcnow().isoformat()"
+    }
 
 
 # Leaderboard endpoints

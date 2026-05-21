@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../config/app_config.dart';
 import '../utils/logger.dart';
+import '../providers/auth_state_provider.dart';
 
 /// Authentication service for managing JWT tokens and user sessions
 class AuthService {
@@ -65,6 +66,12 @@ class AuthService {
   Future<void> storeUserData(Map<String, dynamic> userData) async {
     try {
       await _authBox.put(AppConfig.userDataKey, jsonEncode(userData));
+      final userId = userData['id'] as String?;
+      if (userId != null && userId.isNotEmpty) {
+        try {
+          globalAuthStateNotifier.onLogin(userId);
+        } catch (_) {}
+      }
       AppLogger.debug(_tag, 'User data stored');
     } catch (e) {
       AppLogger.error(_tag, 'Failed to store user data', e);
@@ -109,6 +116,9 @@ class AuthService {
   Future<void> logout() async {
     try {
       await _authBox.clear();
+      try {
+        globalAuthStateNotifier.onLogout();
+      } catch (_) {}
       AppLogger.info(_tag, 'User logged out, auth data cleared');
     } catch (e) {
       AppLogger.error(_tag, 'Failed to logout', e);

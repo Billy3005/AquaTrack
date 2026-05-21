@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: List[str] = [
         "http://localhost:3000",  # Flutter web debug
         "http://127.0.0.1:3000",
+        "http://localhost:3001",  # Flutter web NEW PORT
+        "http://127.0.0.1:3001",
+        "http://localhost:3002",  # Flutter web PORT 3002
+        "http://127.0.0.1:3002",
         "http://localhost:8080",  # Flutter web
         "http://127.0.0.1:8080",
         "http://localhost:64038",  # Flutter app current port
@@ -37,7 +41,7 @@ class Settings(BaseSettings):
         """Construct database URL - SQLite for testing, PostgreSQL for production"""
         # Use SQLite for testing when PostgreSQL is not available
         if self.ENVIRONMENT == "development":
-            return "sqlite:///./aquatrack_test.db"
+            return "sqlite:///./aquatrack_water_formula.db"
         else:
             return (
                 f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}"

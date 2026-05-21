@@ -126,6 +126,7 @@ class ApiService {
       '/auth/login',
       '/auth/register',
       '/auth/refresh',
+      // Removed /coach/chat bypass - now using authenticated endpoints
     ];
 
     return publicPaths.any((publicPath) => path.contains(publicPath));
@@ -230,8 +231,52 @@ class ApiService {
         try {
           data = fromJson(response.data);
         } catch (e) {
-          AppLogger.error(_tag, 'JSON parsing failed', e);
-          throw ApiException('Failed to parse response data', statusCode);
+          // Try common envelope formats
+          if (response.data is Map<String, dynamic>) {
+            final responseMap = response.data as Map<String, dynamic>;
+
+            // Try wrapped in 'data' field
+            if (responseMap.containsKey('data')) {
+              try {
+                data = fromJson(responseMap['data']);
+              } catch (_) {
+                // Continue to try other formats
+              }
+            }
+
+            // Try wrapped in 'result' field
+            if (data == null && responseMap.containsKey('result')) {
+              try {
+                data = fromJson(responseMap['result']);
+              } catch (_) {
+                // Continue to try other formats
+              }
+            }
+
+            // Try wrapped in 'payload' field
+            if (data == null && responseMap.containsKey('payload')) {
+              try {
+                data = fromJson(responseMap['payload']);
+              } catch (_) {
+                // Continue to try other formats
+              }
+            }
+
+            // Try unwrapping if it's a list
+            if (data == null && responseMap.containsKey('items')) {
+              try {
+                data = fromJson(responseMap['items']);
+              } catch (_) {
+                // Failed all attempts
+              }
+            }
+          }
+
+          // If still failed after trying all envelope formats
+          if (data == null) {
+            AppLogger.error(_tag, 'JSON parsing failed after trying all envelope formats', e);
+            throw ApiException('Failed to parse response data', statusCode);
+          }
         }
       }
 

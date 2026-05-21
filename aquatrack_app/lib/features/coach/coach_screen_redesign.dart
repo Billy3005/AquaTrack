@@ -166,9 +166,10 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
                                 controller: _scrollController,
                                 itemCount: conversationState.messages.length,
                                 itemBuilder: (context, index) {
-                                  return _buildMessageBubble(
-                                    conversationState.messages[index],
-                                  );
+                                  final message = conversationState.messages[index];
+                                  return message.isTyping
+                                      ? _buildThinkingIndicator()
+                                      : _buildMessageBubble(message);
                                 },
                               ),
                       ),
@@ -440,6 +441,92 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
         fontFamily: 'SF Pro Text',
         letterSpacing: 0.1,
         fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  /// Build thinking indicator with animation
+  Widget _buildThinkingIndicator() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.78,
+            ),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E3A5F),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(14),
+                bottomLeft: Radius.circular(14),
+                bottomRight: Radius.circular(14),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Đang suy nghĩ',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    height: 1.45,
+                    fontFamily: 'SF Pro Text',
+                    color: Color(0xFFBAE6FD),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                AnimatedBuilder(
+                  animation: _typingAnimation,
+                  builder: (context, child) {
+                    return Row(
+                      children: List.generate(3, (index) {
+                        double delay = index * 0.3;
+                        double opacity = ((_typingAnimation.value + delay) % 1.0);
+                        if (opacity > 0.5) opacity = 1.0 - opacity;
+                        opacity = opacity * 2; // Make it more visible
+
+                        return Container(
+                          margin: EdgeInsets.only(
+                            left: index > 0 ? 3 : 0,
+                          ),
+                          child: Opacity(
+                            opacity: opacity.clamp(0.3, 1.0),
+                            child: Container(
+                              width: 4,
+                              height: 4,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF38BDF8),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          // Time
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              '${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}',
+              style: const TextStyle(
+                fontSize: 9.5,
+                color: AppColors.textMuted,
+                fontFamily: 'SF Pro Text',
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

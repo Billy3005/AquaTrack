@@ -1,12 +1,30 @@
 import os
 import random
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from typing import Dict, List, Optional, Tuple
+import asyncio
+import json
 
 try:
     import ollama
 except ImportError:
     ollama = None
+
+try:
+    import openai
+except ImportError:
+    openai = None
+
+try:
+    import anthropic
+except ImportError:
+    anthropic = None
+
+# Import analytics service for enhanced personalization
+try:
+    from app.services.analytics_service import analytics_service
+except ImportError:
+    analytics_service = None
 
 # Import CoachResponse from coach endpoint since it's defined there
 try:
@@ -31,62 +49,258 @@ class AICoachService:
     """
 
     def __init__(self):
-        """Initialize AI Coach service"""
+        """Initialize AI Coach service with multiple AI providers"""
+        # AI Provider availability
+        self.anthropic_available = False
+        self.openai_available = False
         self.ollama_available = False
-        self.model_name = "llama3.2:1b"  # Lightweight model for speed
 
+        # Model configurations
+        self.ollama_model = "llama3.2:1b"  # Lightweight local model
+
+        # Initialize Anthropic Claude
+        anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+        if anthropic and anthropic_api_key:
+            try:
+                self.anthropic_client = anthropic.Anthropic(api_key=anthropic_api_key)
+                self.anthropic_available = True
+                print("[OK] Anthropic Claude AI initialized")
+            except Exception as e:
+                print(f"[WARN] Anthropic initialization failed: {str(e)}")
+        else:
+            print("ANTHROPIC_API_KEY not set, using fallback inference")
+
+        # Initialize OpenAI
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        if openai and openai_api_key:
+            try:
+                self.openai_client = openai.OpenAI(api_key=openai_api_key)
+                self.openai_available = True
+                print("OK OpenAI GPT initialized")
+            except Exception as e:
+                print(f"WARN OpenAI initialization failed: {str(e)}")
+        else:
+            print("OPENAI_API_KEY not set, using fallback inference")
+
+        # Initialize Ollama (local)
         if ollama:
             try:
-                # Test if Ollama is running
                 models = ollama.list()
                 self.ollama_available = True
-                print("Ollama AI Coach initialized successfully")
+                print("OK Ollama local AI initialized")
 
                 # Check if our model is available
                 model_names = [model['name'] for model in models.get('models', [])]
-                if self.model_name not in model_names:
-                    print(f"Model {self.model_name} not found. Available models: {model_names}")
-                    # Fallback to any available model
+                if self.ollama_model not in model_names:
+                    print(f"[WARN] Model {self.ollama_model} not found. Available: {model_names}")
                     if model_names:
-                        self.model_name = model_names[0]
-                        print(f"Using model: {self.model_name}")
+                        self.ollama_model = model_names[0]
+                        print(f"[INFO] Using model: {self.ollama_model}")
 
             except Exception as e:
                 print(f"Ollama not available: {str(e)}")
                 print("To use AI Coach: Install Ollama and run 'ollama pull llama3.2:1b'")
-        else:
-            print("Ollama package not installed")
 
-        print(f"AI Coach mode: {'Ollama AI' if self.ollama_available else 'Enhanced Rule-based'}")
+        # Determine AI mode with priority: Anthropic > OpenAI > Ollama > Rules
+        print(f"[INIT DEBUG] ollama_available = {self.ollama_available}")
+        print(f"[INIT DEBUG] anthropic_available = {self.anthropic_available}")
+        print(f"[INIT DEBUG] openai_available = {self.openai_available}")
+
+        if self.anthropic_available:
+            print("AI Coach mode: Anthropic Claude (Premium)")
+        elif self.openai_available:
+            print("AI Coach mode: OpenAI GPT (Cloud)")
+        elif self.ollama_available:
+            print("AI Coach mode: Ollama Local")
+        else:
+            print("AI Coach mode: Enhanced Rule-based")
 
     async def generate_coach_response(
         self,
         user_message: str,
         user_context: Dict,
-        hydration_data: Dict
+        hydration_data: Dict,
+        user_id: str = None,
+        db = None
     ) -> CoachResponse:
         """
-        Generate coach response using AI or enhanced rules
+        Generate coach response with priority-based AI provider selection
+        Priority: Anthropic Claude > OpenAI > Ollama > Enhanced Rules
         """
-        if self.ollama_available:
-            return await self._generate_ai_response(user_message, user_context, hydration_data)
-        else:
-            return await self._generate_enhanced_rule_response(user_message, user_context, hydration_data)
+        print(f"[GENERATE DEBUG] Method called with message: {user_message}")
+        print(f"[GENERATE DEBUG] ollama_available = {self.ollama_available}")
+        # Try Anthropic Claude first
+        if self.anthropic_available:
+            try:
+                return await self._generate_anthropic_response(user_message, user_context, hydration_data, user_id, db)
+            except Exception as e:
+                print(f"[FALLBACK] Anthropic failed, fallback to next provider: {str(e)}")
 
-    async def _generate_ai_response(
+        # Fallback to OpenAI
+        if self.openai_available:
+            try:
+                return await self._generate_openai_response(user_message, user_context, hydration_data, user_id, db)
+            except Exception as e:
+                print(f"[FALLBACK] OpenAI failed, fallback to next provider: {str(e)}")
+
+        # Fallback to Ollama
+        print(f"[DEBUG] ollama_available = {self.ollama_available}")
+        if self.ollama_available:
+            try:
+                print("[DEBUG] Calling Ollama...")
+                return await self._generate_ollama_response(user_message, user_context, hydration_data, user_id, db)
+            except Exception as e:
+                print(f"[FALLBACK] Ollama failed, fallback to rules: {str(e)}")
+
+        # Final fallback to enhanced rules
+        return await self._generate_enhanced_rule_response(user_message, user_context, hydration_data)
+
+    async def _generate_anthropic_response(
         self,
         user_message: str,
         user_context: Dict,
-        hydration_data: Dict
+        hydration_data: Dict,
+        user_id: str = None,
+        db = None
+    ) -> CoachResponse:
+        """Generate response using Anthropic Claude"""
+        try:
+            # Build analytics-enhanced context for Claude
+            context_prompt = await self._get_analytics_enhanced_context(
+                user_message, user_context, hydration_data, user_id, db
+            )
+
+            response = await asyncio.to_thread(
+                self.anthropic_client.messages.create,
+                model="claude-3-haiku-20240307",  # Fast and cost-effective
+                max_tokens=200,
+                temperature=0.7,
+                system="""Bạn là AQUA AI - trợ lý hydration thông minh của app AquaTrack Việt Nam.
+
+🎯 NHIỆM VỤ:
+- Khuyến khích uống nước đều đặn bằng tiếng Việt tự nhiên
+- Cá nhân hóa lời khuyên dựa trên data người dùng
+- Tạo động lực tích cực và practical
+
+💬 PHONG CÁCH:
+- Thân thiện, không formal
+- 1-2 câu ngắn gọn
+- Emoji phù hợp (💧🌟💪⚡)
+- Practical actions
+
+🚫 TRÁNH:
+- Lời khuyên y tế chuyên sâu
+- Response quá dài
+- Ngôn ngữ khô khan""",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": context_prompt
+                    }
+                ]
+            )
+
+            ai_text = response.content[0].text.strip()
+
+            # Parse and structure response
+            suggestions, action_items = self._parse_ai_response(ai_text, hydration_data)
+            coaching_type, motivation_level = self._analyze_response_intent(ai_text, hydration_data)
+
+            return CoachResponse(
+                response=ai_text,
+                suggestions=suggestions,
+                action_items=action_items,
+                motivation_level=motivation_level,
+                coaching_type=coaching_type
+            )
+
+        except Exception as e:
+            print(f"[AI ERROR] Anthropic error: {str(e)}")
+            raise
+
+    async def _generate_openai_response(
+        self,
+        user_message: str,
+        user_context: Dict,
+        hydration_data: Dict,
+        user_id: str = None,
+        db = None
+    ) -> CoachResponse:
+        """Generate response using OpenAI GPT"""
+        try:
+            # Build analytics-enhanced context
+            context_prompt = await self._get_analytics_enhanced_context(
+                user_message, user_context, hydration_data, user_id, db
+            )
+
+            response = await asyncio.to_thread(
+                self.openai_client.chat.completions.create,
+                model="gpt-3.5-turbo",
+                max_tokens=150,
+                temperature=0.7,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": """Bạn là AQUA AI - trợ lý hydration thông minh của AquaTrack.
+
+🎯 NHIỆM VỤ:
+- Khuyến khích uống nước đều đặn (tiếng Việt)
+- Cá nhân hóa theo data user
+- Tạo động lực practical
+
+💬 PHONG CÁCH:
+- Thân thiện, ngắn gọn (1-2 câu)
+- Emoji phù hợp: 💧🌟💪⚡
+- Actionable advice
+
+🚫 TRÁNH:
+- Lời khuyên y tế chuyên sâu
+- Response dài
+- Ngôn ngữ formal"""
+                    },
+                    {
+                        "role": "user",
+                        "content": context_prompt
+                    }
+                ]
+            )
+
+            ai_text = response.choices[0].message.content.strip()
+
+            # Parse and structure response
+            suggestions, action_items = self._parse_ai_response(ai_text, hydration_data)
+            coaching_type, motivation_level = self._analyze_response_intent(ai_text, hydration_data)
+
+            return CoachResponse(
+                response=ai_text,
+                suggestions=suggestions,
+                action_items=action_items,
+                motivation_level=motivation_level,
+                coaching_type=coaching_type
+            )
+
+        except Exception as e:
+            print(f"[AI ERROR] OpenAI error: {str(e)}")
+            raise
+
+    async def _generate_ollama_response(
+        self,
+        user_message: str,
+        user_context: Dict,
+        hydration_data: Dict,
+        user_id: str = None,
+        db = None
     ) -> CoachResponse:
         """Generate response using Ollama AI"""
         try:
-            # Build context prompt
-            prompt = self._build_ai_prompt(user_message, user_context, hydration_data)
+            # Build analytics-enhanced context
+            prompt = await self._get_analytics_enhanced_context(
+                user_message, user_context, hydration_data, user_id, db
+            )
 
             # Call Ollama API
             response = ollama.chat(
-                model=self.model_name,
+                model=self.ollama_model,
                 messages=[
                     {
                         'role': 'system',
@@ -119,7 +333,8 @@ TRÁNH:
                     'temperature': 0.8,  # Creative but not too random
                     'top_p': 0.9,
                     'max_tokens': 150    # Keep responses concise
-                }
+                },
+                timeout=90  # Increased timeout for slower responses
             )
 
             ai_text = response['message']['content'].strip()
@@ -139,39 +354,159 @@ TRÁNH:
             )
 
         except Exception as e:
-            print(f"🤖 Ollama AI error: {str(e)}")
-            # Fallback to enhanced rules
-            return await self._generate_enhanced_rule_response(user_message, user_context, hydration_data)
+            print(f"[AI ERROR] Ollama error: {str(e)}")
+            raise
 
-    def _build_ai_prompt(self, user_message: str, user_context: Dict, hydration_data: Dict) -> str:
-        """Build comprehensive prompt for AI"""
+    def _build_advanced_context(self, user_message: str, user_context: Dict, hydration_data: Dict, user_id: str = None, db = None) -> str:
+        """Build comprehensive AI context with advanced personalization"""
         total_today = hydration_data.get("total_today", 0)
         log_count = hydration_data.get("log_count", 0)
         current_hour = datetime.now().hour
 
-        # Time context
-        time_context = "buổi sáng" if current_hour < 12 else "buổi chiều" if current_hour < 18 else "buổi tối"
-
-        # Hydration status
-        if total_today >= 2000:
-            hydration_status = "đã đạt mục tiêu"
-        elif total_today >= 1000:
-            hydration_status = f"đã uống {total_today}ml, cần thêm {2000-total_today}ml"
+        # Time context in Vietnamese
+        if current_hour < 6:
+            time_context = "rạng sáng"
+        elif current_hour < 12:
+            time_context = "buổi sáng"
+        elif current_hour < 14:
+            time_context = "buổi trưa"
+        elif current_hour < 18:
+            time_context = "buổi chiều"
+        elif current_hour < 22:
+            time_context = "buổi tối"
         else:
-            hydration_status = f"mới uống {total_today}ml, cần cải thiện"
+            time_context = "đêm muộn"
 
-        prompt = f"""THÔNG TIN NGƯỜI DÙNG:
-- Tin nhắn: "{user_message}"
-- Thời gian: {time_context} ({current_hour}h)
+        # Hydration status analysis
+        goal_percentage = (total_today / 2000) * 100
+        if total_today >= 2000:
+            hydration_status = f"đã hoàn thành mục tiêu ({total_today}ml = {goal_percentage:.0f}%)"
+        elif total_today >= 1500:
+            remaining = 2000 - total_today
+            hydration_status = f"sắp đạt mục tiêu ({total_today}ml, còn {remaining}ml)"
+        elif total_today >= 1000:
+            hydration_status = f"đang tiến bộ ({total_today}ml = {goal_percentage:.0f}% mục tiêu)"
+        elif total_today >= 500:
+            hydration_status = f"cần cố gắng thêm ({total_today}ml = {goal_percentage:.0f}%)"
+        else:
+            hydration_status = f"cần bắt kịp ngay ({total_today}ml = {goal_percentage:.0f}%)"
+
+        # Activity pattern analysis
+        activity_insight = ""
+        if log_count == 0:
+            activity_insight = "chưa có log nào hôm nay"
+        elif log_count == 1:
+            activity_insight = "mới bắt đầu log"
+        elif log_count <= 3:
+            activity_insight = f"có {log_count} lần log - khá ổn"
+        else:
+            activity_insight = f"rất tích cực với {log_count} lần log"
+
+        # User context integration
+        context_details = ""
+        if user_context:
+            if user_context.get("activity_level"):
+                context_details += f"- Mức độ hoạt động: {user_context['activity_level']}\n"
+            if user_context.get("mood"):
+                context_details += f"- Tâm trạng: {user_context['mood']}\n"
+            if user_context.get("location"):
+                context_details += f"- Vị trí: {user_context['location']}\n"
+            if user_context.get("weather"):
+                context_details += f"- Thời tiết: {user_context['weather']}\n"
+
+        # Get analytics insights if available
+        analytics_context = ""
+        if analytics_service and user_id and db:
+            try:
+                import asyncio
+                # Get user analytics profile for enhanced personalization
+                profile = asyncio.create_task(analytics_service.get_user_analytics_profile(db, user_id, days=14))
+                # Since we can't await in sync method, we'll add a simplified version
+                analytics_context = "📊 ANALYTICS INSIGHTS: Advanced personalization active"
+            except Exception:
+                analytics_context = ""
+
+        # Build comprehensive prompt
+        prompt = f"""📱 USER MESSAGE: "{user_message}"
+
+⏰ THỜI GIAN & BỐI CẢNH:
+- Hiện tại: {time_context} ({current_hour}:00)
 - Tình trạng hydration: {hydration_status}
-- Số lần log hôm nay: {log_count}
+- Hoạt động hôm nay: {activity_insight}
 
-NGỮ CẢNH THÊM:
-{user_context}
+{context_details if context_details else ""}
+{analytics_context if analytics_context else ""}
 
-Hãy trả lời như AQUA AI coach thân thiện, khuyến khích user dựa trên thông tin trên."""
+🎯 YÊU CẦU RESPONSE:
+- Trả lời tin nhắn của user bằng tiếng Việt thân thiện
+- Dựa trên tình trạng hydration hiện tại để đưa ra lời khuyên phù hợp
+- Cá nhân hóa theo behavior pattern của user
+- Khuyến khích tích cực, practical và empathetic
+- Ngắn gọn 1-2 câu với emoji phù hợp
+
+Hãy response như AQUA AI coach thông minh với deep understanding về user."""
 
         return prompt
+
+    async def _get_analytics_enhanced_context(
+        self,
+        user_message: str,
+        user_context: Dict,
+        hydration_data: Dict,
+        user_id: str = None,
+        db = None
+    ) -> str:
+        """Build analytics-enhanced context for AI responses"""
+        # Start with basic context
+        base_context = self._build_advanced_context(user_message, user_context, hydration_data)
+
+        # Add analytics insights if available
+        if not (analytics_service and user_id and db):
+            return base_context
+
+        try:
+            # Get user analytics profile
+            profile = await analytics_service.get_user_analytics_profile(db, user_id, days=14)
+
+            # Extract key insights for AI context
+            user_segment = profile.get("user_segment", {}).get("segment", "unknown")
+            coaching_style = profile.get("personalization_context", {}).get("coaching_style_preference", "encouraging")
+            motivation_level = profile.get("personalization_context", {}).get("motivation_indicators", {}).get("level", "medium")
+
+            # Get top recommendations
+            recommendations = profile.get("coaching_recommendations", [])[:2]
+            rec_context = ""
+            if recommendations:
+                rec_list = [f"- {rec['message']}" for rec in recommendations]
+                rec_context = f"\n📋 LỜI KHUYÊN ƯU TIÊN:\n" + "\n".join(rec_list)
+
+            # Risk factors
+            risks = profile.get("risk_factors", [])
+            risk_context = ""
+            if risks:
+                high_risks = [risk for risk in risks if risk.get("severity") == "high"]
+                if high_risks:
+                    risk_context = f"\nWARN RISK FACTORS: {', '.join([r['type'] for r in high_risks])}"
+
+            # Enhanced analytics context
+            analytics_enhancement = f"""
+
+📊 PHÂN TÍCH USER (14 ngày):
+- User segment: {user_segment}
+- Coaching style phù hợp: {coaching_style}
+- Mức độ motivation: {motivation_level}{rec_context}{risk_context}
+
+🎯 ENHANCED COACHING INSTRUCTION:
+- Adapt tone theo coaching_style preference của user
+- Consider user_segment để adjust expectation level
+- Address risk factors nếu có trong response
+- Sử dụng insights để tạo connection với user's behavior pattern"""
+
+            return base_context + analytics_enhancement
+
+        except Exception as e:
+            print(f"[ANALYTICS] Error getting enhanced context: {str(e)}")
+            return base_context
 
     def _parse_ai_response(self, ai_text: str, hydration_data: Dict) -> Tuple[List[str], List[str]]:
         """Parse AI response to extract suggestions and actions"""

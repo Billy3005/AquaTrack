@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Text, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -33,6 +33,29 @@ class User(Base):
     language_preference = Column(String, default="vi")
     sound_enabled = Column(Boolean, default=True)
 
+    # Water Formula Profile - B1: Body
+    gender = Column(String, nullable=True)  # male/female/other
+    age = Column(Integer, nullable=True)
+    height = Column(Integer, nullable=True)  # cm
+    weight = Column(Float, nullable=True)  # kg
+
+    # Water Formula Profile - B2: Lifestyle
+    activity_level = Column(String, nullable=True)  # sedentary/light/moderate/active/very_active
+    job_type = Column(String, nullable=True)  # office/mixed/outdoor/manual
+
+    # Water Formula Profile - B3: Health (JSON array for multiple selections)
+    health_conditions = Column(JSON, default=list)  # ["none"] or ["diabetes", "hypertension"] etc
+
+    # Water Formula Profile - B4: Diet
+    veggie_intake = Column(String, nullable=True)  # low/medium/high
+    coffee_cups_per_day = Column(Integer, default=0)
+    alcohol_units_per_day = Column(Integer, default=0)
+
+    # Calculated water goal (auto-calculated when profile complete)
+    calculated_daily_goal_ml = Column(Integer, nullable=True)
+    formula_last_updated = Column(DateTime(timezone=True), nullable=True)
+    profile_complete = Column(Boolean, default=False)
+
     # Level system
     current_level = Column(Integer, default=1)
     total_xp = Column(Integer, default=0)
@@ -51,6 +74,10 @@ class User(Base):
     # Push notification settings
     push_token = Column(Text, nullable=True)
     timezone = Column(String, default="Asia/Ho_Chi_Minh")
+
+    # Social features
+    status = Column(String, default="normal")  # normal/thirsty/stressed/offline
+    is_online = Column(Boolean, default=False)
 
     # Relationships
     intake_logs = relationship(

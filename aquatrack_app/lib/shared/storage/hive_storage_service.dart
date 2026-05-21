@@ -2,6 +2,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/daily_summary.dart';
 import '../models/intake_log.dart';
+import '../../core/services/auth_service.dart';
 
 /// Hive local storage service cho offline-first approach
 class HiveStorageService {
@@ -38,37 +39,84 @@ class HiveStorageService {
     _appSettingsBox = await Hive.openBox<dynamic>(_appSettingsBoxName);
   }
 
+  Future<void> _ensureBoxesOpen() async {
+    if (!_dailySummaryBox.isOpen ||
+        !_intakeLogsBox.isOpen ||
+        !_appSettingsBox.isOpen) {
+      await _openBoxes();
+    }
+  }
+
   /// Save daily summary
   Future<void> saveDailySummary(DailySummary summary) async {
-    final today = _getTodayKey();
+    await _ensureBoxesOpen();
+    final today = await _getTodayKey();
     await _dailySummaryBox.put(today, summary);
   }
 
   /// Load today's summary
-  DailySummary? loadTodaysSummary() {
-    final today = _getTodayKey();
+  Future<DailySummary?> loadTodaysSummary() async {
+    await _ensureBoxesOpen();
+    final today = await _getTodayKey();
     return _dailySummaryBox.get(today);
   }
 
-  /// Save intake log
+  /// Save intake log with user-scoped key
   Future<void> saveIntakeLog(IntakeLog log) async {
-    await _intakeLogsBox.put(log.id, log);
+    await _ensureBoxesOpen();
+
+    try {
+      final authService = AuthService();
+      final userId = await authService.getCurrentUserId();
+
+      if (userId != null && userId.isNotEmpty) {
+        final userScopedKey = '$userId:${log.id}';
+        await _intakeLogsBox.put(userScopedKey, log);
+      } else {
+        // Fallback to original key if no user ID
+        await _intakeLogsBox.put('guest:${log.id}', log);
+      }
+    } catch (e) {
+      // Fallback to original key on error
+      await _intakeLogsBox.put('guest:${log.id}', log);
+    }
   }
 
-  /// Load today's intake logs
-  List<IntakeLog> loadTodaysLogs() {
-    final today = DateTime.now();
-    final todayStart = DateTime(today.year, today.month, today.day);
-    final todayEnd = todayStart.add(const Duration(days: 1));
+  /// Load today's intake logs for current user
+  Future<List<IntakeLog>> loadTodaysLogs() async {
+    await _ensureBoxesOpen();
 
-    return _intakeLogsBox.values
-        .where(
-          (log) =>
+    try {
+      final authService = AuthService();
+      final currentUserId = await authService.getCurrentUserId();
+
+      if (currentUserId == null || currentUserId.isEmpty) {
+        return []; // Return empty if no user authenticated
+      }
+
+      final today = DateTime.now();
+      final todayStart = DateTime(today.year, today.month, today.day);
+      final todayEnd = todayStart.add(const Duration(days: 1));
+
+      final userKeyPrefix = '$currentUserId:';
+
+      // Filter keys by user prefix, then filter values by date
+      final userLogs = <IntakeLog>[];
+      for (final key in _intakeLogsBox.keys) {
+        if (key.toString().startsWith(userKeyPrefix)) {
+          final log = _intakeLogsBox.get(key);
+          if (log != null &&
               log.loggedAt.isAfter(todayStart) &&
-              log.loggedAt.isBefore(todayEnd),
-        )
-        .toList()
-      ..sort((a, b) => a.loggedAt.compareTo(b.loggedAt));
+              log.loggedAt.isBefore(todayEnd)) {
+            userLogs.add(log);
+          }
+        }
+      }
+
+      return userLogs..sort((a, b) => a.loggedAt.compareTo(b.loggedAt));
+    } catch (e) {
+      return []; // Return empty on error
+    }
   }
 
   /// Load all intake logs for a specific date range
@@ -82,14 +130,39 @@ class HiveStorageService {
       ..sort((a, b) => a.loggedAt.compareTo(b.loggedAt));
   }
 
-  /// Load all intake logs (for analytics and stats)
-  List<IntakeLog> loadAllIntakeLogs() {
-    return _intakeLogsBox.values.toList()
-      ..sort((a, b) => a.loggedAt.compareTo(b.loggedAt));
+  /// Load all intake logs for current user (for analytics and stats)
+  Future<List<IntakeLog>> loadAllIntakeLogs() async {
+    await _ensureBoxesOpen();
+
+    try {
+      final authService = AuthService();
+      final currentUserId = await authService.getCurrentUserId();
+
+      if (currentUserId == null || currentUserId.isEmpty) {
+        return []; // Return empty if no user authenticated
+      }
+
+      final userKeyPrefix = '$currentUserId:';
+      final userLogs = <IntakeLog>[];
+
+      for (final key in _intakeLogsBox.keys) {
+        if (key.toString().startsWith(userKeyPrefix)) {
+          final log = _intakeLogsBox.get(key);
+          if (log != null) {
+            userLogs.add(log);
+          }
+        }
+      }
+
+      return userLogs..sort((a, b) => a.loggedAt.compareTo(b.loggedAt));
+    } catch (e) {
+      return []; // Return empty on error
+    }
   }
 
   /// Delete old logs (older than 30 days) to save space
   Future<void> cleanupOldLogs({int daysToKeep = 30}) async {
+    await _ensureBoxesOpen();
     final cutoffDate = DateTime.now().subtract(Duration(days: daysToKeep));
 
     final logsToDelete = _intakeLogsBox.values
@@ -104,11 +177,13 @@ class HiveStorageService {
 
   /// Save app setting
   Future<void> saveSetting(String key, dynamic value) async {
+    await _ensureBoxesOpen();
     await _appSettingsBox.put(key, value);
   }
 
   /// Load app setting
-  T? loadSetting<T>(String key) {
+  Future<T?> loadSetting<T>(String key) async {
+    await _ensureBoxesOpen();
     return _appSettingsBox.get(key) as T?;
   }
 
@@ -116,11 +191,13 @@ class HiveStorageService {
   Future<void> saveCoachConversation(
     List<Map<String, dynamic>> messages,
   ) async {
+    await _ensureBoxesOpen();
     await _appSettingsBox.put('coach_conversation', messages);
   }
 
   /// Load coach conversation messages
-  List<Map<String, dynamic>>? loadCoachConversation() {
+  Future<List<Map<String, dynamic>>?> loadCoachConversation() async {
+    await _ensureBoxesOpen();
     final data = _appSettingsBox.get('coach_conversation');
     if (data == null) return null;
 
@@ -133,6 +210,7 @@ class HiveStorageService {
 
   /// Cache friends data
   Future<void> cacheFriends(List<dynamic> friends) async {
+    await _ensureBoxesOpen();
     final friendsData = friends.map((friend) {
       if (friend is Map<String, dynamic>) {
         return friend;
@@ -163,6 +241,7 @@ class HiveStorageService {
 
   /// Cache friend requests data
   Future<void> cacheFriendRequests(List<dynamic> requests) async {
+    await _ensureBoxesOpen();
     final requestsData = requests.map((request) {
       if (request is Map<String, dynamic>) {
         return request;
@@ -188,6 +267,7 @@ class HiveStorageService {
 
   /// Cache weekly leaderboard data
   Future<void> cacheWeeklyLeaderboard(List<dynamic> leaderboard) async {
+    await _ensureBoxesOpen();
     final leaderboardData = leaderboard.map((entry) {
       if (entry is Map<String, dynamic>) {
         return entry;
@@ -213,6 +293,7 @@ class HiveStorageService {
 
   /// Cache social stats data
   Future<void> cacheSocialStats(Map<String, dynamic> stats) async {
+    await _ensureBoxesOpen();
     await _appSettingsBox.put('cached_social_stats', stats);
   }
 
@@ -226,6 +307,7 @@ class HiveStorageService {
 
   /// Cache timestamp for data freshness tracking
   Future<void> cacheSocialDataTimestamp(DateTime timestamp) async {
+    await _ensureBoxesOpen();
     await _appSettingsBox.put(
       'social_data_timestamp',
       timestamp.millisecondsSinceEpoch,
@@ -253,6 +335,7 @@ class HiveStorageService {
 
   /// Clear all data (for testing or reset functionality)
   Future<void> clearAllData() async {
+    await _ensureBoxesOpen();
     await _dailySummaryBox.clear();
     await _intakeLogsBox.clear();
     await _appSettingsBox.clear();
@@ -268,8 +351,23 @@ class HiveStorageService {
   }
 
   /// Generate today's key for daily summary storage
-  String _getTodayKey() {
+  Future<String> _getTodayKey() async {
     final today = DateTime.now();
-    return '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final dateKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+    try {
+      final authService = AuthService();
+      final userId = await authService.getCurrentUserId();
+
+      if (userId != null && userId.isNotEmpty) {
+        return '$userId:$dateKey';
+      } else {
+        // Fallback to date-only key if no user ID (shouldn't happen in normal flow)
+        return 'guest:$dateKey';
+      }
+    } catch (e) {
+      // Fallback if auth service fails
+      return 'guest:$dateKey';
+    }
   }
 }

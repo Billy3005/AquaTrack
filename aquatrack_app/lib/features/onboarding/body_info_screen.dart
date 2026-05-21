@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/repositories/user_repository.dart';
+import '../../core/utils/logger.dart';
 import '../../shared/widgets/living_drop.dart';
 
 /// Body Info Onboarding Screen - 5-step wizard after registration
@@ -17,6 +19,7 @@ class BodyInfoScreen extends StatefulWidget {
 
 class _BodyInfoScreenState extends State<BodyInfoScreen> {
   int currentStep = 0;
+  bool _isSubmitting = false;
 
   // User data
   final Map<String, dynamic> data = {
@@ -31,6 +34,8 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
     'coffee': 1,
     'alcohol': 0,
   };
+
+  final UserRepository _userRepository = UserRepository();
 
   final List<OnboardingStep> steps = [
     OnboardingStep(
@@ -62,14 +67,90 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
 
   bool get isLastStep => currentStep == steps.length - 1;
 
-  void nextStep() {
+  Future<void> nextStep() async {
     if (isLastStep) {
-      // Navigate to main app
-      context.go('/');
+      await _submitOnboardingData();
     } else {
       setState(() {
         currentStep++;
       });
+    }
+  }
+
+  /// Submit onboarding data to backend
+  Future<void> _submitOnboardingData() async {
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    AppLogger.info('Onboarding', 'Submitting onboarding data...');
+
+    try {
+      // Map Flutter data fields to backend API format
+      await _userRepository.submitOnboardingData(
+        gender: data['gender'] as String,
+        age: data['age'] as int,
+        height: (data['height'] as double).round(),
+        weight: data['weight'] as double,
+        activityLevel: data['activity'] as String,
+        jobType: data['work'] as String,
+        healthConditions: List<String>.from(data['health'] as List),
+        veggieIntake: data['veg'] as String,
+        coffeeCupsPerDay: data['coffee'] as int,
+        alcoholUnitsPerDay: data['alcohol'] as int,
+      );
+
+      AppLogger.info('Onboarding', 'Onboarding data submitted successfully');
+
+      // Navigate to main app
+      if (mounted) {
+        context.go('/');
+      }
+    } catch (e) {
+      AppLogger.error('Onboarding', 'Failed to submit onboarding data', e);
+
+      // Show error dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: AppColors.nightSurface,
+            title: const Text(
+              'Lỗi lưu thông tin',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: Text(
+              'Không thể lưu thông tin cá nhân. Vui lòng thử lại sau.\n\nChi tiết: $e',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // Still navigate to home even if API fails
+                  context.go('/');
+                },
+                child: const Text('Bỏ qua', style: TextStyle(color: Colors.white)),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text(
+                  'Thử lại',
+                  style: TextStyle(color: Color(0xFF38BDF8)),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
@@ -383,7 +464,7 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
         children: [
           // Next button
           GestureDetector(
-            onTap: nextStep,
+            onTap: _isSubmitting ? null : nextStep,
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -404,8 +485,21 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  if (_isSubmitting) ...[
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   Text(
-                    isLastStep ? 'Bắt đầu uống nước' : 'Tiếp theo',
+                    _isSubmitting
+                        ? 'Đang lưu...'
+                        : (isLastStep ? 'Bắt đầu uống nước' : 'Tiếp theo'),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -413,12 +507,14 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
                       letterSpacing: 0.02,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Icon(
-                    Icons.arrow_forward_rounded,
-                    color: Colors.white,
-                    size: 16,
-                  ),
+                  if (!_isSubmitting) ...[
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ],
                 ],
               ),
             ),

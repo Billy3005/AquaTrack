@@ -3,6 +3,7 @@ import '../models/user.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../utils/logger.dart';
+import '../providers/auth_state_provider.dart';
 
 /// Repository for authentication-related API calls
 class AuthRepository {
@@ -38,6 +39,14 @@ class AuthRepository {
           refreshToken: response.data!.refreshToken,
         );
         await _authService.storeUserData(response.data!.user.toJson());
+
+        // Notify auth state change
+        try {
+          globalAuthStateNotifier.onLogin(response.data!.user.id);
+        } catch (e) {
+          // Ignore if global notifier not initialized yet
+          AppLogger.debug(_tag, 'Auth state notifier not ready: $e');
+        }
 
         AppLogger.info(
           _tag,
@@ -83,6 +92,14 @@ class AuthRepository {
           refreshToken: response.data!.refreshToken,
         );
         await _authService.storeUserData(response.data!.user.toJson());
+
+        // Notify auth state change
+        try {
+          globalAuthStateNotifier.onLogin(response.data!.user.id);
+        } catch (e) {
+          // Ignore if global notifier not initialized yet
+          AppLogger.debug(_tag, 'Auth state notifier not ready: $e');
+        }
 
         AppLogger.info(
           _tag,
@@ -154,6 +171,15 @@ class AuthRepository {
 
       // Clear local auth data
       await _authService.logout();
+
+      // Notify auth state change
+      try {
+        globalAuthStateNotifier.onLogout();
+      } catch (e) {
+        // Ignore if global notifier not initialized yet
+        AppLogger.debug(_tag, 'Auth state notifier not ready: $e');
+      }
+
       AppLogger.info(_tag, 'Logout completed');
     } catch (e) {
       AppLogger.error(_tag, 'Logout failed', e);

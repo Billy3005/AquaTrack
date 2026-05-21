@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 # Import individual routers
-from app.api.v1.endpoints import auth, coach, friends, intake, levels, stats, users, vision
+from app.api.v1.endpoints import auth, coach, friends, intake, levels, stats, users, vision, water_profile
 
 # Main API router
 api_router = APIRouter()
@@ -15,6 +15,7 @@ api_router.include_router(coach.router, prefix="/coach", tags=["ai-coach"])
 api_router.include_router(levels.router, prefix="/levels", tags=["levels"])
 api_router.include_router(vision.router, prefix="/vision", tags=["smart-scan"])
 api_router.include_router(friends.router, prefix="/friends", tags=["social-features"])
+api_router.include_router(water_profile.router, prefix="/water-profile", tags=["water-calculation"])
 
 
 # Health check endpoint
@@ -23,7 +24,7 @@ async def ping():
     """Health check endpoint for API v1"""
     return {
         "message": "pong",
-        "status": "AquaTrack API v1 + Phase 2 Social Features! 🚀",
-        "endpoints": "auth, users, intake, stats, coach, levels, vision, friends ready",
-        "features": "Full hydration tracking + AI coach + gamification + Smart Scan ML + Social Features",
+        "status": "AquaTrack API v1 + Water Formula Calculation! 🚀",
+        "endpoints": "auth, users, intake, stats, coach, levels, vision, friends, water-profile ready",
+        "features": "Full hydration tracking + AI coach + gamification + Smart Scan ML + Social Features + Water Formula",
     }

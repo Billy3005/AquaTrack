@@ -4,6 +4,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../shared/storage/hive_storage_service.dart';
 import '../../../core/repositories/level_repository.dart';
+import '../../../core/repositories/user_repository.dart';
+import '../../../core/providers/auth_state_provider.dart';
 import '../../../core/sync/level_sync_repository.dart';
 import '../widgets/achievement_badges_grid.dart';
 import '../widgets/avatar_collection_showcase.dart';
@@ -85,13 +87,19 @@ class LevelState {
 /// Level system notifier với enhanced offline-first sync
 @riverpod
 class LevelNotifier extends _$LevelNotifier {
-  late final LevelRepository _levelRepository;
+  LevelRepository? _levelRepository;
   LevelSyncRepository? _levelSyncRepository;
 
   @override
   Future<LevelState> build() async {
-    // Initialize repositories via dependency injection
-    _levelRepository = ref.read(levelRepositoryProvider);
+    final authState = ref.watch(authStateProvider);
+
+    if (!authState.isAuthenticated) {
+      return await _loadInitialStateAsync();
+    }
+
+    // Initialize repositories via dependency injection (only if not already initialized)
+    _levelRepository ??= ref.read(levelRepositoryProvider);
 
     // Get sync repository (null if not configured)
     _levelSyncRepository = ref.read(levelSyncRepositoryNullableProvider);
@@ -109,12 +117,16 @@ class LevelNotifier extends _$LevelNotifier {
   /// Load level data from API with fallback to local storage
   Future<LevelState> _loadLevelDataFromApi() async {
     try {
+      // Ensure repository is initialized
+      final repository = _levelRepository!;
+
       // Fetch data from API in parallel for better performance
       final results = await Future.wait([
-        _levelRepository.getCurrentLevel(),
-        _levelRepository.getAchievements(),
-        _levelRepository.getUnlockedAvatars(),
-        _levelRepository.getLevelStats(),
+        repository.getCurrentLevel(),
+        repository.getAchievements(),
+        repository.getUnlockedAvatars(),
+        repository.getLevelStats(),
+        UserRepository().getUserStats(),
       ]);
 
       final levelInfoResponse = results[0] as LevelApiResponse<LevelInfo>;
@@ -122,6 +134,7 @@ class LevelNotifier extends _$LevelNotifier {
           results[1] as LevelApiResponse<List<AchievementProgress>>;
       final avatarsResponse = results[2] as LevelApiResponse<List<String>>;
       final statsResponse = results[3] as LevelApiResponse<LevelStats>;
+      final userStats = results[4] as UserStats;
 
       // Check for any API errors
       if (!levelInfoResponse.isSuccess) {
@@ -145,6 +158,7 @@ class LevelNotifier extends _$LevelNotifier {
         achievementsResponse.data!,
         avatarsResponse.data!,
         statsResponse.data!,
+        userStats,
       );
     } catch (e) {
       debugPrint('❌ Failed to load level data from API: $e');
@@ -176,6 +190,7 @@ class LevelNotifier extends _$LevelNotifier {
     List<AchievementProgress> achievementsData,
     List<String> unlockedAvatarIds,
     LevelStats stats,
+    UserStats userStats,
   ) {
     // Convert API achievements to local Achievement format
     final achievements = achievementsData.map((apiAchievement) {
@@ -197,10 +212,8 @@ class LevelNotifier extends _$LevelNotifier {
       levelInfo.currentLevel,
     );
 
-    // Get selected avatar from local storage or default
-    final storage = HiveStorageService.instance;
-    final savedAvatarId =
-        storage.loadSetting<String>('selected_avatar') ?? 'water_drop';
+    // Use default avatar for now, async loading will update later
+    final savedAvatarId = 'water_drop';
 
     return LevelState(
       currentLevel: levelInfo.currentLevel,
@@ -210,12 +223,9 @@ class LevelNotifier extends _$LevelNotifier {
       avatars: avatars,
       selectedAvatarId: savedAvatarId,
       isLevelingUp: false,
-      totalLogsCount: stats.achievements.total > 0
-          ? stats.achievements.total
-          : 0,
-      currentStreak: 0, // TODO: Get from daily summary or stats API
-      totalVolume:
-          stats.totalXP * 10, // Approximate from XP, should get from proper API
+      totalLogsCount: userStats.totalLogsCount,
+      currentStreak: userStats.currentStreak,
+      totalVolume: userStats.totalVolumeMl,
       daysWithGoal: stats.achievements.unlocked,
     );
   }
@@ -288,19 +298,69 @@ class LevelNotifier extends _$LevelNotifier {
     return _loadInitialState();
   }
 
-  /// Load initial state từ storage
-  LevelState _loadInitialState() {
+  /// Load initial state từ storage async
+  Future<LevelState> _loadInitialStateAsync() async {
+    // Load saved values from storage with fallback to defaults
     final storage = HiveStorageService.instance;
 
-    // Load saved data hoặc dùng defaults
-    final savedLevel = storage.loadSetting<int>('current_level') ?? 1;
-    final savedXP = storage.loadSetting<int>('current_xp') ?? 0;
-    final savedAvatarId =
-        storage.loadSetting<String>('selected_avatar') ?? 'water_drop';
-    final totalLogsCount = storage.loadSetting<int>('total_logs_count') ?? 0;
-    final currentStreak = storage.loadSetting<int>('current_streak') ?? 0;
-    final totalVolume = storage.loadSetting<int>('total_volume') ?? 0;
-    final daysWithGoal = storage.loadSetting<int>('days_with_goal') ?? 0;
+    try {
+      final savedLevel = await storage.loadSetting<int>('current_level') ?? 1;
+      final savedXP = await storage.loadSetting<int>('current_xp') ?? 0;
+      final savedAvatarId = await storage.loadSetting<String>('selected_avatar') ?? 'water_drop';
+      final totalLogsCount = await storage.loadSetting<int>('total_logs_count') ?? 0;
+      final currentStreak = await storage.loadSetting<int>('current_streak') ?? 0;
+      final totalVolume = await storage.loadSetting<int>('total_volume') ?? 0;
+      final daysWithGoal = await storage.loadSetting<int>('days_with_goal') ?? 0;
+
+      // Calculate next level XP requirement
+      final nextLevelXP = _calculateNextLevelXP(savedLevel);
+
+      // Generate achievements với current stats
+      final achievements = DefaultAchievements.getAll(
+        totalLogs: totalLogsCount,
+        currentStreak: currentStreak,
+        totalVolume: totalVolume,
+        currentLevel: savedLevel,
+        daysWithGoal: daysWithGoal,
+      );
+
+      // Generate avatars
+      final avatars = DefaultAvatars.getAll(
+        currentLevel: savedLevel,
+        selectedAvatarId: savedAvatarId,
+      );
+
+      debugPrint('💾 LevelProvider: Loaded from storage - Level: $savedLevel, XP: $savedXP, Streak: $currentStreak');
+
+      return LevelState(
+        currentLevel: savedLevel,
+        currentXP: savedXP,
+        nextLevelXP: nextLevelXP,
+        achievements: achievements,
+        avatars: avatars,
+        selectedAvatarId: savedAvatarId,
+        isLevelingUp: false,
+        totalLogsCount: totalLogsCount,
+        currentStreak: currentStreak,
+        totalVolume: totalVolume,
+        daysWithGoal: daysWithGoal,
+      );
+    } catch (e) {
+      debugPrint('❌ LevelProvider: Error loading from storage: $e');
+      return _loadInitialState();
+    }
+  }
+
+  /// Load initial state từ storage (sync fallback)
+  LevelState _loadInitialState() {
+    // Fallback to default values if async loading fails
+    final savedLevel = 1;
+    final savedXP = 0;
+    final savedAvatarId = 'water_drop';
+    final totalLogsCount = 0;
+    final currentStreak = 0;
+    final totalVolume = 0;
+    final daysWithGoal = 0;
 
     // Calculate next level XP requirement
     final nextLevelXP = _calculateNextLevelXP(savedLevel);
@@ -484,9 +544,10 @@ class LevelNotifier extends _$LevelNotifier {
       await storage.saveSetting('current_streak', currentState.currentStreak);
       await storage.saveSetting('total_volume', currentState.totalVolume);
       await storage.saveSetting('days_with_goal', currentState.daysWithGoal);
+
+      debugPrint('💾 LevelProvider: Saved to storage - Level: ${currentState.currentLevel}, XP: ${currentState.currentXP}, Streak: ${currentState.currentStreak}');
     } catch (e) {
-      // Silently fail - storage is not critical
-      debugPrint('Failed to save level state to storage: $e');
+      debugPrint('❌ Failed to save level state to storage: $e');
     }
   }
 
