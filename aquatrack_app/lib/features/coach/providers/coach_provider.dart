@@ -68,6 +68,14 @@ class CoachNotifier extends _$CoachNotifier {
     // Initialize repository via dependency injection
     _coachRepository = ref.read(coachRepositoryProvider);
 
+    // Listen to auth state changes để reset conversation khi user switch
+    ref.listen<AuthState>(authStateProvider, (previous, current) {
+      if (previous?.userId != current.userId) {
+        // User changed - reset conversation for new user
+        _resetForNewUser();
+      }
+    });
+
     // Cancel timer when provider is disposed
     ref.onDispose(() {
       _autoSuggestionTimer?.cancel();
@@ -79,9 +87,16 @@ class CoachNotifier extends _$CoachNotifier {
   /// Load conversation từ backend API với fallback
   Future<ConversationState> _loadConversationFromApi() async {
     try {
-      _sessionOwnerUserId = _getCurrentUserId();
+      final currentUserId = _getCurrentUserId();
+      _sessionOwnerUserId = currentUserId;
 
-      // Try to get recent conversation session
+      // Only load if we have a valid user ID
+      if (currentUserId == null) {
+        debugPrint('⚠️ No current user ID, creating welcome conversation');
+        return _createWelcomeConversation();
+      }
+
+      // Try to get recent conversation session for current user
       final sessions = await _coachRepository.getConversationSessions(limit: 1);
 
       if (sessions == null) {
@@ -90,22 +105,31 @@ class CoachNotifier extends _$CoachNotifier {
 
       if (sessions.isNotEmpty) {
         final recentSession = sessions.first;
-        _currentSessionId = recentSession['session_id'];
+        final sessionUserId = recentSession['user_id'] as String?;
 
-        // Load conversation history for this session
-        final messages = await _coachRepository.getConversationHistory(
-          sessionId: recentSession['session_id'],
-        );
+        // Double-check session belongs to current user
+        if (sessionUserId == currentUserId) {
+          _currentSessionId = recentSession['session_id'];
 
-        if (messages != null && messages.isNotEmpty) {
-          return ConversationState(
-            messages: messages,
-            lastUpdated: DateTime.now(),
+          // Load conversation history for this session
+          final messages = await _coachRepository.getConversationHistory(
+            sessionId: recentSession['session_id'],
           );
+
+          if (messages != null && messages.isNotEmpty) {
+            debugPrint('✅ Loaded ${messages.length} messages for user $currentUserId');
+            return ConversationState(
+              messages: messages,
+              lastUpdated: DateTime.now(),
+            );
+          }
+        } else {
+          debugPrint('⚠️ Session belongs to different user, creating new conversation');
         }
       }
 
-      // No existing conversation, create welcome conversation
+      // No existing conversation for current user, create welcome conversation
+      debugPrint('📝 Creating new welcome conversation for user $currentUserId');
       return _createWelcomeConversation();
     } catch (e) {
       debugPrint('❌ Failed to load conversation from API: $e');
@@ -779,6 +803,29 @@ class CoachNotifier extends _$CoachNotifier {
           .toList();
       await storage.saveCoachConversation(messagesJson);
     });
+  }
+
+  /// Reset conversation for new user (called on auth state change)
+  void _resetForNewUser() async {
+    debugPrint('🔄 Resetting conversation for new user');
+
+    // Cancel any ongoing timers
+    _autoSuggestionTimer?.cancel();
+
+    // Reset session state
+    _currentSessionId = null;
+    _sessionOwnerUserId = null;
+
+    // Reset provider state and load fresh conversation for new user
+    state = const AsyncValue.loading();
+
+    try {
+      final newConversation = await _loadConversationFromApi();
+      state = AsyncValue.data(newConversation);
+    } catch (e) {
+      // Fallback to welcome conversation if API fails
+      state = AsyncValue.data(_createWelcomeConversation());
+    }
   }
 
   /// Clear conversation
