@@ -166,7 +166,8 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
                                 controller: _scrollController,
                                 itemCount: conversationState.messages.length,
                                 itemBuilder: (context, index) {
-                                  final message = conversationState.messages[index];
+                                  final message =
+                                      conversationState.messages[index];
                                   return message.isTyping
                                       ? _buildThinkingIndicator()
                                       : _buildMessageBubble(message);
@@ -485,7 +486,8 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
                     return Row(
                       children: List.generate(3, (index) {
                         double delay = index * 0.3;
-                        double opacity = ((_typingAnimation.value + delay) % 1.0);
+                        double opacity =
+                            ((_typingAnimation.value + delay) % 1.0);
                         if (opacity > 0.5) opacity = 1.0 - opacity;
                         opacity = opacity * 2; // Make it more visible
 
@@ -537,9 +539,8 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
-        crossAxisAlignment: isAi
-            ? CrossAxisAlignment.start
-            : CrossAxisAlignment.end,
+        crossAxisAlignment:
+            isAi ? CrossAxisAlignment.start : CrossAxisAlignment.end,
         children: [
           Container(
             constraints: BoxConstraints(

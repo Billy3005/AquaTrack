@@ -7,8 +7,8 @@ import '../models/chat_message.dart';
 /// Provider for coach conversation management
 final coachChatNotifierProvider =
     StateNotifierProvider<CoachChatNotifier, ConversationState>(
-      (ref) => CoachChatNotifier(),
-    );
+  (ref) => CoachChatNotifier(),
+);
 
 /// Coach Chat State Notifier
 class CoachChatNotifier extends StateNotifier<ConversationState> {
@@ -18,8 +18,8 @@ class CoachChatNotifier extends StateNotifier<ConversationState> {
   String? _currentSessionId;
 
   CoachChatNotifier({CoachRepository? coachRepository})
-    : _coachRepository = coachRepository ?? CoachRepository(),
-      super(ConversationState(lastUpdated: DateTime.now())) {
+      : _coachRepository = coachRepository ?? CoachRepository(),
+        super(ConversationState(lastUpdated: DateTime.now())) {
     _initializeConversation();
   }
 
@@ -54,9 +54,8 @@ class CoachChatNotifier extends StateNotifier<ConversationState> {
       );
 
       if (messages != null) {
-        final chatMessages = messages
-            .map((msg) => _convertToChatMessage(msg))
-            .toList();
+        final chatMessages =
+            messages.map((msg) => _convertToChatMessage(msg)).toList();
         state = state.copyWith(messages: chatMessages);
       }
     } catch (e) {

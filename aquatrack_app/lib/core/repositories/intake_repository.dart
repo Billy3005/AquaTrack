@@ -10,7 +10,7 @@ class IntakeRepository {
   final ApiService _apiService;
 
   IntakeRepository({ApiService? apiService})
-    : _apiService = apiService ?? ApiService();
+      : _apiService = apiService ?? ApiService();
 
   /// Create new intake log entry with achievements
   Future<IntakeLogWithAchievements> createIntakeLog({
@@ -47,8 +47,8 @@ class IntakeRepository {
           payload = raw['intake_log'] is Map<String, dynamic>
               ? raw
               : (raw['data'] is Map<String, dynamic>
-                    ? raw['data'] as Map<String, dynamic>
-                    : null);
+                  ? raw['data'] as Map<String, dynamic>
+                  : null);
         }
 
         if (payload == null) {

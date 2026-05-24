@@ -394,17 +394,17 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
         final priorityA = a.status == FriendStatus.thirsty
             ? 0
             : a.status == FriendStatus.stressed
-            ? 1
-            : a.status == FriendStatus.normal
-            ? 2
-            : 3;
+                ? 1
+                : a.status == FriendStatus.normal
+                    ? 2
+                    : 3;
         final priorityB = b.status == FriendStatus.thirsty
             ? 0
             : b.status == FriendStatus.stressed
-            ? 1
-            : b.status == FriendStatus.normal
-            ? 2
-            : 3;
+                ? 1
+                : b.status == FriendStatus.normal
+                    ? 2
+                    : 3;
         return priorityA.compareTo(priorityB);
       });
 
@@ -508,8 +508,8 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
     final ringColor = rank == 1
         ? const Color(0xFFFBBF24)
         : rank == 2
-        ? const Color(0xFFCBD5E1)
-        : const Color(0xFFD97706);
+            ? const Color(0xFFCBD5E1)
+            : const Color(0xFFD97706);
     final size = rank == 1 ? 56.0 : 46.0;
 
     return Expanded(
@@ -696,9 +696,8 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: chip.active
-                  ? AppColors.textBright
-                  : AppColors.textSecondary,
+              color:
+                  chip.active ? AppColors.textBright : AppColors.textSecondary,
             ),
           ),
           const SizedBox(width: 6),
@@ -909,8 +908,7 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
                                             borderRadius: BorderRadius.circular(
                                               999,
                                             ),
-                                            boxShadow:
-                                                friend.status ==
+                                            boxShadow: friend.status ==
                                                     FriendStatus.normal
                                                 ? [
                                                     BoxShadow(
@@ -1073,20 +1071,20 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
           gradient: isReminded
               ? null
               : isThirsty
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    const Color(0xFF38BDF8).withValues(alpha: 0.22),
-                    const Color(0xFF0EA5E9).withValues(alpha: 0.16),
-                  ],
-                )
-              : null,
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF38BDF8).withValues(alpha: 0.22),
+                        const Color(0xFF0EA5E9).withValues(alpha: 0.16),
+                      ],
+                    )
+                  : null,
           color: isReminded
               ? const Color(0xFF10B981).withValues(alpha: 0.10)
               : !isThirsty
-              ? const Color(0xFF38BDF8).withValues(alpha: 0.10)
-              : null,
+                  ? const Color(0xFF38BDF8).withValues(alpha: 0.10)
+                  : null,
           border: Border.all(
             color: isReminded
                 ? const Color(0xFF10B981).withValues(alpha: 0.3)
@@ -1099,9 +1097,8 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
           children: [
             Icon(
               isReminded ? Icons.check : Icons.notifications,
-              color: isReminded
-                  ? const Color(0xFF86EFAC)
-                  : AppColors.textBright,
+              color:
+                  isReminded ? const Color(0xFF86EFAC) : AppColors.textBright,
               size: 13,
             ),
             const SizedBox(width: 5),
@@ -1110,9 +1107,8 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
               style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w600,
-                color: isReminded
-                    ? const Color(0xFF86EFAC)
-                    : AppColors.textBright,
+                color:
+                    isReminded ? const Color(0xFF86EFAC) : AppColors.textBright,
               ),
             ),
           ],

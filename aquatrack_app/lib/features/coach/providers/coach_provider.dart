@@ -117,26 +117,28 @@ class CoachNotifier extends _$CoachNotifier {
           );
 
           if (messages != null && messages.isNotEmpty) {
-            debugPrint('✅ Loaded ${messages.length} messages for user $currentUserId');
+            debugPrint(
+                '✅ Loaded ${messages.length} messages for user $currentUserId');
             return ConversationState(
               messages: messages,
               lastUpdated: DateTime.now(),
             );
           }
         } else {
-          debugPrint('⚠️ Session belongs to different user, creating new conversation');
+          debugPrint(
+              '⚠️ Session belongs to different user, creating new conversation');
         }
       }
 
       // No existing conversation for current user, create welcome conversation
-      debugPrint('📝 Creating new welcome conversation for user $currentUserId');
+      debugPrint(
+          '📝 Creating new welcome conversation for user $currentUserId');
       return _createWelcomeConversation();
     } catch (e) {
       debugPrint('❌ Failed to load conversation from API: $e');
 
       // Only fallback to local storage for genuine connectivity issues
-      final isConnectivityError =
-          e.toString().contains('SocketException') ||
+      final isConnectivityError = e.toString().contains('SocketException') ||
           e.toString().contains('HttpException') ||
           e.toString().contains('TimeoutException') ||
           e.toString().contains('Connection refused') ||
@@ -269,9 +271,8 @@ class CoachNotifier extends _$CoachNotifier {
       todayIntake: todaysSummary?.totalEffectiveMl ?? 0,
       dailyGoal: todaysSummary?.dailyGoalMl ?? 2000,
       recentAchievements: recentAchievements,
-      overallHealthStatus: ref
-          .read(bodyMapNotifierProvider.notifier)
-          .overallHealthMessage,
+      overallHealthStatus:
+          ref.read(bodyMapNotifierProvider.notifier).overallHealthMessage,
     );
   }
 
@@ -379,9 +380,8 @@ class CoachNotifier extends _$CoachNotifier {
   Future<void> _saveConversationLocal() async {
     state.whenData((currentState) async {
       final storage = HiveStorageService.instance;
-      final messagesJson = currentState.messages
-          .map((msg) => msg.toJson())
-          .toList();
+      final messagesJson =
+          currentState.messages.map((msg) => msg.toJson()).toList();
       await storage.saveCoachConversation(messagesJson);
     });
   }
@@ -798,9 +798,8 @@ class CoachNotifier extends _$CoachNotifier {
   Future<void> _saveConversation() async {
     state.whenData((currentState) async {
       final storage = HiveStorageService.instance;
-      final messagesJson = currentState.messages
-          .map((msg) => msg.toJson())
-          .toList();
+      final messagesJson =
+          currentState.messages.map((msg) => msg.toJson()).toList();
       await storage.saveCoachConversation(messagesJson);
     });
   }

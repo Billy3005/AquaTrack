@@ -50,174 +50,174 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
   }
 
   List<ShopItem> get _items => [
-    // Featured / limited
-    ShopItem(
-      id: 'theme_aurora',
-      category: 'theme',
-      name: 'Aurora Night',
-      subtitle: 'Theme · giới hạn',
-      price: 450,
-      rarity: 'epic',
-      featured: true,
-      colorSwatch: const [
-        Color(0xFF312E81),
-        Color(0xFF7C3AED),
-        Color(0xFF06B6D4),
-      ],
-    ),
-    ShopItem(
-      id: 'frame_dragon',
-      category: 'frame',
-      name: 'Rồng nước',
-      subtitle: 'Khung avatar · hiếm',
-      price: 600,
-      rarity: 'epic',
-      featured: true,
-      ringColors: const [
-        Color(0xFFFBBF24),
-        Color(0xFFF472B6),
-        Color(0xFF0EA5E9),
-      ],
-    ),
+        // Featured / limited
+        ShopItem(
+          id: 'theme_aurora',
+          category: 'theme',
+          name: 'Aurora Night',
+          subtitle: 'Theme · giới hạn',
+          price: 450,
+          rarity: 'epic',
+          featured: true,
+          colorSwatch: const [
+            Color(0xFF312E81),
+            Color(0xFF7C3AED),
+            Color(0xFF06B6D4),
+          ],
+        ),
+        ShopItem(
+          id: 'frame_dragon',
+          category: 'frame',
+          name: 'Rồng nước',
+          subtitle: 'Khung avatar · hiếm',
+          price: 600,
+          rarity: 'epic',
+          featured: true,
+          ringColors: const [
+            Color(0xFFFBBF24),
+            Color(0xFFF472B6),
+            Color(0xFF0EA5E9),
+          ],
+        ),
 
-    // Themes
-    ShopItem(
-      id: 'theme_ocean',
-      category: 'theme',
-      name: 'Đêm Đại dương',
-      subtitle: 'Theme · đã có',
-      price: 0,
-      rarity: 'common',
-      owned: true,
-      colorSwatch: const [
-        Color(0xFF0C4A80),
-        Color(0xFF082F5C),
-        Color(0xFF38BDF8),
-      ],
-    ),
-    ShopItem(
-      id: 'theme_forest',
-      category: 'theme',
-      name: 'Mưa rừng',
-      subtitle: 'Theme',
-      price: 280,
-      rarity: 'rare',
-      colorSwatch: const [
-        Color(0xFF064E3B),
-        Color(0xFF059669),
-        Color(0xFFA3E635),
-      ],
-    ),
-    ShopItem(
-      id: 'theme_desert',
-      category: 'theme',
-      name: 'Hoàng hôn sa mạc',
-      subtitle: 'Theme',
-      price: 320,
-      rarity: 'rare',
-      colorSwatch: const [
-        Color(0xFF7C2D12),
-        Color(0xFFF59E0B),
-        Color(0xFFFDE68A),
-      ],
-    ),
-    ShopItem(
-      id: 'theme_sakura',
-      category: 'theme',
-      name: 'Hoa anh đào',
-      subtitle: 'Theme',
-      price: 380,
-      rarity: 'rare',
-      colorSwatch: const [
-        Color(0xFF831843),
-        Color(0xFFEC4899),
-        Color(0xFFFBCFE8),
-      ],
-    ),
+        // Themes
+        ShopItem(
+          id: 'theme_ocean',
+          category: 'theme',
+          name: 'Đêm Đại dương',
+          subtitle: 'Theme · đã có',
+          price: 0,
+          rarity: 'common',
+          owned: true,
+          colorSwatch: const [
+            Color(0xFF0C4A80),
+            Color(0xFF082F5C),
+            Color(0xFF38BDF8),
+          ],
+        ),
+        ShopItem(
+          id: 'theme_forest',
+          category: 'theme',
+          name: 'Mưa rừng',
+          subtitle: 'Theme',
+          price: 280,
+          rarity: 'rare',
+          colorSwatch: const [
+            Color(0xFF064E3B),
+            Color(0xFF059669),
+            Color(0xFFA3E635),
+          ],
+        ),
+        ShopItem(
+          id: 'theme_desert',
+          category: 'theme',
+          name: 'Hoàng hôn sa mạc',
+          subtitle: 'Theme',
+          price: 320,
+          rarity: 'rare',
+          colorSwatch: const [
+            Color(0xFF7C2D12),
+            Color(0xFFF59E0B),
+            Color(0xFFFDE68A),
+          ],
+        ),
+        ShopItem(
+          id: 'theme_sakura',
+          category: 'theme',
+          name: 'Hoa anh đào',
+          subtitle: 'Theme',
+          price: 380,
+          rarity: 'rare',
+          colorSwatch: const [
+            Color(0xFF831843),
+            Color(0xFFEC4899),
+            Color(0xFFFBCFE8),
+          ],
+        ),
 
-    // Avatar frames
-    ShopItem(
-      id: 'frame_ocean',
-      category: 'frame',
-      name: 'Sóng Ocean',
-      subtitle: 'Khung avatar · đã có',
-      price: 0,
-      rarity: 'common',
-      owned: true,
-      ringColors: const [Color(0xFF0EA5E9), Color(0xFF38BDF8)],
-    ),
-    ShopItem(
-      id: 'frame_gold',
-      category: 'frame',
-      name: 'Vàng ròng',
-      subtitle: 'Khung avatar',
-      price: 220,
-      rarity: 'rare',
-      ringColors: const [Color(0xFFFBBF24), Color(0xFFF59E0B)],
-    ),
-    ShopItem(
-      id: 'frame_aurora',
-      category: 'frame',
-      name: 'Cực quang',
-      subtitle: 'Khung avatar',
-      price: 480,
-      rarity: 'epic',
-      ringColors: const [
-        Color(0xFFA78BFA),
-        Color(0xFF22D3EE),
-        Color(0xFF10B981),
-      ],
-    ),
+        // Avatar frames
+        ShopItem(
+          id: 'frame_ocean',
+          category: 'frame',
+          name: 'Sóng Ocean',
+          subtitle: 'Khung avatar · đã có',
+          price: 0,
+          rarity: 'common',
+          owned: true,
+          ringColors: const [Color(0xFF0EA5E9), Color(0xFF38BDF8)],
+        ),
+        ShopItem(
+          id: 'frame_gold',
+          category: 'frame',
+          name: 'Vàng ròng',
+          subtitle: 'Khung avatar',
+          price: 220,
+          rarity: 'rare',
+          ringColors: const [Color(0xFFFBBF24), Color(0xFFF59E0B)],
+        ),
+        ShopItem(
+          id: 'frame_aurora',
+          category: 'frame',
+          name: 'Cực quang',
+          subtitle: 'Khung avatar',
+          price: 480,
+          rarity: 'epic',
+          ringColors: const [
+            Color(0xFFA78BFA),
+            Color(0xFF22D3EE),
+            Color(0xFF10B981),
+          ],
+        ),
 
-    // Boosters / consumables
-    ShopItem(
-      id: 'boost_2x',
-      category: 'boost',
-      name: 'Nhân đôi 24h',
-      subtitle: 'Toàn bộ xu nhận được × 2',
-      price: 180,
-      rarity: 'rare',
-      icon: '⚡',
-    ),
-    ShopItem(
-      id: 'boost_freeze',
-      category: 'boost',
-      name: 'Đóng băng chuỗi',
-      subtitle: 'Bảo vệ streak 1 ngày',
-      price: 120,
-      rarity: 'common',
-      icon: '🧊',
-    ),
-    ShopItem(
-      id: 'boost_xpkit',
-      category: 'boost',
-      name: 'Gói +500 XP',
-      subtitle: 'Nạp ngay 500 XP',
-      price: 250,
-      rarity: 'rare',
-      icon: '💎',
-    ),
+        // Boosters / consumables
+        ShopItem(
+          id: 'boost_2x',
+          category: 'boost',
+          name: 'Nhân đôi 24h',
+          subtitle: 'Toàn bộ xu nhận được × 2',
+          price: 180,
+          rarity: 'rare',
+          icon: '⚡',
+        ),
+        ShopItem(
+          id: 'boost_freeze',
+          category: 'boost',
+          name: 'Đóng băng chuỗi',
+          subtitle: 'Bảo vệ streak 1 ngày',
+          price: 120,
+          rarity: 'common',
+          icon: '🧊',
+        ),
+        ShopItem(
+          id: 'boost_xpkit',
+          category: 'boost',
+          name: 'Gói +500 XP',
+          subtitle: 'Nạp ngay 500 XP',
+          price: 250,
+          rarity: 'rare',
+          icon: '💎',
+        ),
 
-    // Drink stickers (cosmetic)
-    ShopItem(
-      id: 'sticker_neon',
-      category: 'sticker',
-      name: 'Drop Neon',
-      subtitle: 'Hiệu ứng giọt nước',
-      price: 90,
-      rarity: 'common',
-      icon: '💧',
-    ),
-    ShopItem(
-      id: 'sticker_bubble',
-      category: 'sticker',
-      name: 'Bong bóng vàng',
-      subtitle: 'Hiệu ứng khi log',
-      price: 140,
-      rarity: 'common',
-      icon: '🫧',
-    ),
-  ];
+        // Drink stickers (cosmetic)
+        ShopItem(
+          id: 'sticker_neon',
+          category: 'sticker',
+          name: 'Drop Neon',
+          subtitle: 'Hiệu ứng giọt nước',
+          price: 90,
+          rarity: 'common',
+          icon: '💧',
+        ),
+        ShopItem(
+          id: 'sticker_bubble',
+          category: 'sticker',
+          name: 'Bong bóng vàng',
+          subtitle: 'Hiệu ứng khi log',
+          price: 140,
+          rarity: 'common',
+          icon: '🫧',
+        ),
+      ];
 
   List<String> get _tabs => ['all', 'theme', 'frame', 'boost', 'sticker'];
 
@@ -457,9 +457,9 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                     children: [
                       Text(
                         _currentBalance.toString().replaceAllMapped(
-                          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                          (match) => '${match[1]}.',
-                        ),
+                              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                              (match) => '${match[1]}.',
+                            ),
                         style: AppTextStyles.headingMedium.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
@@ -1098,9 +1098,9 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                 const SizedBox(width: 5),
                 Text(
                   item.price.toString().replaceAllMapped(
-                    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                    (match) => '${match[1]}.',
-                  ),
+                        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                        (match) => '${match[1]}.',
+                      ),
                   style: AppTextStyles.caption.copyWith(
                     color: cantAfford
                         ? AppColors.textMuted

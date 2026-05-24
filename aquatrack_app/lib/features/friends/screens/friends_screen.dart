@@ -143,9 +143,8 @@ class FriendsScreen extends ConsumerWidget {
             Text(
               title,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: isActive
-                    ? AppColors.cyanAccent
-                    : AppColors.textSecondary,
+                color:
+                    isActive ? AppColors.cyanAccent : AppColors.textSecondary,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
@@ -154,9 +153,8 @@ class FriendsScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isActive
-                      ? AppColors.cyanAccent
-                      : AppColors.textTertiary,
+                  color:
+                      isActive ? AppColors.cyanAccent : AppColors.textTertiary,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(

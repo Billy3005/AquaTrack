@@ -46,7 +46,7 @@ class SimpleAuthService {
   /// Test CORS connectivity
   static Future<bool> testCORS() async {
     try {
-      final response = await _dio.get('http://localhost:8001/cors-test');
+      final response = await _dio.get('http://localhost:8000/cors-test');
       return response.statusCode == 200;
     } catch (e) {
       print('CORS test failed: $e');

@@ -160,7 +160,8 @@ class HomeNotifier extends _$HomeNotifier {
 
       // Fallback to local storage if server fails
       try {
-        final localSummary = await HiveStorageService.instance.loadTodaysSummary();
+        final localSummary =
+            await HiveStorageService.instance.loadTodaysSummary();
         if (localSummary != null) {
           debugPrint('🏠 HomeProvider: Loaded from local storage');
           return localSummary;
@@ -307,11 +308,15 @@ class HomeNotifier extends _$HomeNotifier {
           // DEBUG: Reset streak date for testing (remove in production)
           // await storage.saveSetting('last_streak_date', null); // Clear for clean test
 
-          final lastStreakDate = await storage.loadSetting<String>('last_streak_date');
-          final currentStoredStreak = await storage.loadSetting<int>('current_streak') ?? 0;
-          final today = DateTime.now().toIso8601String().substring(0, 10); // YYYY-MM-DD
+          final lastStreakDate =
+              await storage.loadSetting<String>('last_streak_date');
+          final currentStoredStreak =
+              await storage.loadSetting<int>('current_streak') ?? 0;
+          final today =
+              DateTime.now().toIso8601String().substring(0, 10); // YYYY-MM-DD
 
-          debugPrint('🔍 Debug: lastStreakDate = $lastStreakDate, today = $today');
+          debugPrint(
+              '🔍 Debug: lastStreakDate = $lastStreakDate, today = $today');
           debugPrint('🔍 Debug: currentStoredStreak = $currentStoredStreak');
 
           if (lastStreakDate != today) {
@@ -319,16 +324,20 @@ class HomeNotifier extends _$HomeNotifier {
             final currentLevelState = await levelNotifier.future;
             newStreak = currentLevelState.currentStreak + 1;
 
-            debugPrint('🔥 HomeProvider: Goal achieved for the first time today!');
-            debugPrint('🔥 Current level state streak: ${currentLevelState.currentStreak}');
+            debugPrint(
+                '🔥 HomeProvider: Goal achieved for the first time today!');
+            debugPrint(
+                '🔥 Current level state streak: ${currentLevelState.currentStreak}');
             debugPrint('🔥 New streak will be: $newStreak');
           } else {
-            debugPrint('🔥 HomeProvider: Goal already achieved today, streak unchanged');
+            debugPrint(
+                '🔥 HomeProvider: Goal already achieved today, streak unchanged');
           }
         } catch (e) {
           // If can't get current streak, start from 1
           newStreak = 1;
-          debugPrint('🔥 HomeProvider: Goal achieved! Starting new streak: 1 day');
+          debugPrint(
+              '🔥 HomeProvider: Goal achieved! Starting new streak: 1 day');
         }
       }
 
@@ -374,17 +383,21 @@ class HomeNotifier extends _$HomeNotifier {
 
       // Log achievements if any were unlocked
       if (result.hasAchievements) {
-        debugPrint('🏆 HomeProvider: Unlocked ${result.achievements.length} achievements!');
+        debugPrint(
+            '🏆 HomeProvider: Unlocked ${result.achievements.length} achievements!');
         for (final achievement in result.achievements) {
-          debugPrint('🏆 Achievement: ${achievement.title} (+${achievement.xpReward} XP)');
+          debugPrint(
+              '🏆 Achievement: ${achievement.title} (+${achievement.xpReward} XP)');
         }
       }
 
       // Log level progress if available and update streak
       if (result.levelProgress != null) {
         final progress = result.levelProgress!;
-        debugPrint('📊 Level Progress: Level ${progress.currentLevel} (${progress.currentXp}/${progress.xpForNextLevel} XP)');
-        debugPrint('🔥 Streak Update: ${progress.currentStreak} days (Goal: ${progress.goalAchievedToday})');
+        debugPrint(
+            '📊 Level Progress: Level ${progress.currentLevel} (${progress.currentXp}/${progress.xpForNextLevel} XP)');
+        debugPrint(
+            '🔥 Streak Update: ${progress.currentStreak} days (Goal: ${progress.goalAchievedToday})');
 
         // Update current summary with fresh streak data from backend
         state.whenData((currentSummary) {
@@ -394,10 +407,10 @@ class HomeNotifier extends _$HomeNotifier {
             xpToday: progress.currentXp,
           );
           state = AsyncValue.data(updatedSummary);
-          debugPrint('✅ HomeProvider: Updated streak from backend: ${progress.currentStreak} days');
+          debugPrint(
+              '✅ HomeProvider: Updated streak from backend: ${progress.currentStreak} days');
         });
       }
-
     } catch (e) {
       debugPrint('🌐 HomeProvider: Failed to sync to server: $e');
       // Log will remain in local storage and can be synced later
@@ -461,11 +474,14 @@ class HomeNotifier extends _$HomeNotifier {
               streakDays: userStats.currentStreak,
               currentLevel: userStats.currentLevel,
               // Don't override daily goal if user has custom goal
-              dailyGoalMl: userStats.dailyGoalMl > 0 ? userStats.dailyGoalMl : currentSummary.dailyGoalMl,
+              dailyGoalMl: userStats.dailyGoalMl > 0
+                  ? userStats.dailyGoalMl
+                  : currentSummary.dailyGoalMl,
             );
 
             state = AsyncValue.data(updatedSummary);
-            debugPrint('🏠 HomeProvider: Synced with user stats - Level: ${userStats.currentLevel}, Streak: ${userStats.currentStreak}');
+            debugPrint(
+                '🏠 HomeProvider: Synced with user stats - Level: ${userStats.currentLevel}, Streak: ${userStats.currentStreak}');
           } catch (e) {
             debugPrint('❌ HomeProvider: Error syncing user stats: $e');
           }
@@ -484,14 +500,20 @@ class HomeNotifier extends _$HomeNotifier {
           try {
             final currentSummary = await future;
             // Only update if user stats haven't provided these values yet
-            if (currentSummary.streakDays == 0 || currentSummary.currentLevel == 1) {
+            if (currentSummary.streakDays == 0 ||
+                currentSummary.currentLevel == 1) {
               final updatedSummary = currentSummary.copyWith(
-                streakDays: currentSummary.streakDays == 0 ? levelState.currentStreak : currentSummary.streakDays,
-                currentLevel: currentSummary.currentLevel == 1 ? levelState.currentLevel : currentSummary.currentLevel,
+                streakDays: currentSummary.streakDays == 0
+                    ? levelState.currentStreak
+                    : currentSummary.streakDays,
+                currentLevel: currentSummary.currentLevel == 1
+                    ? levelState.currentLevel
+                    : currentSummary.currentLevel,
               );
 
               state = AsyncValue.data(updatedSummary);
-              debugPrint('🏠 HomeProvider: Synced with level provider - Level: ${levelState.currentLevel}, Streak: ${levelState.currentStreak}');
+              debugPrint(
+                  '🏠 HomeProvider: Synced with level provider - Level: ${levelState.currentLevel}, Streak: ${levelState.currentStreak}');
             }
           } catch (e) {
             debugPrint('❌ HomeProvider: Error syncing level state: $e');

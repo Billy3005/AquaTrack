@@ -158,9 +158,8 @@ class _StatsScreenRedesignState extends ConsumerState<StatsScreenRedesign> {
           style: TextStyle(
             fontSize: 11.5,
             fontWeight: FontWeight.w600,
-            color: isSelected
-                ? const Color(0xFF082F49)
-                : AppColors.textSecondary,
+            color:
+                isSelected ? const Color(0xFF082F49) : AppColors.textSecondary,
             fontFamily: 'SF Pro Text',
           ),
         ),
@@ -269,8 +268,8 @@ class _StatsScreenRedesignState extends ConsumerState<StatsScreenRedesign> {
         // Calculate mock percentage from chart data if available
         final mockPct = index < statsData.chartData.length
             ? (statsData.chartData[index].value /
-                  statsData.chartData[index].goal *
-                  100)
+                statsData.chartData[index].goal *
+                100)
             : 50.0;
 
         Color labelColor;
@@ -587,8 +586,7 @@ class WaveChartPainter extends CustomPainter {
 
     // Draw goal line (dashed)
     final goalPaint = Paint()
-      ..color =
-          const Color(0x7338BDF8) // rgba(56,189,248,0.45)
+      ..color = const Color(0x7338BDF8) // rgba(56,189,248,0.45)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 

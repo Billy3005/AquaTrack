@@ -137,8 +137,7 @@ class ChatMessage {
         (e) => e.name == json['type'],
         orElse: () => MessageType.text,
       ),
-      quickReplies:
-          (json['quickReplies'] as List<dynamic>?)
+      quickReplies: (json['quickReplies'] as List<dynamic>?)
               ?.map((qr) => QuickReply.fromJson(qr as Map<String, dynamic>))
               .toList() ??
           [],

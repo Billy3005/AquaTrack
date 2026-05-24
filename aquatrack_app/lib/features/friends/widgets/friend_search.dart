@@ -161,9 +161,8 @@ class _FriendSearchState extends ConsumerState<FriendSearch> {
         leading: CircleAvatar(
           radius: 24,
           backgroundColor: AppColors.cyanAccent.withValues(alpha: 0.1),
-          backgroundImage: user.avatarUrl != null
-              ? NetworkImage(user.avatarUrl!)
-              : null,
+          backgroundImage:
+              user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
           child: user.avatarUrl == null
               ? Text(
                   user.displayName.isNotEmpty

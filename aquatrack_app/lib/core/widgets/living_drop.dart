@@ -259,8 +259,7 @@ class LivingDropPainter extends CustomPainter {
       wavePath.moveTo(-waveWidth, fillLevel);
 
       for (double x = -waveWidth; x <= size.width + waveWidth; x += 1) {
-        final y =
-            fillLevel +
+        final y = fillLevel +
             waveHeight * math.sin((x / waveWidth) * 2 * math.pi + waveOffset) +
             waveHeight *
                 0.5 *
@@ -289,8 +288,7 @@ class LivingDropPainter extends CustomPainter {
       highlightPath.moveTo(-waveWidth, fillLevel - 2);
 
       for (double x = -waveWidth; x <= size.width + waveWidth; x += 1) {
-        final y =
-            fillLevel -
+        final y = fillLevel -
             2 +
             (waveHeight * 0.3) *
                 math.sin((x / waveWidth) * 2 * math.pi + waveOffset);

@@ -3,7 +3,8 @@ import '../services/auth_service.dart';
 
 /// Provider to track authentication state changes
 /// This helps invalidate other providers when user logs in/out
-final authStateProvider = StateNotifierProvider<AuthStateNotifier, AuthState>((ref) {
+final authStateProvider =
+    StateNotifierProvider<AuthStateNotifier, AuthState>((ref) {
   return AuthStateNotifier();
 });
 
@@ -48,10 +49,11 @@ late AuthStateNotifier globalAuthStateNotifier;
 
 /// Notifier to manage authentication state
 class AuthStateNotifier extends StateNotifier<AuthState> {
-  AuthStateNotifier() : super(AuthState(
-    isAuthenticated: false,
-    lastChanged: DateTime.now(),
-  )) {
+  AuthStateNotifier()
+      : super(AuthState(
+          isAuthenticated: false,
+          lastChanged: DateTime.now(),
+        )) {
     _checkInitialState();
     globalAuthStateNotifier = this; // Set global reference
   }

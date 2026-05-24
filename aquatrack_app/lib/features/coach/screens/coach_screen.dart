@@ -87,29 +87,29 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
         children: [
           // AI Avatar
           Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.cyan, AppColors.xpPurple],
-                  ),
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.cyan.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.cyan, AppColors.xpPurple],
+              ),
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.cyan.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-                child: const Icon(
-                  Icons.water_drop,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              )
+              ],
+            ),
+            child: const Icon(
+              Icons.water_drop,
+              color: Colors.white,
+              size: 20,
+            ),
+          )
               .animate(onPlay: (controller) => controller.repeat(reverse: true))
               .shimmer(
                 duration: 2000.ms,
@@ -301,29 +301,29 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.cyan, AppColors.xpPurple],
-                  ),
-                  borderRadius: BorderRadius.circular(40),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.cyan.withValues(alpha: 0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.cyan, AppColors.xpPurple],
+              ),
+              borderRadius: BorderRadius.circular(40),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.cyan.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 5),
                 ),
-                child: const Icon(
-                  Icons.chat_bubble_outline_rounded,
-                  color: Colors.white,
-                  size: 40,
-                ),
-              )
+              ],
+            ),
+            child: const Icon(
+              Icons.chat_bubble_outline_rounded,
+              color: Colors.white,
+              size: 40,
+            ),
+          )
               .animate(onPlay: (controller) => controller.repeat(reverse: true))
               .scale(
                 begin: const Offset(0.9, 0.9),
@@ -370,33 +370,33 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
   /// Build quick start chip
   Widget _buildQuickStartChip(String label, String message) {
     return GestureDetector(
-          onTap: () => _sendMessage(message),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.cyan.withValues(alpha: 0.1),
-                  AppColors.cyan.withValues(alpha: 0.05),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppColors.cyan.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: Text(
-              label,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.cyan,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+      onTap: () => _sendMessage(message),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.cyan.withValues(alpha: 0.1),
+              AppColors.cyan.withValues(alpha: 0.05),
+            ],
           ),
-        )
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppColors.cyan.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.cyan,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    )
         .animate(delay: const Duration(milliseconds: 200))
         .fadeIn(duration: 400.ms)
         .slideY(begin: 0.2, end: 0.0);

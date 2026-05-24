@@ -592,13 +592,13 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                                 width: 2,
                               )
                             : avatar.unlocked
-                            ? Border.all(
-                                color: avatar.color.withValues(alpha: 0.4),
-                              )
-                            : Border.all(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                style: BorderStyle.solid,
-                              ),
+                                ? Border.all(
+                                    color: avatar.color.withValues(alpha: 0.4),
+                                  )
+                                : Border.all(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    style: BorderStyle.solid,
+                                  ),
                         boxShadow: avatar.unlocked
                             ? [
                                 BoxShadow(
@@ -781,8 +781,8 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                             theme.current
                                 ? 'Đang dùng'
                                 : theme.unlocked
-                                ? 'Đã mở'
-                                : theme.level ?? '',
+                                    ? 'Đã mở'
+                                    : theme.level ?? '',
                             style: TextStyle(
                               fontSize: 10,
                               color: theme.current
