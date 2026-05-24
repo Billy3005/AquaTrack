@@ -158,27 +158,27 @@ class _CurrentAvatarDisplay extends StatelessWidget {
         children: [
           // Large Avatar
           Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.cyan, width: 3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.cyan.withValues(alpha: 0.3),
-                      blurRadius: 15,
-                      spreadRadius: 2,
-                    ),
-                  ],
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.cyan, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.cyan.withValues(alpha: 0.3),
+                  blurRadius: 15,
+                  spreadRadius: 2,
                 ),
-                child: Center(
-                  child: Text(
-                    avatar.emoji,
-                    style: const TextStyle(fontSize: 40),
-                  ),
-                ),
-              )
+              ],
+            ),
+            child: Center(
+              child: Text(
+                avatar.emoji,
+                style: const TextStyle(fontSize: 40),
+              ),
+            ),
+          )
               .animate(onPlay: (controller) => controller.repeat(reverse: true))
               .scale(
                 begin: const Offset(1.0, 1.0),
@@ -251,65 +251,62 @@ class _AvatarGridItem extends StatelessWidget {
     final isSelected = avatar.isSelected;
 
     return GestureDetector(
-          onTap: onTap,
-          child: Container(
-            decoration: BoxDecoration(
-              color: isUnlocked
-                  ? AppColors.surface
-                  : AppColors.surface.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelected
-                    ? AppColors.cyan
-                    : isUnlocked
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isUnlocked
+              ? AppColors.surface
+              : AppColors.surface.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.cyan
+                : isUnlocked
                     ? AppColors.surfaceLight
                     : AppColors.textHint.withValues(alpha: 0.3),
-                width: isSelected ? 3 : 1,
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: AppColors.cyan.withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        spreadRadius: 2,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Avatar Emoji hoặc Lock
-                if (isUnlocked)
-                  Text(
-                    avatar.emoji,
-                    style: TextStyle(
-                      fontSize: 32,
-                      color: isSelected
-                          ? null
-                          : Colors.white.withValues(alpha: 0.8),
-                    ),
-                  )
-                else
-                  const Icon(Icons.lock, color: AppColors.textHint, size: 24),
-
-                const SizedBox(height: 4),
-
-                // Level requirement cho locked avatars
-                if (!isUnlocked)
-                  Text(
-                    'LV ${avatar.unlockLevel}',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textHint,
-                      fontSize: 10,
-                    ),
-                  ),
-              ],
-            ),
+            width: isSelected ? 3 : 1,
           ),
-        )
-        .animate(target: isSelected ? 1 : 0)
-        .scale(
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.cyan.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Avatar Emoji hoặc Lock
+            if (isUnlocked)
+              Text(
+                avatar.emoji,
+                style: TextStyle(
+                  fontSize: 32,
+                  color:
+                      isSelected ? null : Colors.white.withValues(alpha: 0.8),
+                ),
+              )
+            else
+              const Icon(Icons.lock, color: AppColors.textHint, size: 24),
+
+            const SizedBox(height: 4),
+
+            // Level requirement cho locked avatars
+            if (!isUnlocked)
+              Text(
+                'LV ${avatar.unlockLevel}',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textHint,
+                  fontSize: 10,
+                ),
+              ),
+          ],
+        ),
+      ),
+    ).animate(target: isSelected ? 1 : 0).scale(
           begin: const Offset(1.0, 1.0),
           end: const Offset(1.1, 1.1),
           duration: 0.2.seconds,

@@ -160,12 +160,12 @@ class FriendsNotifier extends _$FriendsNotifier {
       final storage = HiveStorageService.instance;
       final cachedFriendsData = storage.loadCachedFriends();
       final cachedRequestsData = storage.loadCachedFriendRequests();
-      final cachedLeaderboardData = storage
-          .loadCachedWeeklyLeaderboard(); // Fix: Load leaderboard
-      final cachedStatsData = storage
-          .loadCachedSocialStats(); // Fix: Load real stats
-      final cachedTimestamp = storage
-          .loadCachedSocialDataTimestamp(); // Fix: Load timestamp
+      final cachedLeaderboardData =
+          storage.loadCachedWeeklyLeaderboard(); // Fix: Load leaderboard
+      final cachedStatsData =
+          storage.loadCachedSocialStats(); // Fix: Load real stats
+      final cachedTimestamp =
+          storage.loadCachedSocialDataTimestamp(); // Fix: Load timestamp
 
       if (cachedFriendsData.isNotEmpty) {
         debugPrint(
@@ -173,9 +173,8 @@ class FriendsNotifier extends _$FriendsNotifier {
         );
 
         // Convert cached data to models
-        final cachedFriends = cachedFriendsData
-            .map((json) => Friend.fromJson(json))
-            .toList();
+        final cachedFriends =
+            cachedFriendsData.map((json) => Friend.fromJson(json)).toList();
         final cachedRequests = cachedRequestsData
             .map((json) => FriendRequest.fromJson(json))
             .toList();

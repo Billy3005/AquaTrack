@@ -226,8 +226,7 @@ class _LivingDropPainter extends CustomPainter {
 
     final reflectionPath = Path();
     for (double x = 0; x <= size.width; x += 2) {
-      final waveHeight =
-          2 *
+      final waveHeight = 2 *
           math.sin((x / size.width * 4 * math.pi) + wavePhase + math.pi / 4);
       if (x == 0) {
         reflectionPath.moveTo(x, waterLevel + waveHeight);

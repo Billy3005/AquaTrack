@@ -129,91 +129,87 @@ class _AchievementBadge extends StatelessWidget {
     final isUnlocked = achievement.isUnlocked;
 
     return GestureDetector(
-          onTap: onTap,
-          child: Container(
-            decoration: BoxDecoration(
-              color: isUnlocked
-                  ? AppColors.surface
-                  : AppColors.surface.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isUnlocked
-                    ? AppColors.xpPurple.withValues(alpha: 0.4)
-                    : AppColors.textHint.withValues(alpha: 0.2),
-                width: isUnlocked ? 2 : 1,
-              ),
-              boxShadow: isUnlocked
-                  ? [
-                      BoxShadow(
-                        color: AppColors.xpPurple.withValues(alpha: 0.2),
-                        blurRadius: 8,
-                        spreadRadius: 1,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Icon với unlock state
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: isUnlocked
-                        ? AppColors.xpPurple.withValues(alpha: 0.2)
-                        : AppColors.textHint.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    isUnlocked ? achievement.icon : Icons.lock,
-                    color: isUnlocked ? AppColors.xpPurple : AppColors.textHint,
-                    size: 24,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                // Title
-                Text(
-                  achievement.title,
-                  style: AppTextStyles.caption.copyWith(
-                    color: isUnlocked
-                        ? AppColors.textPrimary
-                        : AppColors.textHint,
-                    fontWeight: isUnlocked ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-                if (isUnlocked) ...[
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '✓',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.success,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isUnlocked
+              ? AppColors.surface
+              : AppColors.surface.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isUnlocked
+                ? AppColors.xpPurple.withValues(alpha: 0.4)
+                : AppColors.textHint.withValues(alpha: 0.2),
+            width: isUnlocked ? 2 : 1,
           ),
-        )
-        .animate(target: isUnlocked ? 1 : 0)
-        .shimmer(
+          boxShadow: isUnlocked
+              ? [
+                  BoxShadow(
+                    color: AppColors.xpPurple.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icon với unlock state
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: isUnlocked
+                    ? AppColors.xpPurple.withValues(alpha: 0.2)
+                    : AppColors.textHint.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isUnlocked ? achievement.icon : Icons.lock,
+                color: isUnlocked ? AppColors.xpPurple : AppColors.textHint,
+                size: 24,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Title
+            Text(
+              achievement.title,
+              style: AppTextStyles.caption.copyWith(
+                color: isUnlocked ? AppColors.textPrimary : AppColors.textHint,
+                fontWeight: isUnlocked ? FontWeight.w600 : FontWeight.w400,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+
+            if (isUnlocked) ...[
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '✓',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.success,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ).animate(target: isUnlocked ? 1 : 0).shimmer(
           duration: 2.seconds,
           color: AppColors.xpPurple.withValues(alpha: 0.3),
         );

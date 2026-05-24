@@ -4,14 +4,16 @@ class AppConfig {
   AppConfig._();
 
   // API Configuration (updated to match running backend port)
-  static const String apiBaseUrl = 'http://localhost:8001';
+  static const String apiBaseUrl = 'http://localhost:8000';
   static const String apiVersion = 'v1';
 
   // Simple endpoints for CORS testing
-  static const String simpleLoginUrl = 'http://localhost:8001/simple-login';
-  static const Duration apiTimeout = Duration(seconds: 90);  // Increased for AI responses
+  static const String simpleLoginUrl = 'http://localhost:8000/simple-login';
+  static const Duration apiTimeout =
+      Duration(seconds: 90); // Increased for AI responses
   static const Duration connectTimeout = Duration(seconds: 15);
-  static const Duration receiveTimeout = Duration(seconds: 90);  // Increased for AI responses
+  static const Duration receiveTimeout =
+      Duration(seconds: 90); // Increased for AI responses
 
   // Authentication
   static const String accessTokenKey = 'access_token';
@@ -62,10 +64,10 @@ class AppConfig {
 
   /// Get configuration based on environment
   static Map<String, dynamic> get config => {
-    'apiBaseUrl': apiBaseUrl,
-    'apiTimeout': apiTimeout.inMilliseconds,
-    'enableLogging': enableLogging && isDebug,
-    'enableAnalytics': enableAnalytics && isProduction,
-    'maxRetries': maxRetries,
-  };
+        'apiBaseUrl': apiBaseUrl,
+        'apiTimeout': apiTimeout.inMilliseconds,
+        'enableLogging': enableLogging && isDebug,
+        'enableAnalytics': enableAnalytics && isProduction,
+        'maxRetries': maxRetries,
+      };
 }

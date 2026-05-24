@@ -177,7 +177,8 @@ extension WaterProfileStatus on WaterProfileResponse {
   bool get isComplete => profileComplete;
 
   /// Kiểm tra có goal được tính toán chưa
-  bool get hasCalculatedGoal => calculatedDailyGoalMl != null && calculatedDailyGoalMl! > 0;
+  bool get hasCalculatedGoal =>
+      calculatedDailyGoalMl != null && calculatedDailyGoalMl! > 0;
 
   /// Format calculated goal
   String get formattedGoal {
@@ -189,8 +190,13 @@ extension WaterProfileStatus on WaterProfileResponse {
   /// Progress percentage (0-100)
   double get completionPercentage {
     final fields = [
-      gender, age, height, weight, activityLevel,
-      jobType, veggieIntake
+      gender,
+      age,
+      height,
+      weight,
+      activityLevel,
+      jobType,
+      veggieIntake
     ];
     final completedFields = fields.where((field) => field != null).length;
     return (completedFields / fields.length) * 100;

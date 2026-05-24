@@ -1,9 +1,8 @@
 import os
 import random
-from datetime import datetime, date, timedelta
-from typing import Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Dict, Optional, Tuple
 import asyncio
-import json
 
 try:
     import ollama
@@ -32,19 +31,19 @@ try:
 except ImportError:
     # Define CoachResponse locally if import fails
     from typing import List
-    from pydantic import BaseModel
+    from pydantic import BaseModel, Field
 
     class CoachResponse(BaseModel):
         response: str
-        suggestions: List[str] = []
-        action_items: List[str] = []
+        suggestions: List[str] = Field(default_factory=list)
+        action_items: List[str] = Field(default_factory=list)
         motivation_level: str = "medium"
         coaching_type: str = "general"
 
 
 class AICoachService:
     """
-    AI Coach service using Ollama (free local AI) for Vietnamese conversation
+    AI Coach service using Qwen (free local AI) for Vietnamese conversation
     Falls back to enhanced rule-based system if Ollama is not available
     """
 
@@ -56,7 +55,7 @@ class AICoachService:
         self.ollama_available = False
 
         # Model configurations
-        self.ollama_model = "llama3.2:1b"  # Lightweight local model
+        self.ollama_model = "qwen2.5:3b"  # Qwen model for Vietnamese conversation
 
         # Initialize Anthropic Claude
         anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
@@ -99,21 +98,23 @@ class AICoachService:
 
             except Exception as e:
                 print(f"Ollama not available: {str(e)}")
-                print("To use AI Coach: Install Ollama and run 'ollama pull llama3.2:1b'")
+                print("To use AI Coach: Install Ollama and run 'ollama pull qwen2.5:3b'")
 
         # Determine AI mode with priority: Anthropic > OpenAI > Ollama > Rules
-        print(f"[INIT DEBUG] ollama_available = {self.ollama_available}")
-        print(f"[INIT DEBUG] anthropic_available = {self.anthropic_available}")
-        print(f"[INIT DEBUG] openai_available = {self.openai_available}")
-
         if self.anthropic_available:
             print("AI Coach mode: Anthropic Claude (Premium)")
         elif self.openai_available:
             print("AI Coach mode: OpenAI GPT (Cloud)")
         elif self.ollama_available:
-            print("AI Coach mode: Ollama Local")
+            print("AI Coach mode: Qwen2.5 (Ollama Local)")
         else:
             print("AI Coach mode: Enhanced Rule-based")
+
+    def _mask_user_message(self, message: str) -> str:
+        """Mask user message for secure logging"""
+        if len(message) <= 10:
+            return message[:3] + "***"
+        return message[:5] + "***" + message[-2:]
 
     async def generate_coach_response(
         self,
@@ -127,8 +128,10 @@ class AICoachService:
         Generate coach response with priority-based AI provider selection
         Priority: Anthropic Claude > OpenAI > Ollama > Enhanced Rules
         """
-        print(f"[GENERATE DEBUG] Method called with message: {user_message}")
-        print(f"[GENERATE DEBUG] ollama_available = {self.ollama_available}")
+        # Secure logging - mask user message
+        masked_message = self._mask_user_message(user_message)
+        print(f"[GENERATE] Processing message: {masked_message}")
+
         # Try Anthropic Claude first
         if self.anthropic_available:
             try:
@@ -144,10 +147,9 @@ class AICoachService:
                 print(f"[FALLBACK] OpenAI failed, fallback to next provider: {str(e)}")
 
         # Fallback to Ollama
-        print(f"[DEBUG] ollama_available = {self.ollama_available}")
         if self.ollama_available:
             try:
-                print("[DEBUG] Calling Ollama...")
+                print("[DEBUG] Calling Qwen via Ollama...")
                 return await self._generate_ollama_response(user_message, user_context, hydration_data, user_id, db)
             except Exception as e:
                 print(f"[FALLBACK] Ollama failed, fallback to rules: {str(e)}")
@@ -175,7 +177,7 @@ class AICoachService:
                 model="claude-3-haiku-20240307",  # Fast and cost-effective
                 max_tokens=200,
                 temperature=0.7,
-                system="""Bạn là AQUA AI - trợ lý hydration thông minh của app AquaTrack Việt Nam.
+                system="""Bạn là AQUA AI - trợ lý hydration thông minh của app AquaTrack.
 
 🎯 NHIỆM VỤ:
 - Khuyến khích uống nước đều đặn bằng tiếng Việt tự nhiên
@@ -291,20 +293,21 @@ class AICoachService:
         user_id: str = None,
         db = None
     ) -> CoachResponse:
-        """Generate response using Ollama AI"""
+        """Generate response using Qwen via Ollama AI"""
         try:
             # Build analytics-enhanced context
             prompt = await self._get_analytics_enhanced_context(
                 user_message, user_context, hydration_data, user_id, db
             )
 
-            # Call Ollama API
-            response = ollama.chat(
+            # Call Ollama API with async thread protection
+            response = await asyncio.to_thread(
+                ollama.chat,
                 model=self.ollama_model,
                 messages=[
                     {
                         'role': 'system',
-                        'content': '''Bạn là AQUA AI - trợ lý hydration thông minh và thân thiện của ứng dụng AquaTrack.
+                        'content': '''Bạn là AQUA AI - trợ lý hydration thông minh của app AquaTrack Việt Nam.
 
 NHIỆM VỤ:
 - Khuyến khích người dùng uống nước đều đặn
@@ -312,9 +315,9 @@ NHIỆM VỤ:
 - Tạo động lực tích cực và vui vẻ
 - Cá nhân hóa dựa trên dữ liệu hydration của user
 
-PHONG CÁCH TRAU LỜI:
+PHONG CÁCH TRẢ LỜI:
 - Tiếng Việt thân thiện, không quá formal
-- Sử dụng emoji phù hợp (💧🌟💪)
+- Sử dụng emoji phù hợp (💧🌟💪⚡)
 - Ngắn gọn, không quá 2-3 câu
 - Tích cực, khích lệ
 - Đưa ra lời khuyên thực tế
@@ -322,7 +325,9 @@ PHONG CÁCH TRAU LỜI:
 TRÁNH:
 - Lời khuyên y tế chuyên môn
 - Câu trả lời quá dài
-- Ngôn ngữ formal/khô khan'''
+- Ngôn ngữ formal/khô khan
+
+Hãy trả lời bằng tiếng Việt thân thiện và khuyến khích.'''
                     },
                     {
                         'role': 'user',
@@ -332,9 +337,8 @@ TRÁNH:
                 options={
                     'temperature': 0.8,  # Creative but not too random
                     'top_p': 0.9,
-                    'max_tokens': 150    # Keep responses concise
-                },
-                timeout=90  # Increased timeout for slower responses
+                    'num_predict': 150   # Keep responses concise
+                }
             )
 
             ai_text = response['message']['content'].strip()
@@ -354,10 +358,17 @@ TRÁNH:
             )
 
         except Exception as e:
-            print(f"[AI ERROR] Ollama error: {str(e)}")
+            print(f"[AI ERROR] Qwen/Ollama error: {str(e)}")
             raise
 
-    def _build_advanced_context(self, user_message: str, user_context: Dict, hydration_data: Dict, user_id: str = None, db = None) -> str:
+    def _build_advanced_context(
+        self,
+        user_message: str,
+        user_context: Dict,
+        hydration_data: Dict,
+        user_id: str = None,
+        db = None
+    ) -> str:
         """Build comprehensive AI context with advanced personalization"""
         total_today = hydration_data.get("total_today", 0)
         log_count = hydration_data.get("log_count", 0)
@@ -392,7 +403,6 @@ TRÁNH:
             hydration_status = f"cần bắt kịp ngay ({total_today}ml = {goal_percentage:.0f}%)"
 
         # Activity pattern analysis
-        activity_insight = ""
         if log_count == 0:
             activity_insight = "chưa có log nào hôm nay"
         elif log_count == 1:
@@ -414,18 +424,6 @@ TRÁNH:
             if user_context.get("weather"):
                 context_details += f"- Thời tiết: {user_context['weather']}\n"
 
-        # Get analytics insights if available
-        analytics_context = ""
-        if analytics_service and user_id and db:
-            try:
-                import asyncio
-                # Get user analytics profile for enhanced personalization
-                profile = asyncio.create_task(analytics_service.get_user_analytics_profile(db, user_id, days=14))
-                # Since we can't await in sync method, we'll add a simplified version
-                analytics_context = "📊 ANALYTICS INSIGHTS: Advanced personalization active"
-            except Exception:
-                analytics_context = ""
-
         # Build comprehensive prompt
         prompt = f"""📱 USER MESSAGE: "{user_message}"
 
@@ -435,7 +433,6 @@ TRÁNH:
 - Hoạt động hôm nay: {activity_insight}
 
 {context_details if context_details else ""}
-{analytics_context if analytics_context else ""}
 
 🎯 YÊU CẦU RESPONSE:
 - Trả lời tin nhắn của user bằng tiếng Việt thân thiện
@@ -457,8 +454,8 @@ Hãy response như AQUA AI coach thông minh với deep understanding về user.
         db = None
     ) -> str:
         """Build analytics-enhanced context for AI responses"""
-        # Start with basic context
-        base_context = self._build_advanced_context(user_message, user_context, hydration_data)
+        # Start with basic context - pass all parameters correctly
+        base_context = self._build_advanced_context(user_message, user_context, hydration_data, user_id, db)
 
         # Add analytics insights if available
         if not (analytics_service and user_id and db):

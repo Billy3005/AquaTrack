@@ -9,7 +9,7 @@ class ConflictResolver {
   final SyncDatabase _syncDatabase;
 
   ConflictResolver({required SyncDatabase syncDatabase})
-    : _syncDatabase = syncDatabase;
+      : _syncDatabase = syncDatabase;
 
   /// Resolve a conflict using the specified strategy
   Future<ConflictResolutionResult> resolveConflict({

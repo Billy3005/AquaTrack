@@ -22,7 +22,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _rememberMe = true;
+  bool _rememberMe = false;
   String? _errorMessage;
   late AnimationController _bubbleController;
 
@@ -33,14 +33,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _emailController.text = '';
     _passwordController.text = '';
 
+    _emailController.addListener(_onFormChanged);
+    _passwordController.addListener(_onFormChanged);
+
     _bubbleController = AnimationController(
       duration: const Duration(seconds: 4),
       vsync: this,
     )..repeat();
   }
 
+  void _onFormChanged() {
+    setState(() {});
+  }
+
   @override
   void dispose() {
+    _emailController.removeListener(_onFormChanged);
+    _passwordController.removeListener(_onFormChanged);
+
     _emailController.dispose();
     _passwordController.dispose();
     _bubbleController.dispose();

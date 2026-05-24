@@ -105,15 +105,15 @@ class AppColors {
   // Material Color Swatch for ThemeData
   static const MaterialColor primarySwatch =
       MaterialColor(0xFF00B4D8, <int, Color>{
-        50: Color(0xFFE0F7FF),
-        100: Color(0xFFB3ECFF),
-        200: Color(0xFF80E0FF),
-        300: Color(0xFF4DD4FF),
-        400: Color(0xFF26CAFF),
-        500: Color(0xFF00B4D8),
-        600: Color(0xFF00A7D3),
-        700: Color(0xFF0097CC),
-        800: Color(0xFF0088C4),
-        900: Color(0xFF0070B8),
-      });
+    50: Color(0xFFE0F7FF),
+    100: Color(0xFFB3ECFF),
+    200: Color(0xFF80E0FF),
+    300: Color(0xFF4DD4FF),
+    400: Color(0xFF26CAFF),
+    500: Color(0xFF00B4D8),
+    600: Color(0xFF00A7D3),
+    700: Color(0xFF0097CC),
+    800: Color(0xFF0088C4),
+    900: Color(0xFF0070B8),
+  });
 }

@@ -22,14 +22,14 @@ class CoachRepository {
     ApiService? apiService,
     SyncService? syncService,
     ConflictResolver? conflictResolver,
-  }) : _apiService = apiService ?? ApiService(),
-       _syncService = syncService,
-       _syncRepository = syncService != null && conflictResolver != null
-           ? CoachConversationSyncRepository(
-               syncService: syncService,
-               conflictResolver: conflictResolver,
-             )
-           : null;
+  })  : _apiService = apiService ?? ApiService(),
+        _syncService = syncService,
+        _syncRepository = syncService != null && conflictResolver != null
+            ? CoachConversationSyncRepository(
+                syncService: syncService,
+                conflictResolver: conflictResolver,
+              )
+            : null;
 
   /// Send message với enhanced context và sync support
   Future<ChatMessage?> sendMessage({
@@ -82,12 +82,12 @@ class CoachRepository {
 
       // Trigger sync for new message if sync available
       if (_syncRepository != null && _syncService != null) {
-          await _syncRepository!.syncNewMessage(
-            messageId: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-            sessionId: currentSessionId,
-            content: content,
-            messageType: 'user_message',
-          );
+        await _syncRepository!.syncNewMessage(
+          messageId: 'msg_${DateTime.now().millisecondsSinceEpoch}',
+          sessionId: currentSessionId,
+          content: content,
+          messageType: 'user_message',
+        );
       }
 
       return aiMessage;
@@ -194,9 +194,8 @@ class CoachRepository {
 
       // Parse sessions từ API response
       final sessionsJson = response.data!['sessions'] as List<dynamic>? ?? [];
-      final sessions = sessionsJson
-          .map((json) => json as Map<String, dynamic>)
-          .toList();
+      final sessions =
+          sessionsJson.map((json) => json as Map<String, dynamic>).toList();
 
       return sessions;
     } catch (e) {
@@ -354,7 +353,7 @@ class CoachRepository {
 
   /// Generate achievement-based recommendations
   Future<List<Map<String, dynamic>>>
-  _generateAchievementRecommendations() async {
+      _generateAchievementRecommendations() async {
     // In real implementation, this would check actual achievement progress
     return [
       {
@@ -473,7 +472,6 @@ class CoachRepository {
       return [];
     }
   }
-
 
   /// Get personalized AI insights dựa trên long-term data patterns
   Future<Map<String, dynamic>> getPersonalizedInsights() async {
@@ -809,9 +807,8 @@ class ConversationMessage {
     List<QuickReplyApi>? quickReplies;
 
     if (quickRepliesJson != null) {
-      quickReplies = quickRepliesJson
-          .map((qr) => QuickReplyApi.fromJson(qr))
-          .toList();
+      quickReplies =
+          quickRepliesJson.map((qr) => QuickReplyApi.fromJson(qr)).toList();
     }
 
     return ConversationMessage(
@@ -873,9 +870,8 @@ class ConversationHistoryResponse {
     return ConversationHistoryResponse(
       sessionId: json['session_id'] ?? '',
       totalMessages: json['total_messages'] ?? 0,
-      messages: messagesJson
-          .map((msg) => ConversationMessage.fromJson(msg))
-          .toList(),
+      messages:
+          messagesJson.map((msg) => ConversationMessage.fromJson(msg)).toList(),
       hasMore: json['has_more'] ?? false,
       nextPage: json['next_page'],
     );

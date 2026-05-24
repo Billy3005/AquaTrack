@@ -160,9 +160,8 @@ class ProfileNotifier extends _$ProfileNotifier {
             currentStreak: level.currentStreak,
             totalDrinks: _calculateTotalDrinks(),
             averageDaily: _calculateAverageDaily(),
-            achievementsCount: level.achievements
-                .where((a) => a.isUnlocked)
-                .length,
+            achievementsCount:
+                level.achievements.where((a) => a.isUnlocked).length,
           ),
           loading: () => ProfileStats.empty(),
           error: (_, __) => ProfileStats.empty(),
@@ -207,11 +206,11 @@ class ProfileStats {
   });
 
   factory ProfileStats.empty() => const ProfileStats(
-    currentLevel: 1,
-    totalXP: 0,
-    currentStreak: 0,
-    totalDrinks: 0,
-    averageDaily: 0.0,
-    achievementsCount: 0,
-  );
+        currentLevel: 1,
+        totalXP: 0,
+        currentStreak: 0,
+        totalDrinks: 0,
+        averageDaily: 0.0,
+        achievementsCount: 0,
+      );
 }

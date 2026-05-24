@@ -274,7 +274,8 @@ class ApiService {
 
           // If still failed after trying all envelope formats
           if (data == null) {
-            AppLogger.error(_tag, 'JSON parsing failed after trying all envelope formats', e);
+            AppLogger.error(_tag,
+                'JSON parsing failed after trying all envelope formats', e);
             throw ApiException('Failed to parse response data', statusCode);
           }
         }

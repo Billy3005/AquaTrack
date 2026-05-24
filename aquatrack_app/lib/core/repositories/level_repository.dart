@@ -8,7 +8,7 @@ class LevelRepository {
   final ApiService _apiService;
 
   LevelRepository({ApiService? apiService})
-    : _apiService = apiService ?? ApiService();
+      : _apiService = apiService ?? ApiService();
 
   /// Get current level and XP information
   Future<LevelApiResponse<LevelInfo>> getCurrentLevel() async {
@@ -215,8 +215,8 @@ class LevelInfo {
       currentXP: json['current_xp'] ?? 0,
       xpForNextLevel: json['xp_for_next_level'] ?? 100,
       xpToNextLevel: json['xp_to_next_level'] ?? 100,
-      levelProgressPercentage: (json['level_progress_percentage'] ?? 0)
-          .toDouble(),
+      levelProgressPercentage:
+          (json['level_progress_percentage'] ?? 0).toDouble(),
       totalXPEarned: json['total_xp_earned'] ?? 0,
     );
   }

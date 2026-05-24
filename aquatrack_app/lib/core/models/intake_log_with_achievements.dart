@@ -120,10 +120,12 @@ class IntakeLogWithAchievements {
     return IntakeLogWithAchievements(
       intakeLog: IntakeLog.fromJson(json['intake_log'] as Map<String, dynamic>),
       achievements: achievementsList
-          .map((item) => AchievementUnlocked.fromJson(item as Map<String, dynamic>))
+          .map((item) =>
+              AchievementUnlocked.fromJson(item as Map<String, dynamic>))
           .toList(),
       levelProgress: json['level_progress'] != null
-          ? LevelProgress.fromJson(json['level_progress'] as Map<String, dynamic>)
+          ? LevelProgress.fromJson(
+              json['level_progress'] as Map<String, dynamic>)
           : null,
     );
   }
@@ -141,5 +143,6 @@ class IntakeLogWithAchievements {
 
   /// Helper to check if user leveled up
   bool get hasLeveledUp =>
-      levelProgress != null && achievements.any((a) => a.achievementType == 'level');
+      levelProgress != null &&
+      achievements.any((a) => a.achievementType == 'level');
 }

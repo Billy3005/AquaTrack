@@ -130,7 +130,8 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
                   // Still navigate to home even if API fails
                   context.go('/');
                 },
-                child: const Text('Bỏ qua', style: TextStyle(color: Colors.white)),
+                child:
+                    const Text('Bỏ qua', style: TextStyle(color: Colors.white)),
               ),
               TextButton(
                 onPressed: () {
@@ -559,7 +560,6 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
             ],
           ),
           const SizedBox(height: 18),
-
           _buildFieldLabel('Tuổi'),
           _buildNumberStepper(
             value: data['age'] as int,
@@ -568,7 +568,6 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
             max: 100,
             unit: 'tuổi',
           ),
-
           _buildFieldLabel('Chiều cao'),
           _buildSliderField(
             value: data['height'] as double,
@@ -577,7 +576,6 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
             max: 210,
             unit: 'cm',
           ),
-
           _buildFieldLabel('Cân nặng'),
           _buildSliderField(
             value: data['weight'] as double,
@@ -668,7 +666,6 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
             );
           }).toList(),
           const SizedBox(height: 18),
-
           _buildFieldLabel('Tính chất công việc'),
           Wrap(
             spacing: 8,
@@ -864,7 +861,6 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
             ),
           ),
           const SizedBox(height: 10),
-
           Row(
             children: VegetableOption.values.map((veg) {
               final isSelected = data['veg'] == veg.id;
@@ -936,7 +932,6 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
             }).toList(),
           ),
           const SizedBox(height: 20),
-
           _buildFieldLabel('Cà phê / ngày'),
           _buildCounterRow(
             value: data['coffee'] as int,
@@ -948,7 +943,6 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
             tint: const Color(0xFFB45309),
           ),
           const SizedBox(height: 12),
-
           _buildFieldLabel('Rượu bia / ngày'),
           _buildCounterRow(
             value: data['alcohol'] as int,
@@ -1005,9 +999,9 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
                   children: [
                     Text(
                       goal.toString().replaceAllMapped(
-                        RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-                        (Match m) => '${m[1]}.',
-                      ),
+                            RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+                            (Match m) => '${m[1]}.',
+                          ),
                       style: const TextStyle(
                         fontSize: 42,
                         fontWeight: FontWeight.w800,
@@ -1364,7 +1358,6 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
             ],
           ),
           const SizedBox(height: 10),
-
           Container(
             height: 32,
             child: Stack(
@@ -1388,8 +1381,7 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
                   top: 13,
                   left: 0,
                   child: Container(
-                    width:
-                        (MediaQuery.of(context).size.width - 72) *
+                    width: (MediaQuery.of(context).size.width - 72) *
                         (percentage / 100),
                     height: 6,
                     decoration: BoxDecoration(
@@ -1409,8 +1401,7 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
 
                 // Thumb
                 Positioned(
-                  left:
-                      (MediaQuery.of(context).size.width - 72) *
+                  left: (MediaQuery.of(context).size.width - 72) *
                           (percentage / 100) -
                       10,
                   top: 6,
@@ -1493,7 +1484,6 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-
               Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1523,7 +1513,6 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
                         ),
                       ],
                     ),
-
                     Row(
                       children: [
                         _buildSmallStepButton(
@@ -1542,7 +1531,6 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
               ),
             ],
           ),
-
           if (hint != null) ...[
             const SizedBox(height: 8),
             Text(

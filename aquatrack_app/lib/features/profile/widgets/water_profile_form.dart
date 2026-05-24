@@ -87,7 +87,8 @@ class _WaterProfileFormState extends ConsumerState<WaterProfileForm> {
       _weightController.text = profile.weight?.toString() ?? '';
       _selectedActivityLevel = profile.activityLevel;
       _selectedJobType = profile.jobType;
-      _selectedHealthConditions = profile.healthConditions ?? [HealthCondition.none];
+      _selectedHealthConditions =
+          profile.healthConditions ?? [HealthCondition.none];
       _selectedVeggieIntake = profile.veggieIntake;
       _coffeeController.text = profile.coffeeCupsPerDay?.toString() ?? '0';
       _alcoholController.text = profile.alcoholUnitsPerDay?.toString() ?? '0';
@@ -246,7 +247,8 @@ class _WaterProfileFormState extends ConsumerState<WaterProfileForm> {
           value: _selectedGender,
           items: _enums!.genderOptions,
           onChanged: (value) => setState(() => _selectedGender = value),
-          validator: (value) => value == null ? 'Vui lòng chọn giới tính' : null,
+          validator: (value) =>
+              value == null ? 'Vui lòng chọn giới tính' : null,
         ),
 
         const SizedBox(height: 16),
@@ -299,17 +301,17 @@ class _WaterProfileFormState extends ConsumerState<WaterProfileForm> {
           value: _selectedActivityLevel,
           items: _enums!.activityLevelOptions,
           onChanged: (value) => setState(() => _selectedActivityLevel = value),
-          validator: (value) => value == null ? 'Vui lòng chọn mức độ hoạt động' : null,
+          validator: (value) =>
+              value == null ? 'Vui lòng chọn mức độ hoạt động' : null,
         ),
-
         const SizedBox(height: 16),
-
         _buildDropdownField<JobType>(
           label: 'Loại công việc',
           value: _selectedJobType,
           items: _enums!.jobTypeOptions,
           onChanged: (value) => setState(() => _selectedJobType = value),
-          validator: (value) => value == null ? 'Vui lòng chọn loại công việc' : null,
+          validator: (value) =>
+              value == null ? 'Vui lòng chọn loại công việc' : null,
         ),
       ],
     );
@@ -325,7 +327,8 @@ class _WaterProfileFormState extends ConsumerState<WaterProfileForm> {
           label: 'Tình trạng sức khỏe',
           selectedValues: _selectedHealthConditions,
           options: _enums!.healthConditionOptions,
-          onChanged: (values) => setState(() => _selectedHealthConditions = values),
+          onChanged: (values) =>
+              setState(() => _selectedHealthConditions = values),
         ),
       ],
     );
@@ -342,11 +345,10 @@ class _WaterProfileFormState extends ConsumerState<WaterProfileForm> {
           value: _selectedVeggieIntake,
           items: _enums!.veggieIntakeOptions,
           onChanged: (value) => setState(() => _selectedVeggieIntake = value),
-          validator: (value) => value == null ? 'Vui lòng chọn lượng rau củ' : null,
+          validator: (value) =>
+              value == null ? 'Vui lòng chọn lượng rau củ' : null,
         ),
-
         const SizedBox(height: 16),
-
         Row(
           children: [
             Expanded(
@@ -616,7 +618,8 @@ class _WaterProfileFormState extends ConsumerState<WaterProfileForm> {
                       newValues.clear();
                       newValues.add(option.value);
                     } else {
-                      newValues.removeWhere((v) => v is HealthCondition && v == HealthCondition.none);
+                      newValues.removeWhere((v) =>
+                          v is HealthCondition && v == HealthCondition.none);
                       newValues.add(option.value);
                     }
                   } else {

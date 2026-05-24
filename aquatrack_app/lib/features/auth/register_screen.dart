@@ -206,8 +206,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
           final opacity = animValue < 0.3
               ? animValue / 0.3 * 0.8
               : animValue > 0.7
-              ? (1.0 - animValue) / 0.3 * 0.8
-              : 0.8;
+                  ? (1.0 - animValue) / 0.3 * 0.8
+                  : 0.8;
           final yOffset = animValue * -120.0;
 
           return Positioned(
@@ -470,9 +470,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                   height: 3,
                   margin: EdgeInsets.only(right: index < 3 ? 4 : 0),
                   decoration: BoxDecoration(
-                    color: index < score
-                        ? colors[score]
-                        : const Color(0x0FFFFFFF),
+                    color:
+                        index < score ? colors[score] : const Color(0x0FFFFFFF),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -576,8 +575,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   }
 
   Widget _buildSubmitButton() {
-    final canSubmit =
-        _emailController.text.isNotEmpty &&
+    final canSubmit = _emailController.text.isNotEmpty &&
         _passwordController.text.isNotEmpty &&
         _confirmPasswordController.text.isNotEmpty &&
         _nameController.text.isNotEmpty &&
@@ -590,9 +588,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       child: ElevatedButton(
         onPressed: canSubmit && !_isLoading ? _register : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: canSubmit
-              ? Colors.transparent
-              : const Color(0x0DFFFFFF),
+          backgroundColor:
+              canSubmit ? Colors.transparent : const Color(0x0DFFFFFF),
           shadowColor: Colors.transparent,
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           shape: RoundedRectangleBorder(

@@ -353,7 +353,8 @@ class HiveStorageService {
   /// Generate today's key for daily summary storage
   Future<String> _getTodayKey() async {
     final today = DateTime.now();
-    final dateKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final dateKey =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
     try {
       final authService = AuthService();

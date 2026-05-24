@@ -36,9 +36,8 @@ class StatusFilters extends ConsumerWidget {
       _FilterItem(
         filter: FriendStatusFilter.thirsty,
         label: 'Đang khát',
-        count: state.friends
-            .where((f) => f.status == FriendStatus.thirsty)
-            .length,
+        count:
+            state.friends.where((f) => f.status == FriendStatus.thirsty).length,
         icon: Icons.water_drop,
         color: AppColors.error,
       ),
@@ -121,9 +120,8 @@ class StatusFilters extends ConsumerWidget {
             Text(
               filterItem.label,
               style: AppTextStyles.labelSmall.copyWith(
-                color: isSelected
-                    ? AppColors.cyanAccent
-                    : AppColors.textSecondary,
+                color:
+                    isSelected ? AppColors.cyanAccent : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
             ),

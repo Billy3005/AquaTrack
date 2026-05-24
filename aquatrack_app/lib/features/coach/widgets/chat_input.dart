@@ -143,39 +143,37 @@ class _ChatInputState extends State<ChatInput> {
     final isActive = _hasText && widget.isEnabled;
 
     return GestureDetector(
-          onTap: isActive ? _sendMessage : null,
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: isActive
-                  ? const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [AppColors.cyan, AppColors.xpPurple],
-                    )
-                  : null,
-              color: isActive ? null : AppColors.surface.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: isActive
-                  ? [
-                      BoxShadow(
-                        color: AppColors.cyan.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Icon(
-              Icons.send_rounded,
-              color: isActive ? Colors.white : AppColors.textSecondary,
-              size: 20,
-            ),
-          ),
-        )
-        .animate(target: isActive ? 1 : 0)
-        .scale(
+      onTap: isActive ? _sendMessage : null,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          gradient: isActive
+              ? const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.cyan, AppColors.xpPurple],
+                )
+              : null,
+          color: isActive ? null : AppColors.surface.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: AppColors.cyan.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Icon(
+          Icons.send_rounded,
+          color: isActive ? Colors.white : AppColors.textSecondary,
+          size: 20,
+        ),
+      ),
+    ).animate(target: isActive ? 1 : 0).scale(
           begin: const Offset(0.9, 0.9),
           end: const Offset(1.0, 1.0),
           duration: 200.ms,

@@ -78,7 +78,8 @@ class LogDrinkNotifier extends _$LogDrinkNotifier {
 
       // Log achievements if any
       if (result.hasAchievements) {
-        debugPrint('🏆 LogDrink: Unlocked ${result.achievements.length} achievements!');
+        debugPrint(
+            '🏆 LogDrink: Unlocked ${result.achievements.length} achievements!');
       }
 
       // Reset form sau khi log thành công

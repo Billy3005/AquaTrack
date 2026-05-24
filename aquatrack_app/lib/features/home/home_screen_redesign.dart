@@ -91,7 +91,6 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
     return 'Tân binh';
   }
 
-
   /// Show XP popup animation
   void _showXpAnimation(int amount) {
     setState(() {
@@ -175,7 +174,8 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
         child: SafeArea(
           child: homeSummaryAsync.when(
             data: (summary) => levelStateAsync.when(
-              data: (levelState) => _buildMainContent(summary, null, levelState),
+              data: (levelState) =>
+                  _buildMainContent(summary, null, levelState),
               loading: () => _buildMainContent(summary, null, null),
               error: (error, stack) => _buildMainContent(summary, null, null),
             ),
@@ -189,9 +189,11 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
     );
   }
 
-  Widget _buildMainContent(dynamic summary, UserStatsData? userStats, LevelState? levelState) {
+  Widget _buildMainContent(
+      dynamic summary, UserStatsData? userStats, LevelState? levelState) {
     final current = (summary?.totalEffectiveMl ?? 0).toDouble();
-    final goal = (summary?.dailyGoalMl ?? 2000).toDouble(); // Use goal from summary or default
+    final goal = (summary?.dailyGoalMl ?? 2000)
+        .toDouble(); // Use goal from summary or default
     final percent = ((current / goal) * 100.0).clamp(0.0, 100.0);
 
     // Determine state based on current data
@@ -203,7 +205,8 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
     return Column(
       children: [
         // Hero section
-        _buildHeroSection(summary, userStats, levelState, percent, isGoal, isLow, isNight, hot),
+        _buildHeroSection(summary, userStats, levelState, percent, isGoal,
+            isLow, isNight, hot),
 
         // Scrollable content
         Expanded(
@@ -340,7 +343,8 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
     );
   }
 
-  Widget _buildTopContextRow(dynamic summary, UserStatsData? userStats, LevelState? levelState, bool hot, bool isNight) {
+  Widget _buildTopContextRow(dynamic summary, UserStatsData? userStats,
+      LevelState? levelState, bool hot, bool isNight) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -351,8 +355,8 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
               hot
                   ? Icons.wb_sunny
                   : isNight
-                  ? Icons.nightlight_round
-                  : Icons.water_drop,
+                      ? Icons.nightlight_round
+                      : Icons.water_drop,
               size: 14,
               color: hot ? const Color(0xFFFBBF24) : const Color(0xFF7DD3FC),
             ),
@@ -361,8 +365,8 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
               hot
                   ? 'HCMC · 34°C'
                   : isNight
-                  ? 'Đêm · 22°C'
-                  : 'HCMC · 28°C',
+                      ? 'Đêm · 22°C'
+                      : 'HCMC · 28°C',
               style: TextStyle(
                 fontSize: 12,
                 color: const Color(0xFFBAE6FD).withValues(alpha: 0.85),
@@ -473,7 +477,8 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
     );
   }
 
-  Widget _buildXPBar(dynamic summary, UserStatsData? userStats, LevelState? levelState) {
+  Widget _buildXPBar(
+      dynamic summary, UserStatsData? userStats, LevelState? levelState) {
     final xp = (levelState?.currentXP ?? 0).toDouble();
     final level = levelState?.currentLevel ?? 1;
     final levelName = _getLevelName(level);
@@ -651,9 +656,8 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: isActive
-                    ? const Color(0xFFE0F2FE)
-                    : AppColors.textPrimary,
+                color:
+                    isActive ? const Color(0xFFE0F2FE) : AppColors.textPrimary,
                 fontFamily: 'SF Pro Rounded',
                 letterSpacing: -0.01,
               ),

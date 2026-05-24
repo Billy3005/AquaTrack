@@ -9,7 +9,7 @@ class UserRepository {
   final ApiService _apiService;
 
   UserRepository({ApiService? apiService})
-    : _apiService = apiService ?? ApiService();
+      : _apiService = apiService ?? ApiService();
 
   /// Get current user profile
   Future<User> getProfile() async {

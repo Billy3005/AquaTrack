@@ -454,14 +454,13 @@ class _WeeklyView extends StatelessWidget {
     final missions = _getWeeklyMissions();
     final weeklyDone = missions.where((m) => m.progress >= m.target).length;
     final totalReward = missions.fold(0, (sum, m) => sum + m.reward);
-    final weekProgress =
-        ((missions.fold(
-                      0.0,
-                      (sum, m) => sum + math.min(1.0, m.progress / m.target),
-                    ) /
-                    missions.length) *
-                100)
-            .round();
+    final weekProgress = ((missions.fold(
+                  0.0,
+                  (sum, m) => sum + math.min(1.0, m.progress / m.target),
+                ) /
+                missions.length) *
+            100)
+        .round();
 
     return Column(
       children: [
@@ -799,14 +798,14 @@ class _MissionCard extends StatelessWidget {
         color: mission.claimed
             ? const Color(0xFF0F1A2E).withValues(alpha: 0.5)
             : isClaimable
-            ? const Color(0xFFFBBF24).withValues(alpha: 0.10)
-            : AppColors.nightSurface,
+                ? const Color(0xFFFBBF24).withValues(alpha: 0.10)
+                : AppColors.nightSurface,
         border: Border.all(
           color: mission.claimed
               ? Colors.white.withValues(alpha: 0.08)
               : isClaimable
-              ? const Color(0xFFFBBF24).withValues(alpha: 0.5)
-              : AppColors.nightCard,
+                  ? const Color(0xFFFBBF24).withValues(alpha: 0.5)
+                  : AppColors.nightCard,
         ),
         borderRadius: BorderRadius.circular(14),
       ),
@@ -967,14 +966,15 @@ class _MissionCard extends StatelessWidget {
                                 color: mission.claimed
                                     ? Colors.white.withValues(alpha: 0.18)
                                     : isDone
-                                    ? const Color(0xFFFBBF24)
-                                    : Color(
-                                        int.parse(
-                                              mission.glowColor.substring(1),
-                                              radix: 16,
-                                            ) +
-                                            0xFF000000,
-                                      ),
+                                        ? const Color(0xFFFBBF24)
+                                        : Color(
+                                            int.parse(
+                                                  mission.glowColor
+                                                      .substring(1),
+                                                  radix: 16,
+                                                ) +
+                                                0xFF000000,
+                                          ),
                                 borderRadius: BorderRadius.circular(999),
                                 boxShadow: isDone && !mission.claimed
                                     ? [
@@ -1097,9 +1097,9 @@ class _MissionCard extends StatelessWidget {
   String _formatProgress(int progress, int target, String unit) {
     final formatNumber = (int n) => target >= 1000
         ? n.toString().replaceAllMapped(
-            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-            (Match m) => '${m[1]},',
-          )
+              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+              (Match m) => '${m[1]},',
+            )
         : n.toString();
     return '${formatNumber(progress)}/${formatNumber(target)}${unit.isNotEmpty ? ' $unit' : ''}';
   }

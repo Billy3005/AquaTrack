@@ -164,8 +164,7 @@ class LevelNotifier extends _$LevelNotifier {
       debugPrint('❌ Failed to load level data from API: $e');
 
       // Only fallback to local storage for genuine connectivity issues
-      final isConnectivityError =
-          e.toString().contains('SocketException') ||
+      final isConnectivityError = e.toString().contains('SocketException') ||
           e.toString().contains('HttpException') ||
           e.toString().contains('TimeoutException') ||
           e.toString().contains('Connection refused') ||
@@ -238,9 +237,8 @@ class LevelNotifier extends _$LevelNotifier {
     // Use the existing DefaultAvatars logic but filter by unlocked IDs
     final allAvatars = DefaultAvatars.getAll(
       currentLevel: currentLevel,
-      selectedAvatarId: unlockedIds.isNotEmpty
-          ? unlockedIds.first
-          : 'water_drop',
+      selectedAvatarId:
+          unlockedIds.isNotEmpty ? unlockedIds.first : 'water_drop',
     );
 
     // Filter avatars to only show unlocked ones
@@ -306,11 +304,15 @@ class LevelNotifier extends _$LevelNotifier {
     try {
       final savedLevel = await storage.loadSetting<int>('current_level') ?? 1;
       final savedXP = await storage.loadSetting<int>('current_xp') ?? 0;
-      final savedAvatarId = await storage.loadSetting<String>('selected_avatar') ?? 'water_drop';
-      final totalLogsCount = await storage.loadSetting<int>('total_logs_count') ?? 0;
-      final currentStreak = await storage.loadSetting<int>('current_streak') ?? 0;
+      final savedAvatarId =
+          await storage.loadSetting<String>('selected_avatar') ?? 'water_drop';
+      final totalLogsCount =
+          await storage.loadSetting<int>('total_logs_count') ?? 0;
+      final currentStreak =
+          await storage.loadSetting<int>('current_streak') ?? 0;
       final totalVolume = await storage.loadSetting<int>('total_volume') ?? 0;
-      final daysWithGoal = await storage.loadSetting<int>('days_with_goal') ?? 0;
+      final daysWithGoal =
+          await storage.loadSetting<int>('days_with_goal') ?? 0;
 
       // Calculate next level XP requirement
       final nextLevelXP = _calculateNextLevelXP(savedLevel);
@@ -330,7 +332,8 @@ class LevelNotifier extends _$LevelNotifier {
         selectedAvatarId: savedAvatarId,
       );
 
-      debugPrint('💾 LevelProvider: Loaded from storage - Level: $savedLevel, XP: $savedXP, Streak: $currentStreak');
+      debugPrint(
+          '💾 LevelProvider: Loaded from storage - Level: $savedLevel, XP: $savedXP, Streak: $currentStreak');
 
       return LevelState(
         currentLevel: savedLevel,
@@ -545,7 +548,8 @@ class LevelNotifier extends _$LevelNotifier {
       await storage.saveSetting('total_volume', currentState.totalVolume);
       await storage.saveSetting('days_with_goal', currentState.daysWithGoal);
 
-      debugPrint('💾 LevelProvider: Saved to storage - Level: ${currentState.currentLevel}, XP: ${currentState.currentXP}, Streak: ${currentState.currentStreak}');
+      debugPrint(
+          '💾 LevelProvider: Saved to storage - Level: ${currentState.currentLevel}, XP: ${currentState.currentXP}, Streak: ${currentState.currentStreak}');
     } catch (e) {
       debugPrint('❌ Failed to save level state to storage: $e');
     }
