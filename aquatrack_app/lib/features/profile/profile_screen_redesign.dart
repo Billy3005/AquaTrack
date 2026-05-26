@@ -3,10 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
+import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_text_styles.dart';
 import '../../core/repositories/auth_repository.dart';
 import '../../shared/widgets/coin_badge.dart';
+import 'providers/profile_provider.dart';
 
 /// Profile Screen - Complete redesign matching aquatrack/project/components/profile.jsx
 class ProfileScreenRedesign extends ConsumerStatefulWidget {
@@ -18,9 +19,16 @@ class ProfileScreenRedesign extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
-  int _dailyGoal = 2500;
-  bool _editingGoal = false;
-  late TextEditingController _goalController;
+  // Daily goal is computed-only via Water Formula, not editable
+
+  @override
+  void initState() {
+    super.initState();
+    // Force refresh profile data when ProfileScreen is opened
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(profileNotifierProvider.notifier).refreshProfile();
+    });
+  }
 
   final List<ReminderData> _reminders = [
     ReminderData(
@@ -55,17 +63,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
     ),
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _goalController = TextEditingController(text: _dailyGoal.toString());
-  }
-
-  @override
-  void dispose() {
-    _goalController.dispose();
-    super.dispose();
-  }
+  // No initialization needed - using ProfileProvider computed goal
 
   @override
   Widget build(BuildContext context) {
@@ -73,48 +71,59 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        color: AppColors.nightBase,
+        color: AppColors.background,
         child: SafeArea(
           child: Column(
             children: [
               // Header with gradient and avatar
               _buildHeader(),
 
-              // Scrollable content
+              // Scrollable content with pull-to-refresh
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Lifetime stats
-                      _buildLifetimeStats(),
-                      const SizedBox(height: 18),
+                child: RefreshIndicator(
+                  backgroundColor: AppColors.surface,
+                  color: AppColors.cyan,
+                  onRefresh: () async {
+                    await ref
+                        .read(profileNotifierProvider.notifier)
+                        .refreshProfile();
+                  },
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+                    physics:
+                        const AlwaysScrollableScrollPhysics(), // Ensure pull-to-refresh works
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Lifetime stats
+                        _buildLifetimeStats(),
+                        const SizedBox(height: 18),
 
-                      // Avatar collection
-                      _buildAvatarCollection(),
-                      const SizedBox(height: 18),
+                        // Avatar collection
+                        _buildAvatarCollection(),
+                        const SizedBox(height: 18),
 
-                      // Themes
-                      _buildThemesSection(),
-                      const SizedBox(height: 18),
+                        // Themes
+                        _buildThemesSection(),
+                        const SizedBox(height: 18),
 
-                      // Daily goal
-                      _buildDailyGoalSection(),
-                      const SizedBox(height: 18),
+                        // Daily goal
+                        _buildDailyGoalSection(),
+                        const SizedBox(height: 18),
 
-                      // Reminder schedule
-                      _buildReminderSection(),
-                      const SizedBox(height: 18),
+                        // Reminder schedule
+                        _buildReminderSection(),
+                        const SizedBox(height: 18),
 
-                      // Body data
-                      _buildBodyDataSection(),
-                      const SizedBox(height: 18),
+                        // Body data
+                        _buildBodyDataSection(),
+                        const SizedBox(height: 18),
 
-                      // Sign out
-                      _buildSignOutButton(),
-                      const SizedBox(height: 12),
-                    ],
+                        // Sign out
+                        _buildSignOutButton(),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -131,7 +140,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF0C2A4A), AppColors.nightBase],
+          colors: [Color(0xFF0C2A4A), AppColors.background],
         ),
       ),
       child: Stack(
@@ -169,7 +178,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                       'HỒ SƠ',
                       style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textBright,
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.1,
                         fontFamily: 'SF Pro Text',
@@ -177,7 +186,12 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                     ),
                     Row(
                       children: [
-                        const CoinBadge(amount: 1240),
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final profile = ref.watch(profileNotifierProvider);
+                            return CoinBadge(amount: profile.coins);
+                          },
+                        ),
                         const SizedBox(width: 8),
                         _buildSettingsButton(),
                       ],
@@ -193,59 +207,70 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                     _buildAvatar(),
                     const SizedBox(width: 14),
 
-                    // User info
+                    // User info - Real user data from ProfileProvider
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Minh Nguyễn',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                              letterSpacing: -0.02,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
+                      child: Consumer(
+                        builder: (context, ref, child) {
+                          final profile = ref.watch(profileNotifierProvider);
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Chiến binh Nước',
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  color: Color(0xFFA5B4FC),
-                                  fontFamily: 'SF Pro Rounded',
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                width: 3,
-                                height: 3,
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFFA5B4FC,
-                                  ).withValues(alpha: 0.6),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
                               Text(
-                                'Tham gia 84 ngày',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontFamily: 'SF Pro Text',
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12.5,
+                                profile.userName,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                  letterSpacing: -0.02,
                                 ),
                               ),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  const Text(
+                                    'Chiến binh Nước',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      color: Color(0xFFA5B4FC),
+                                      fontFamily: 'SF Pro Rounded',
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                    ),
+                                    width: 3,
+                                    height: 3,
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                        0xFFA5B4FC,
+                                      ).withValues(alpha: 0.6),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  Consumer(
+                                    builder: (context, ref, child) {
+                                      final profile =
+                                          ref.watch(profileNotifierProvider);
+                                      return Text(
+                                        'Tham gia ${profile.daysSinceJoined} ngày',
+                                        style: TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontFamily: 'SF Pro Text',
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 12.5,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              _buildXPBar(),
                             ],
-                          ),
-                          const SizedBox(height: 8),
-                          _buildXPBar(),
-                        ],
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -303,7 +328,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                 colors: [Color(0xFF7DD3FC), Color(0xFF0284C7)],
               ),
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.nightBase, width: 2),
+              border: Border.all(color: AppColors.background, width: 2),
             ),
             child: const Icon(Icons.water_drop, color: Colors.white, size: 32),
           ),
@@ -316,17 +341,22 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
             decoration: BoxDecoration(
               color: const Color(0xFF4F46E5),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.nightBase, width: 2),
+              border: Border.all(color: AppColors.background, width: 2),
             ),
-            child: const Text(
-              'LV 7',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFE0E7FF),
-                fontFamily: 'SF Pro Rounded',
-                letterSpacing: 0.04,
-              ),
+            child: Consumer(
+              builder: (context, ref, child) {
+                final profile = ref.watch(profileNotifierProvider);
+                return Text(
+                  profile.levelDisplay,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFE0E7FF),
+                    fontFamily: 'SF Pro Rounded',
+                    letterSpacing: 0.04,
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -335,121 +365,130 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
   }
 
   Widget _buildXPBar() {
-    const xp = 1240;
-    const xpMax = 2000;
-    final pct = (xp / xpMax * 100).clamp(0, 100);
+    return Consumer(
+      builder: (context, ref, child) {
+        final profile = ref.watch(profileNotifierProvider);
+        final pct = profile.xpProgress;
 
-    return Column(
-      children: [
-        // XP info row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return Column(
           children: [
-            const Row(
+            // XP info row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'LV 7',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.purpleXP,
-                    fontFamily: 'SF Pro Rounded',
-                    letterSpacing: 0.04,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      profile.levelDisplay,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.xpPurple,
+                        fontFamily: 'SF Pro Rounded',
+                        letterSpacing: 0.04,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      '· Chiến binh Nước',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(width: 6),
                 Text(
-                  '· Chiến binh Nước',
-                  style: TextStyle(
-                    fontSize: 11,
+                  profile.xpProgressDisplay,
+                  style: const TextStyle(
+                    fontSize: 10,
                     color: AppColors.textSecondary,
+                    fontFeatures: [FontFeature.tabularFigures()],
                   ),
                 ),
               ],
             ),
-            const Text(
-              '1240 / 2000 XP',
-              style: TextStyle(
-                fontSize: 10,
-                color: AppColors.textMuted,
-                fontFeatures: [FontFeature.tabularFigures()],
+            const SizedBox(height: 6),
+
+            // Progress bar
+            Container(
+              height: 8,
+              decoration: BoxDecoration(
+                color: const Color(0xFF312E81),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: pct / 100,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.xpPurple, Color(0xFFA5B4FC)],
+                    ),
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.xpPurple.withValues(alpha: 0.53),
+                        blurRadius: 12,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 6),
-
-        // Progress bar
-        Container(
-          height: 8,
-          decoration: BoxDecoration(
-            color: const Color(0xFF312E81),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: pct / 100,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.purpleXP, Color(0xFFA5B4FC)],
-                ),
-                borderRadius: BorderRadius.circular(4),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.purpleXP.withValues(alpha: 0.53),
-                    blurRadius: 12,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
   Widget _buildLifetimeStats() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildLifetimeStatCard(
-            icon: const Icon(
-              Icons.water_drop,
-              color: Color(0xFF38BDF8),
-              size: 16,
+    return Consumer(
+      builder: (context, ref, child) {
+        final profile = ref.watch(profileNotifierProvider);
+        return Row(
+          children: [
+            Expanded(
+              child: _buildLifetimeStatCard(
+                icon: const Icon(
+                  Icons.water_drop,
+                  color: Color(0xFF38BDF8),
+                  size: 16,
+                ),
+                value: profile.totalVolumeLiters,
+                label: 'Tổng nước',
+              ),
             ),
-            value: '284L',
-            label: 'Tổng nước',
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildLifetimeStatCard(
-            icon: const Icon(
-              Icons.local_fire_department,
-              color: Color(0xFFF97316),
-              size: 16,
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildLifetimeStatCard(
+                icon: const Icon(
+                  Icons.local_fire_department,
+                  color: Color(0xFFF97316),
+                  size: 16,
+                ),
+                value: profile.longestStreak.toString(),
+                label: 'Streak dài nhất',
+                subtitle: 'ngày',
+              ),
             ),
-            value: '21',
-            label: 'Streak dài nhất',
-            subtitle: 'ngày',
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildLifetimeStatCard(
-            icon: const Icon(
-              Icons.calendar_today,
-              color: Color(0xFFA78BFA),
-              size: 16,
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildLifetimeStatCard(
+                icon: const Icon(
+                  Icons.calendar_today,
+                  color: Color(0xFFA78BFA),
+                  size: 16,
+                ),
+                value: profile.daysSinceJoined.toString(),
+                label: 'Ngày hoạt động',
+                subtitle:
+                    'trên ${(profile.daysSinceJoined * 1.2).ceil()}', // Realistic target based on days joined
+              ),
             ),
-            value: '84',
-            label: 'Ngày hoạt động',
-            subtitle: 'trên 90',
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
@@ -462,7 +501,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
       decoration: BoxDecoration(
-        color: AppColors.nightCard,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
       ),
@@ -622,7 +661,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                                   '🔒',
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: AppColors.textMuted,
+                                    color: AppColors.textSecondary,
                                   ),
                                 ),
                           if (avatar.current)
@@ -666,7 +705,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                         avatar.level!,
                         style: TextStyle(
                           fontSize: 9.5,
-                          color: AppColors.textMuted,
+                          color: AppColors.textSecondary,
                           fontFamily: 'SF Pro Rounded',
                         ),
                       ),
@@ -738,7 +777,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
             return Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.nightSurface,
+                color: AppColors.surface,
                 border: theme.current
                     ? Border.all(color: const Color(0xFFFBBF24), width: 1.5)
                     : Border.all(color: Colors.white.withValues(alpha: 0.06)),
@@ -787,7 +826,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                               fontSize: 10,
                               color: theme.current
                                   ? const Color(0xFFFBBF24)
-                                  : AppColors.textMuted,
+                                  : AppColors.textSecondary,
                               fontFamily: 'SF Pro Rounded',
                               fontWeight: FontWeight.w600,
                             ),
@@ -813,7 +852,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
         Container(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
           decoration: BoxDecoration(
-            color: AppColors.nightCard,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: const Color(0x2638BDF8), // rgba(56,189,248,0.15)
@@ -831,88 +870,59 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                       'DAILY GOAL',
                       style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textMuted,
+                        color: AppColors.textSecondary,
                         letterSpacing: 0.06,
                         fontWeight: FontWeight.w600,
                         fontFamily: 'SF Pro Text',
                       ),
                     ),
                     const SizedBox(height: 2),
-                    _editingGoal
-                        ? Row(
-                            children: [
-                              SizedBox(
-                                width: 90,
-                                child: TextField(
-                                  controller: _goalController,
-                                  keyboardType: TextInputType.number,
-                                  autofocus: true,
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                    fontFamily: 'SF Pro Rounded',
-                                    letterSpacing: -0.02,
-                                  ),
-                                  decoration: InputDecoration(
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(6),
-                                      borderSide: const BorderSide(
-                                        color: Color(0x6638BDF8),
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(6),
-                                      borderSide: const BorderSide(
-                                        color: Color(0x6638BDF8),
-                                      ),
-                                    ),
-                                    filled: true,
-                                    fillColor: const Color(0x1A38BDF8),
-                                    contentPadding: const EdgeInsets.fromLTRB(
-                                      6,
-                                      2,
-                                      6,
-                                      2,
-                                    ),
-                                  ),
-                                  onSubmitted: (_) => _saveGoal(),
-                                  onEditingComplete: _saveGoal,
-                                ),
+                    // Computed daily goal from Water Formula (read-only)
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final profile = ref.watch(profileNotifierProvider);
+                        return Row(
+                          children: [
+                            Text(
+                              profile.dailyGoalMl.toString(),
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                fontFamily: 'SF Pro Rounded',
+                                letterSpacing: -0.02,
                               ),
-                              Text(
-                                ' ml/day',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          )
-                        : GestureDetector(
-                            onTap: () => setState(() => _editingGoal = true),
-                            child: Row(
-                              children: [
-                                Text(
-                                  _dailyGoal.toString(),
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                    fontFamily: 'SF Pro Rounded',
-                                    letterSpacing: -0.02,
-                                  ),
-                                ),
-                                Text(
-                                  ' ml / day',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
                             ),
-                          ),
+                            Text(
+                              ' ml / day',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0x1A7B5EA7),
+                                borderRadius: BorderRadius.circular(12),
+                                border:
+                                    Border.all(color: const Color(0x337B5EA7)),
+                              ),
+                              child: Text(
+                                'Tự động',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
@@ -926,7 +936,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                           'AI điều chỉnh +300ml hôm nay (nóng)',
                           style: TextStyle(
                             fontSize: 11,
-                            color: AppColors.textBright,
+                            color: AppColors.textPrimary,
                             fontFamily: 'SF Pro Text',
                           ),
                         ),
@@ -935,34 +945,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                   ],
                 ),
               ),
-              GestureDetector(
-                onTap: () {
-                  if (_editingGoal) {
-                    _saveGoal();
-                  } else {
-                    setState(() => _editingGoal = true);
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0x1F38BDF8), // rgba(56,189,248,0.12)
-                    border: Border.all(
-                      color: const Color(0x4D38BDF8), // rgba(56,189,248,0.3)
-                    ),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    _editingGoal ? 'Lưu' : 'Sửa',
-                    style: const TextStyle(
-                      color: Color(0xFFBAE6FD),
-                      fontFamily: 'SF Pro Text',
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
+              // No edit button - daily goal is computed automatically
             ],
           ),
         ),
@@ -970,12 +953,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
     );
   }
 
-  void _saveGoal() {
-    setState(() {
-      _dailyGoal = int.tryParse(_goalController.text) ?? _dailyGoal;
-      _editingGoal = false;
-    });
-  }
+  // Daily goal is computed via Water Formula - no manual editing needed
 
   /// Handle sign out functionality
   Future<void> _handleSignOut() async {
@@ -984,7 +962,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.nightCard,
+        backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           'Xác nhận đăng xuất',
@@ -1043,7 +1021,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                   const Text('Đang đăng xuất...'),
                 ],
               ),
-              backgroundColor: AppColors.nightSurface,
+              backgroundColor: AppColors.surface,
               duration: const Duration(seconds: 2),
             ),
           );
@@ -1086,9 +1064,9 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
         const SizedBox(height: 10),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.nightSurface,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: AppColors.textHint),
           ),
           child: Column(
             children: [
@@ -1168,7 +1146,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                   fontSize: 12,
                   color: reminder.isOn
                       ? const Color(0xFFBAE6FD)
-                      : AppColors.textMuted,
+                      : AppColors.textSecondary,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
@@ -1188,7 +1166,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                     fontWeight: FontWeight.w500,
                     color: reminder.isOn
                         ? AppColors.textPrimary
-                        : AppColors.textMuted,
+                        : AppColors.textSecondary,
                     fontFamily: 'SF Pro Text',
                   ),
                 ),
@@ -1197,7 +1175,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                   'Tone: ${reminder.tone}',
                   style: TextStyle(
                     fontSize: 10.5,
-                    color: AppColors.textMuted,
+                    color: AppColors.textSecondary,
                     fontFamily: 'SF Pro Text',
                   ),
                 ),
@@ -1270,79 +1248,95 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
   }
 
   Widget _buildBodyDataSection() {
-    final bodyData = [
-      BodyRowData(
-        label: 'Cân nặng · Chiều cao',
-        value: '62 kg · 168 cm',
-        hint: 'Cập nhật 2 tuần trước',
-      ),
-      BodyRowData(label: 'Giới tính · Tuổi', value: 'Nam · 28'),
-      BodyRowData(
-        label: 'Mức vận động',
-        value: 'Vừa phải',
-        pillColor: const Color(0xFF10B981),
-      ),
-      BodyRowData(
-        label: 'Công việc',
-        value: 'Văn phòng',
-        pillColor: const Color(0xFF38BDF8),
-      ),
-      BodyRowData(label: 'Sức khoẻ đặc biệt', value: 'Không có'),
-      BodyRowData(label: 'Cà phê · Rượu bia', value: '1 cốc · 0 đơn vị'),
-      BodyRowData(
-        label: 'Climate zone',
-        value: 'Nhiệt đới (HCMC)',
-        pillColor: const Color(0xFFF59E0B),
-        isLast: true,
-      ),
-    ];
+    return Consumer(
+      builder: (context, ref, child) {
+        final profile = ref.watch(profileNotifierProvider);
 
-    return Column(
-      children: [
-        _buildSectionHeader(
-          title: 'Hồ sơ cơ thể',
-          subtitle: 'Dùng để AI tính goal',
-          trailing: GestureDetector(
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(10, 4, 10, 4),
-              decoration: BoxDecoration(
-                color: const Color(0x1F38BDF8), // rgba(56,189,248,0.12)
-                border: Border.all(
-                  color: const Color(0x4D38BDF8), // rgba(56,189,248,0.3)
-                ),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.edit, color: Color(0xFFBAE6FD), size: 10),
-                  const SizedBox(width: 4),
-                  const Text(
-                    'Sửa',
-                    style: TextStyle(
-                      color: Color(0xFFBAE6FD),
-                      fontFamily: 'SF Pro Text',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+        final bodyData = [
+          BodyRowData(
+            label: 'Cân nặng · Chiều cao',
+            value: profile.weightHeightDisplay,
+            hint: 'Cập nhật 2 tuần trước',
+          ),
+          BodyRowData(
+            label: 'Giới tính · Tuổi',
+            value: profile.genderAgeDisplay,
+          ),
+          BodyRowData(
+            label: 'Mức vận động',
+            value: profile.activityLevelDisplay,
+            pillColor: const Color(0xFF10B981),
+          ),
+          BodyRowData(
+            label: 'Công việc',
+            value: profile.jobTypeDisplay,
+            pillColor: const Color(0xFF38BDF8),
+          ),
+          BodyRowData(
+            label: 'Sức khoẻ đặc biệt',
+            value: profile.healthConditionsDisplay,
+          ),
+          BodyRowData(
+            label: 'Cà phê · Rượu bia',
+            value: profile.coffeealcoholDisplay,
+          ),
+          BodyRowData(
+            label: 'Climate zone',
+            value: 'Nhiệt đới (HCMC)', // TODO: Add climate zone to backend
+            pillColor: const Color(0xFFF59E0B),
+            isLast: true,
+          ),
+        ];
+
+        return Column(
+          children: [
+            _buildSectionHeader(
+              title: 'Hồ sơ cơ thể',
+              subtitle: 'Dùng để AI tính goal',
+              trailing: GestureDetector(
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(10, 4, 10, 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0x1F38BDF8), // rgba(56,189,248,0.12)
+                    border: Border.all(
+                      color: const Color(0x4D38BDF8), // rgba(56,189,248,0.3)
                     ),
+                    borderRadius: BorderRadius.circular(999),
                   ),
-                ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.edit,
+                          color: Color(0xFFBAE6FD), size: 10),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Sửa',
+                        style: TextStyle(
+                          color: Color(0xFFBAE6FD),
+                          fontFamily: 'SF Pro Text',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.nightCard,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
-          ),
-          child: Column(
-            children: bodyData.map((data) => _buildBodyRow(data)).toList(),
-          ),
-        ),
-      ],
+            const SizedBox(height: 10),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+              ),
+              child: Column(
+                children: bodyData.map((data) => _buildBodyRow(data)).toList(),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1377,7 +1371,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                     data.hint!,
                     style: TextStyle(
                       fontSize: 10.5,
-                      color: AppColors.textMuted,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -1416,7 +1410,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
               ),
             ),
           const SizedBox(width: 10),
-          Icon(Icons.chevron_right, color: AppColors.textMuted, size: 14),
+          Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 14),
         ],
       ),
     );
@@ -1479,7 +1473,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                 subtitle,
                 style: TextStyle(
                   fontSize: 10.5,
-                  color: AppColors.textMuted,
+                  color: AppColors.textSecondary,
                   fontFamily: 'SF Pro Text',
                 ),
               ),
@@ -1493,7 +1487,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                   trailing.toString(),
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.textMuted,
+                    color: AppColors.textSecondary,
                     fontFamily: 'SF Pro Rounded',
                     fontWeight: FontWeight.w600,
                   ),

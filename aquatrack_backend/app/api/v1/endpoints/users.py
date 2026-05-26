@@ -24,6 +24,22 @@ async def get_user_profile(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
+
+    # Debug logging for API response
+    print(f"\n=== DEBUG /users/profile for user {user.email} ===")
+    print(f"Body data from DB:")
+    print(f"  gender: {user.gender} (type: {type(user.gender)})")
+    print(f"  age: {user.age} (type: {type(user.age)})")
+    print(f"  height: {user.height} (type: {type(user.height)})")
+    print(f"  weight: {user.weight} (type: {type(user.weight)})")
+    print(f"  activity_level: {user.activity_level} (type: {type(user.activity_level)})")
+    print(f"  job_type: {user.job_type} (type: {type(user.job_type)})")
+    print(f"  health_conditions: {user.health_conditions} (type: {type(user.health_conditions)})")
+    print(f"  coffee_cups_per_day: {user.coffee_cups_per_day} (type: {type(user.coffee_cups_per_day)})")
+    print(f"  alcohol_units_per_day: {user.alcohol_units_per_day} (type: {type(user.alcohol_units_per_day)})")
+    print(f"  timezone: {user.timezone} (type: {type(user.timezone)})")
+    print(f"=== END DEBUG ===\n")
+
     return user
 
 

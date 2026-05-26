@@ -61,11 +61,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     print('🔄 Starting registration for: $email');
 
     try {
+      // Generate username from email (user@domain.com -> user)
+      final username = email.split('@').first;
+
       // Call register API
       print('📡 Calling register API...');
       final authResponse = await _authRepository.register(
         email: email,
         password: password,
+        username: username,
         fullName: fullName.isEmpty ? null : fullName,
       );
 

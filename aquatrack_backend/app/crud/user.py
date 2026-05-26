@@ -34,12 +34,13 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         db.commit()
         db.refresh(db_obj)
 
-        # Create default achievements for new user
-        default_achievements = Achievement.create_default_achievements(db_obj.id)
-        for achievement in default_achievements:
-            db.add(achievement)
+        # Temporarily disable achievements creation to debug registration
+        # TODO: Re-enable after fixing the issue
+        # default_achievements = Achievement.create_default_achievements(db_obj.id)
+        # for achievement in default_achievements:
+        #     db.add(achievement)
+        # db.commit()
 
-        db.commit()
         return db_obj
 
     def authenticate(self, db: Session, *, email: str, password: str) -> Optional[User]:
