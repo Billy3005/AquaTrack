@@ -83,8 +83,12 @@ class AuthService {
     try {
       final userDataJson = _authBox.get(AppConfig.userDataKey);
       if (userDataJson != null) {
-        return jsonDecode(userDataJson) as Map<String, dynamic>;
+        final userData = jsonDecode(userDataJson) as Map<String, dynamic>;
+        AppLogger.debug(_tag,
+            '📥 AuthService: Retrieved user data - username: ${userData['username']}, email: ${userData['email']}');
+        return userData;
       }
+      AppLogger.debug(_tag, '❌ AuthService: No user data found in storage');
       return null;
     } catch (e) {
       AppLogger.error(_tag, 'Failed to get user data', e);

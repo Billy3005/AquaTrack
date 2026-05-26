@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/repositories/user_repository.dart';
 import '../../core/utils/logger.dart';
 import '../../shared/widgets/living_drop.dart';
+import '../profile/providers/profile_provider.dart';
 
 /// Body Info Onboarding Screen - 5-step wizard after registration
 /// Collects user body information to calculate daily water goal
-class BodyInfoScreen extends StatefulWidget {
+class BodyInfoScreen extends ConsumerStatefulWidget {
   const BodyInfoScreen({super.key});
 
   @override
-  State<BodyInfoScreen> createState() => _BodyInfoScreenState();
+  ConsumerState<BodyInfoScreen> createState() => _BodyInfoScreenState();
 }
 
-class _BodyInfoScreenState extends State<BodyInfoScreen> {
+class _BodyInfoScreenState extends ConsumerState<BodyInfoScreen> {
   int currentStep = 0;
   bool _isSubmitting = false;
 
@@ -101,6 +103,9 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
       );
 
       AppLogger.info('Onboarding', 'Onboarding data submitted successfully');
+
+      // Refresh ProfileProvider with new data
+      await ref.read(profileNotifierProvider.notifier).refreshProfile();
 
       // Navigate to main app
       if (mounted) {

@@ -279,6 +279,9 @@ class ApiService {
             throw ApiException('Failed to parse response data', statusCode);
           }
         }
+      } else if (response.data != null) {
+        // Return raw response payload when no parser is provided.
+        data = response.data as T;
       }
 
       return ApiResponse<T>(

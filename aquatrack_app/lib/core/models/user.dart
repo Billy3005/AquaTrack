@@ -16,6 +16,28 @@ class User {
   final DateTime createdAt;
   final DateTime? lastActiveAt;
 
+  // Body info fields from backend UserResponse
+  final String? gender;
+  final int? age;
+  final int? height; // cm
+  final double? weight; // kg
+  final String? activityLevel;
+  final String? jobType;
+  final List<String>? healthConditions;
+  final String? veggieIntake;
+  final int? coffeeCupsPerDay;
+  final int? alcoholUnitsPerDay;
+
+  // Additional fields
+  final int? calculatedDailyGoalMl;
+  final bool? profileComplete;
+  final int? currentStreak;
+  final int? longestStreak;
+  final int? totalLogsCount;
+  final int? totalVolumeMl;
+  final bool? isActive;
+  final bool? isVerified;
+
   const User({
     required this.id,
     required this.email,
@@ -32,6 +54,26 @@ class User {
     this.timezone,
     required this.createdAt,
     this.lastActiveAt,
+    // Body info
+    this.gender,
+    this.age,
+    this.height,
+    this.weight,
+    this.activityLevel,
+    this.jobType,
+    this.healthConditions,
+    this.veggieIntake,
+    this.coffeeCupsPerDay,
+    this.alcoholUnitsPerDay,
+    // Additional
+    this.calculatedDailyGoalMl,
+    this.profileComplete,
+    this.currentStreak,
+    this.longestStreak,
+    this.totalLogsCount,
+    this.totalVolumeMl,
+    this.isActive,
+    this.isVerified,
   });
 
   /// Create User from JSON
@@ -42,7 +84,7 @@ class User {
       username: json['username'] as String?,
       fullName: json['full_name'] as String?,
       avatarId: json['avatar_id'] as String?,
-      level: json['level'] as int? ?? 1,
+      level: json['level'] as int? ?? json['current_level'] as int? ?? 1,
       totalXp: json['total_xp'] as int? ?? 0,
       dailyGoalMl: json['daily_goal_ml'] as int? ?? 2000,
       notificationsEnabled: json['notifications_enabled'] as bool? ?? true,
@@ -51,9 +93,32 @@ class User {
       soundEnabled: json['sound_enabled'] as bool? ?? true,
       timezone: json['timezone'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
-      lastActiveAt: json['last_active_at'] != null
-          ? DateTime.parse(json['last_active_at'] as String)
+      lastActiveAt: json['last_active_at'] != null || json['last_login'] != null
+          ? DateTime.parse(
+              (json['last_active_at'] ?? json['last_login']) as String)
           : null,
+      // Body info fields
+      gender: json['gender'] as String?,
+      age: json['age'] as int?,
+      height: json['height'] as int?,
+      weight: json['weight']?.toDouble(),
+      activityLevel: json['activity_level'] as String?,
+      jobType: json['job_type'] as String?,
+      healthConditions: json['health_conditions'] != null
+          ? List<String>.from(json['health_conditions'])
+          : null,
+      veggieIntake: json['veggie_intake'] as String?,
+      coffeeCupsPerDay: json['coffee_cups_per_day'] as int?,
+      alcoholUnitsPerDay: json['alcohol_units_per_day'] as int?,
+      // Additional fields
+      calculatedDailyGoalMl: json['calculated_daily_goal_ml'] as int?,
+      profileComplete: json['profile_complete'] as bool?,
+      currentStreak: json['current_streak'] as int?,
+      longestStreak: json['longest_streak'] as int?,
+      totalLogsCount: json['total_logs_count'] as int?,
+      totalVolumeMl: json['total_volume_ml'] as int?,
+      isActive: json['is_active'] as bool?,
+      isVerified: json['is_verified'] as bool?,
     );
   }
 
@@ -66,6 +131,7 @@ class User {
       'full_name': fullName,
       'avatar_id': avatarId,
       'level': level,
+      'current_level': level,
       'total_xp': totalXp,
       'daily_goal_ml': dailyGoalMl,
       'notifications_enabled': notificationsEnabled,
@@ -75,6 +141,28 @@ class User {
       'timezone': timezone,
       'created_at': createdAt.toIso8601String(),
       'last_active_at': lastActiveAt?.toIso8601String(),
+      // Body info
+      if (gender != null) 'gender': gender,
+      if (age != null) 'age': age,
+      if (height != null) 'height': height,
+      if (weight != null) 'weight': weight,
+      if (activityLevel != null) 'activity_level': activityLevel,
+      if (jobType != null) 'job_type': jobType,
+      if (healthConditions != null) 'health_conditions': healthConditions,
+      if (veggieIntake != null) 'veggie_intake': veggieIntake,
+      if (coffeeCupsPerDay != null) 'coffee_cups_per_day': coffeeCupsPerDay,
+      if (alcoholUnitsPerDay != null)
+        'alcohol_units_per_day': alcoholUnitsPerDay,
+      // Additional
+      if (calculatedDailyGoalMl != null)
+        'calculated_daily_goal_ml': calculatedDailyGoalMl,
+      if (profileComplete != null) 'profile_complete': profileComplete,
+      if (currentStreak != null) 'current_streak': currentStreak,
+      if (longestStreak != null) 'longest_streak': longestStreak,
+      if (totalLogsCount != null) 'total_logs_count': totalLogsCount,
+      if (totalVolumeMl != null) 'total_volume_ml': totalVolumeMl,
+      if (isActive != null) 'is_active': isActive,
+      if (isVerified != null) 'is_verified': isVerified,
     };
   }
 
@@ -95,6 +183,26 @@ class User {
     String? timezone,
     DateTime? createdAt,
     DateTime? lastActiveAt,
+    // Body info
+    String? gender,
+    int? age,
+    int? height,
+    double? weight,
+    String? activityLevel,
+    String? jobType,
+    List<String>? healthConditions,
+    String? veggieIntake,
+    int? coffeeCupsPerDay,
+    int? alcoholUnitsPerDay,
+    // Additional
+    int? calculatedDailyGoalMl,
+    bool? profileComplete,
+    int? currentStreak,
+    int? longestStreak,
+    int? totalLogsCount,
+    int? totalVolumeMl,
+    bool? isActive,
+    bool? isVerified,
   }) {
     return User(
       id: id ?? this.id,
@@ -112,6 +220,27 @@ class User {
       timezone: timezone ?? this.timezone,
       createdAt: createdAt ?? this.createdAt,
       lastActiveAt: lastActiveAt ?? this.lastActiveAt,
+      // Body info
+      gender: gender ?? this.gender,
+      age: age ?? this.age,
+      height: height ?? this.height,
+      weight: weight ?? this.weight,
+      activityLevel: activityLevel ?? this.activityLevel,
+      jobType: jobType ?? this.jobType,
+      healthConditions: healthConditions ?? this.healthConditions,
+      veggieIntake: veggieIntake ?? this.veggieIntake,
+      coffeeCupsPerDay: coffeeCupsPerDay ?? this.coffeeCupsPerDay,
+      alcoholUnitsPerDay: alcoholUnitsPerDay ?? this.alcoholUnitsPerDay,
+      // Additional
+      calculatedDailyGoalMl:
+          calculatedDailyGoalMl ?? this.calculatedDailyGoalMl,
+      profileComplete: profileComplete ?? this.profileComplete,
+      currentStreak: currentStreak ?? this.currentStreak,
+      longestStreak: longestStreak ?? this.longestStreak,
+      totalLogsCount: totalLogsCount ?? this.totalLogsCount,
+      totalVolumeMl: totalVolumeMl ?? this.totalVolumeMl,
+      isActive: isActive ?? this.isActive,
+      isVerified: isVerified ?? this.isVerified,
     );
   }
 
