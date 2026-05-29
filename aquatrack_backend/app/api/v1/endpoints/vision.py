@@ -1,14 +1,17 @@
 from typing import List, Optional
 
-from fastapi import (APIRouter, Depends, File, HTTPException, Query,
-                     UploadFile, status)
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud.scan_history import scan_history_crud
-from app.schemas.vision import (ScanHistoryResponse, ScanHistoryUpdate,
-                                VisionEstimateRequest, VisionEstimateResponse)
+from app.schemas.vision import (
+    ScanHistoryResponse,
+    ScanHistoryUpdate,
+    VisionEstimateRequest,
+    VisionEstimateResponse,
+)
 from app.services.vision_service import vision_service
 
 router = APIRouter()

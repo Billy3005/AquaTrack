@@ -7,11 +7,18 @@ from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud.friend import friend_crud, friend_request_crud
 from app.crud.leaderboard import leaderboard_crud
-from app.schemas.social import (FriendReminderRequest, FriendReminderResponse,
-                                FriendRequestCreate, FriendRequestResponse,
-                                FriendRequestUpdate, FriendResponse,
-                                LeaderboardEntryResponse, SocialStatsResponse,
-                                UserSearchResult, WeeklyLeaderboardResponse)
+from app.schemas.social import (
+    FriendReminderRequest,
+    FriendReminderResponse,
+    FriendRequestCreate,
+    FriendRequestResponse,
+    FriendRequestUpdate,
+    FriendResponse,
+    LeaderboardEntryResponse,
+    SocialStatsResponse,
+    UserSearchResult,
+    WeeklyLeaderboardResponse,
+)
 from app.services.social_service import social_service
 
 router = APIRouter()

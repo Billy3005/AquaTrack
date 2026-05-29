@@ -106,9 +106,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       }
     } catch (e) {
       AppLogger.error('Splash', 'Authentication check failed', e);
-      // For now, go to main app anyway for development
+      // Navigate to login on error
       if (mounted) {
-        context.go('/');
+        context.go('/login');
       }
     }
   }

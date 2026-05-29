@@ -1,8 +1,17 @@
 from fastapi import APIRouter
 
 # Import individual routers
-from app.api.v1.endpoints import (auth, coach, friends, intake, levels, stats,
-                                  users, vision, water_profile)
+from app.api.v1.endpoints import (
+    auth,
+    coach,
+    friends,
+    intake,
+    levels,
+    stats,
+    users,
+    vision,
+    water_profile,
+)
 
 # Main API router
 api_router = APIRouter()

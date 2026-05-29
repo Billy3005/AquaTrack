@@ -11,8 +11,7 @@ from app.core.security import get_current_user_id
 from app.crud.intake_log import intake_log_crud
 from app.models.daily_summary import DailySummary
 from app.models.intake_log import IntakeLog
-from app.schemas.intake_log import (IntakeLogCreate, IntakeLogResponse,
-                                    IntakeLogUpdate)
+from app.schemas.intake_log import IntakeLogCreate, IntakeLogResponse, IntakeLogUpdate
 
 
 # Response schemas

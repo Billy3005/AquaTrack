@@ -13,14 +13,18 @@ from app.core.security import get_current_user_id
 from app.crud.conversation import conversation_crud, conversation_session_crud
 from app.crud.intake_log import intake_log_crud
 from app.crud.user import user_crud
-from app.schemas.conversation import (ChatMessageRequest, ChatMessageResponse,
-                                      ContextUpdateRequest,
-                                      ConversationHistoryResponse,
-                                      ConversationSessionCreate,
-                                      ConversationSessionListResponse,
-                                      MessageCreate, MessageResponse,
-                                      QuickReplyActionRequest,
-                                      QuickReplySchema)
+from app.schemas.conversation import (
+    ChatMessageRequest,
+    ChatMessageResponse,
+    ContextUpdateRequest,
+    ConversationHistoryResponse,
+    ConversationSessionCreate,
+    ConversationSessionListResponse,
+    MessageCreate,
+    MessageResponse,
+    QuickReplyActionRequest,
+    QuickReplySchema,
+)
 from app.services.ai_coach_service import ai_coach_service
 
 router = APIRouter()

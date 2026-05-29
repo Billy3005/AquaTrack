@@ -11,16 +11,24 @@ from sqlalchemy.orm import Session
 from app.api import deps
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.water_profile import (UserSummaryResponse,
-                                       WaterCalculationBreakdown,
-                                       WaterCalculationResponse,
-                                       WaterProfileCreate, WaterProfileEnums,
-                                       WaterProfileResponse,
-                                       WaterProfileUpdate)
-from app.services.water_formula_service import (ActivityLevel, Gender,
-                                                HealthCondition, JobType,
-                                                UserWaterProfile, VeggieIntake,
-                                                WaterFormulaService)
+from app.schemas.water_profile import (
+    UserSummaryResponse,
+    WaterCalculationBreakdown,
+    WaterCalculationResponse,
+    WaterProfileCreate,
+    WaterProfileEnums,
+    WaterProfileResponse,
+    WaterProfileUpdate,
+)
+from app.services.water_formula_service import (
+    ActivityLevel,
+    Gender,
+    HealthCondition,
+    JobType,
+    UserWaterProfile,
+    VeggieIntake,
+    WaterFormulaService,
+)
 
 router = APIRouter()
 
