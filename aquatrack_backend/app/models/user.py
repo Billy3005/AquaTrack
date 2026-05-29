@@ -1,6 +1,7 @@
 import uuid
 
-from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Text, JSON
+from sqlalchemy import (JSON, Boolean, Column, DateTime, Float, Integer,
+                        String, Text)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -40,11 +41,15 @@ class User(Base):
     weight = Column(Float, nullable=True)  # kg
 
     # Water Formula Profile - B2: Lifestyle
-    activity_level = Column(String, nullable=True)  # sedentary/light/moderate/active/very_active
+    activity_level = Column(
+        String, nullable=True
+    )  # sedentary/light/moderate/active/very_active
     job_type = Column(String, nullable=True)  # office/mixed/outdoor/manual
 
     # Water Formula Profile - B3: Health (JSON array for multiple selections)
-    health_conditions = Column(JSON, default=list)  # ["none"] or ["diabetes", "hypertension"] etc
+    health_conditions = Column(
+        JSON, default=list
+    )  # ["none"] or ["diabetes", "hypertension"] etc
 
     # Water Formula Profile - B4: Diet
     veggie_intake = Column(String, nullable=True)  # low/medium/high
@@ -95,7 +100,10 @@ class User(Base):
 
     # Social relationships
     friends = relationship(
-        "Friend", foreign_keys="Friend.user_id", back_populates="user", cascade="all, delete-orphan"
+        "Friend",
+        foreign_keys="Friend.user_id",
+        back_populates="user",
+        cascade="all, delete-orphan",
     )
     leaderboard_entries = relationship(
         "LeaderboardEntry", back_populates="user", cascade="all, delete-orphan"

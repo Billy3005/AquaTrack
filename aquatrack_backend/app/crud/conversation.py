@@ -13,7 +13,9 @@ from app.schemas.conversation import (ConversationSessionCreate,
 
 
 class CRUDConversation(CRUDBase[Conversation, MessageCreate, MessageUpdate]):
-    def _serialize_quick_replies(self, quick_replies: Optional[List[QuickReplySchema]]) -> Optional[List[Dict]]:
+    def _serialize_quick_replies(
+        self, quick_replies: Optional[List[QuickReplySchema]]
+    ) -> Optional[List[Dict]]:
         """Convert QuickReplySchema objects to JSON serializable format"""
         if quick_replies is None or len(quick_replies) == 0:
             return None
@@ -21,22 +23,27 @@ class CRUDConversation(CRUDBase[Conversation, MessageCreate, MessageUpdate]):
         # Handle case where quick_replies might contain non-schema objects
         serialized = []
         for qr in quick_replies:
-            if hasattr(qr, 'id') and hasattr(qr, 'text'):
+            if hasattr(qr, "id") and hasattr(qr, "text"):
                 # It's a QuickReplySchema object
-                serialized.append({
-                    "id": qr.id,
-                    "text": qr.text,
-                    "action": getattr(qr, 'action', None),
-                })
+                serialized.append(
+                    {
+                        "id": qr.id,
+                        "text": qr.text,
+                        "action": getattr(qr, "action", None),
+                    }
+                )
             elif isinstance(qr, dict):
                 # It's already a dictionary
-                serialized.append({
-                    "id": qr.get("id", ""),
-                    "text": qr.get("text", ""),
-                    "action": qr.get("action"),
-                })
+                serialized.append(
+                    {
+                        "id": qr.get("id", ""),
+                        "text": qr.get("text", ""),
+                        "action": qr.get("action"),
+                    }
+                )
 
         return serialized if serialized else None
+
     def create_message(
         self, db: Session, *, user_id: str, session_id: str, message: MessageCreate
     ) -> Conversation:

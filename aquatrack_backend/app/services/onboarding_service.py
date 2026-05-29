@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 
 class OnboardingService:
@@ -27,30 +27,26 @@ class OnboardingService:
 
         # Activity multiplier
         activity_muls = {
-            'sedentary': 1.0,
-            'light': 1.15,
-            'moderate': 1.3,
-            'active': 1.45,
-            'athlete': 1.6,
+            "sedentary": 1.0,
+            "light": 1.15,
+            "moderate": 1.3,
+            "active": 1.45,
+            "athlete": 1.6,
         }
         goal *= activity_muls.get(activity_level, 1.3)
 
         # Work multiplier
         work_muls = {
-            'office': 1.0,
-            'mixed': 1.05,
-            'field': 1.2,
-            'manual': 1.25,
-            'sport': 1.35,
+            "office": 1.0,
+            "mixed": 1.05,
+            "field": 1.2,
+            "manual": 1.25,
+            "sport": 1.35,
         }
         goal *= work_muls.get(job_type, 1.0)
 
         # Vegetable adjustment
-        veg_muls = {
-            'low': 1.05,
-            'mid': 1.0,
-            'high': 0.95
-        }
+        veg_muls = {"low": 1.05, "mid": 1.0, "high": 0.95}
         goal *= veg_muls.get(veggie_intake, 1.0)
 
         # Coffee and alcohol additions
@@ -58,11 +54,11 @@ class OnboardingService:
         goal += alcohol_units_per_day * 200  # 200ml per alcohol unit
 
         # Health adjustments
-        if 'pregnant' in health_conditions:
+        if "pregnant" in health_conditions:
             goal += 300
-        if 'lactating' in health_conditions:
+        if "lactating" in health_conditions:
             goal += 700
-        if 'kidney' in health_conditions:
+        if "kidney" in health_conditions:
             goal = min(goal, 1800)  # Clamp to max 1800 for kidney issues
 
         # Round to nearest 50
@@ -74,23 +70,23 @@ class OnboardingService:
         Validate và clean onboarding data trước khi save
         """
         # Ensure health_conditions is a list
-        if 'health_conditions' in data and data['health_conditions']:
-            if isinstance(data['health_conditions'], str):
-                data['health_conditions'] = [data['health_conditions']]
+        if "health_conditions" in data and data["health_conditions"]:
+            if isinstance(data["health_conditions"], str):
+                data["health_conditions"] = [data["health_conditions"]]
         else:
-            data['health_conditions'] = ['none']
+            data["health_conditions"] = ["none"]
 
         # Set defaults for missing fields
         defaults = {
-            'gender': 'male',
-            'age': 28,
-            'height': 168,
-            'weight': 60.0,
-            'activity_level': 'moderate',
-            'job_type': 'office',
-            'veggie_intake': 'mid',
-            'coffee_cups_per_day': 1,
-            'alcohol_units_per_day': 0,
+            "gender": "male",
+            "age": 28,
+            "height": 168,
+            "weight": 60.0,
+            "activity_level": "moderate",
+            "job_type": "office",
+            "veggie_intake": "mid",
+            "coffee_cups_per_day": 1,
+            "alcohol_units_per_day": 0,
         }
 
         for key, default_value in defaults.items():
@@ -114,16 +110,16 @@ class OnboardingService:
 
         # Tính toán daily goal
         calculated_goal = OnboardingService.calculate_daily_goal(
-            gender=clean_data['gender'],
-            age=clean_data['age'],
-            height=clean_data['height'],
-            weight=clean_data['weight'],
-            activity_level=clean_data['activity_level'],
-            job_type=clean_data['job_type'],
-            health_conditions=clean_data['health_conditions'],
-            veggie_intake=clean_data['veggie_intake'],
-            coffee_cups_per_day=clean_data['coffee_cups_per_day'],
-            alcohol_units_per_day=clean_data['alcohol_units_per_day'],
+            gender=clean_data["gender"],
+            age=clean_data["age"],
+            height=clean_data["height"],
+            weight=clean_data["weight"],
+            activity_level=clean_data["activity_level"],
+            job_type=clean_data["job_type"],
+            health_conditions=clean_data["health_conditions"],
+            veggie_intake=clean_data["veggie_intake"],
+            coffee_cups_per_day=clean_data["coffee_cups_per_day"],
+            alcohol_units_per_day=clean_data["alcohol_units_per_day"],
         )
 
         # Update user với calculated goal

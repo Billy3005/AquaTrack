@@ -23,38 +23,44 @@ async def register_user(user_create: UserCreate, db: Session = Depends(get_db)):
     """
     try:
         # Debug: Log registration data received
-        print(f"🔍 REGISTRATION DEBUG:")
-        print(f"  📧 Email: {user_create.email}")
-        print(f"  👤 Username: {user_create.username}")
-        print(f"  📝 Full Name: {user_create.full_name}")
-        print(f"  💧 Daily Goal: {user_create.daily_goal_ml}")
+        print(f"[DEBUG] REGISTRATION DEBUG:")
+        print(f"  [EMAIL] Email: {user_create.email}")
+        print(f"  [USER] Username: {user_create.username}")
+        print(f"  [NAME] Full Name: {user_create.full_name}")
+        print(f"  [GOAL] Daily Goal: {user_create.daily_goal_ml}")
 
         # Check if user already exists
-        print("🔍 Checking existing user...")
+        print("[DEBUG] Checking existing user...")
         existing_user = user_crud.get_by_email(db, email=user_create.email)
         if existing_user:
-            print(f"❌ User already exists: {user_create.email}")
+            print(f"[ERROR] User already exists: {user_create.email}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered",
             )
 
         # Check username if provided
         if user_create.username:
-            print(f"🔍 Checking username: {user_create.username}")
-            existing_username = user_crud.get_by_username(db, username=user_create.username)
+            print(f"[DEBUG] Checking username: {user_create.username}")
+            existing_username = user_crud.get_by_username(
+                db, username=user_create.username
+            )
             if existing_username:
-                print(f"❌ Username already taken: {user_create.username}")
+                print(f"[ERROR] Username already taken: {user_create.username}")
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken"
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Username already taken",
                 )
 
         # Create new user
-        print("🔍 Creating new user...")
+        print("[DEBUG] Creating new user...")
         user = user_crud.create(db, obj_in=user_create)
-        print(f"✅ User created - ID: {user.id}, Username: {user.username}, Email: {user.email}")
+        print(
+            f"✅ User created - ID: {user.id}, Username: {user.username}, Email: {user.email}"
+        )
 
         # Generate JWT tokens for auto-login
-        print("🔍 Generating JWT tokens...")
+        print("[DEBUG] Generating JWT tokens...")
         access_token = create_access_token(subject=user.id)
         refresh_token = create_refresh_token(subject=user.id)
         print("✅ JWT tokens generated")
@@ -98,15 +104,18 @@ async def register_user(user_create: UserCreate, db: Session = Depends(get_db)):
                 "coffee_cups_per_day": user.coffee_cups_per_day,
                 "alcohol_units_per_day": user.alcohol_units_per_day,
                 "created_at": user.created_at.isoformat() if user.created_at else None,
-                "last_active_at": user.last_login.isoformat() if user.last_login else None,
+                "last_active_at": (
+                    user.last_login.isoformat() if user.last_login else None
+                ),
                 "is_active": user.is_active,
             },
         }
     except Exception as e:
-        print(f"❌ REGISTRATION ERROR: {str(e)}")
-        print(f"❌ Exception type: {type(e).__name__}")
+        print(f"[ERROR] REGISTRATION ERROR: {str(e)}")
+        print(f"[ERROR] Exception type: {type(e).__name__}")
         import traceback
-        print(f"❌ Traceback: {traceback.format_exc()}")
+
+        print(f"[ERROR] Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Registration failed: {str(e)}",
@@ -166,15 +175,13 @@ async def login(request: UserLogin, db: Session = Depends(get_db)):
     print(f"DEBUG: Authentication result: {user is not None}")
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password"
         )
 
     # Check if user is active
     if not user_crud.is_active(user):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Account is deactivated"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Account is deactivated"
         )
 
     # Update last login timestamp

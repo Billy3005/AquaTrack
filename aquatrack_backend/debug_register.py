@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 
-import requests
 import json
+
+import requests
+
 
 def test_register():
     url = "http://localhost:8004/api/v1/auth/register"
     data = {
         "email": "finaltest999@example.com",
         "password": "newpass123",
-        "full_name": "New User"
+        "full_name": "New User",
     }
 
     print(f"Testing register endpoint: {url}")
@@ -27,6 +29,7 @@ def test_register():
 
     except requests.exceptions.RequestException as e:
         print(f"Request failed: {e}")
+
 
 if __name__ == "__main__":
     test_register()

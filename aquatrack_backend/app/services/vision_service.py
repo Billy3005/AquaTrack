@@ -82,7 +82,9 @@ class VisionService:
             image = self._preprocess_image(image_data)
 
             # Run ML inference using Claude Vision API
-            container_class, fill_level, liquid_type, confidence = await self._run_ml_inference(image_data)
+            container_class, fill_level, liquid_type, confidence = (
+                await self._run_ml_inference(image_data)
+            )
 
             # Calculate volumes
             estimated_volume_ml, effective_volume_ml = self._calculate_volumes(
@@ -126,8 +128,8 @@ class VisionService:
             image = Image.open(BytesIO(image_data))
 
             # Convert to RGB if needed
-            if image.mode != 'RGB':
-                image = image.convert('RGB')
+            if image.mode != "RGB":
+                image = image.convert("RGB")
 
             # Resize to reasonable size for API transmission (max 1024x1024)
             # Keep aspect ratio but limit max dimension
@@ -142,7 +144,9 @@ class VisionService:
         except Exception as e:
             raise ValueError(f"Invalid image format: {str(e)}")
 
-    async def _run_ml_inference(self, image_data: bytes) -> Tuple[str, float, str, float]:
+    async def _run_ml_inference(
+        self, image_data: bytes
+    ) -> Tuple[str, float, str, float]:
         """
         Run ML inference using Claude Vision API
         """
@@ -152,7 +156,7 @@ class VisionService:
                 print("No Claude API client, using enhanced fallback")
                 return self._enhanced_fallback_inference(image_data)
             # Convert image to base64 for API transmission
-            base64_image = base64.b64encode(image_data).decode('utf-8')
+            base64_image = base64.b64encode(image_data).decode("utf-8")
 
             # Create prompt for Claude Vision API
             prompt = """Analyze this image of a drink container and provide information about:
@@ -185,16 +189,13 @@ Look carefully at the container shape, size, material, and liquid appearance. Be
                                 "source": {
                                     "type": "base64",
                                     "media_type": "image/jpeg",
-                                    "data": base64_image
-                                }
+                                    "data": base64_image,
+                                },
                             },
-                            {
-                                "type": "text",
-                                "text": prompt
-                            }
-                        ]
+                            {"type": "text", "text": prompt},
+                        ],
                     }
-                ]
+                ],
             )
 
             # Parse response
@@ -204,8 +205,8 @@ Look carefully at the container shape, size, material, and liquid appearance. Be
             import json
 
             # Find JSON in response (in case there's extra text)
-            start_idx = response_text.find('{')
-            end_idx = response_text.rfind('}') + 1
+            start_idx = response_text.find("{")
+            end_idx = response_text.rfind("}") + 1
 
             if start_idx != -1 and end_idx != -1:
                 json_str = response_text[start_idx:end_idx]
@@ -249,7 +250,9 @@ Look carefully at the container shape, size, material, and liquid appearance. Be
 
         return container_class, fill_level, liquid_type, confidence
 
-    def _enhanced_fallback_inference(self, image_data: bytes) -> Tuple[str, float, str, float]:
+    def _enhanced_fallback_inference(
+        self, image_data: bytes
+    ) -> Tuple[str, float, str, float]:
         """Enhanced fallback with basic image analysis"""
         # Try basic image analysis for better fallback
         try:
@@ -261,7 +264,9 @@ Look carefully at the container shape, size, material, and liquid appearance. Be
 
             # Guess container based on aspect ratio
             if aspect_ratio > 2.0:
-                container_class = random.choice(["bottle_500", "bottle_750", "bottle_1000"])
+                container_class = random.choice(
+                    ["bottle_500", "bottle_750", "bottle_1000"]
+                )
             elif aspect_ratio < 0.8:
                 container_class = random.choice(["glass_small", "glass_large"])
             else:
@@ -272,7 +277,9 @@ Look carefully at the container shape, size, material, and liquid appearance. Be
             liquid_type = random.choice(["water", "tea", "coffee"])
             confidence = 0.65  # Slightly higher than basic fallback
 
-            print(f"Enhanced fallback: {container_class}, {fill_level:.2f} full, {liquid_type}")
+            print(
+                f"Enhanced fallback: {container_class}, {fill_level:.2f} full, {liquid_type}"
+            )
             return container_class, fill_level, liquid_type, confidence
 
         except Exception:

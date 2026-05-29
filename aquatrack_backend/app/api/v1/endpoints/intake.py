@@ -1,19 +1,19 @@
 from datetime import date, datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud.intake_log import intake_log_crud
-from app.models.intake_log import IntakeLog
 from app.models.daily_summary import DailySummary
+from app.models.intake_log import IntakeLog
 from app.schemas.intake_log import (IntakeLogCreate, IntakeLogResponse,
                                     IntakeLogUpdate)
-from pydantic import BaseModel
-from typing import Any
+
 
 # Response schemas
 class AchievementUnlocked(BaseModel):
@@ -26,10 +26,12 @@ class AchievementUnlocked(BaseModel):
     xp_reward: int
     unlocked_at: Any
 
+
 class IntakeLogWithAchievements(BaseModel):
     intake_log: IntakeLogResponse
     achievements: List[AchievementUnlocked] = []
     level_progress: Optional[dict] = None
+
 
 router = APIRouter()
 
@@ -56,15 +58,15 @@ async def create_intake_log_debug(
             "success": True,
             "intake_log_id": db_intake_log.id,
             "volume_ml": db_intake_log.volume_ml,
-            "effective_volume_ml": db_intake_log.effective_volume_ml
+            "effective_volume_ml": db_intake_log.effective_volume_ml,
         }
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return {"success": False, "error": str(e)}
 
-@router.post("/", response_model=IntakeLogWithAchievements, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/", response_model=IntakeLogWithAchievements, status_code=status.HTTP_201_CREATED
+)
 async def create_intake_log(
     intake_log_data: IntakeLogCreate,
     current_user_id: str = Depends(get_current_user_id),
@@ -74,11 +76,9 @@ async def create_intake_log(
     Create new intake log entry with achievement processing and streak tracking
     """
     # Import services here to avoid circular imports
-    from app.services.achievement_service import achievement_service
-    from app.crud.user import user_crud
-
     # Create intake log (temporarily disable streak for testing)
     from app.crud.user import user_crud
+    from app.services.achievement_service import achievement_service
 
     # Create simple intake log
     db_intake_log = intake_log_crud.create(
@@ -112,19 +112,16 @@ async def create_intake_log(
         # Check if we already updated streak today by checking DailySummary
         today = date.today()
 
-        existing_summary = db.query(DailySummary).filter(
-            DailySummary.user_id == current_user_id,
-            DailySummary.date == today
-        ).first()
+        existing_summary = (
+            db.query(DailySummary)
+            .filter(DailySummary.user_id == current_user_id, DailySummary.date == today)
+            .first()
+        )
 
         if not existing_summary or not existing_summary.goal_achieved:
             # First time achieving goal today - update streak
             new_streak = user.current_streak + 1
-            user_crud.update_stats(
-                db,
-                user_id=current_user_id,
-                new_streak=new_streak
-            )
+            user_crud.update_stats(db, user_id=current_user_id, new_streak=new_streak)
             current_streak = new_streak
             longest_streak = max(user.longest_streak, new_streak)
 
@@ -140,7 +137,7 @@ async def create_intake_log(
                     daily_goal_ml=daily_goal,  # Fix: Add required field
                     total_volume_ml=today_total_ml,
                     total_effective_ml=today_total_ml,
-                    goal_achieved=True
+                    goal_achieved=True,
                 )
                 db.add(daily_summary)
             db.commit()
@@ -152,8 +149,9 @@ async def create_intake_log(
         current_streak = user.current_streak if user else 0
         longest_streak = user.longest_streak if user else 0
 
-    print(f"MANUAL STREAK: Total: {today_total_ml}/{daily_goal}ml, Goal: {goal_achieved}, Streak: {current_streak}")
-
+    print(
+        f"MANUAL STREAK: Total: {today_total_ml}/{daily_goal}ml, Goal: {goal_achieved}, Streak: {current_streak}"
+    )
 
     # Get updated user level progress
     user = user_crud.get(db, current_user_id)
@@ -161,25 +159,31 @@ async def create_intake_log(
     if user:
         level_progress = achievement_service.get_level_progress(user.total_xp)
         # Add streak info to level progress
-        level_progress.update({
-            'current_streak': current_streak,
-            'longest_streak': longest_streak,
-            'goal_achieved_today': goal_achieved,
-            'today_total_ml': today_total_ml,
-            'daily_goal_ml': user.daily_goal_ml or 2000
-        })
+        level_progress.update(
+            {
+                "current_streak": current_streak,
+                "longest_streak": longest_streak,
+                "goal_achieved_today": goal_achieved,
+                "today_total_ml": today_total_ml,
+                "daily_goal_ml": user.daily_goal_ml or 2000,
+            }
+        )
 
     # Convert achievements to response format
     achievement_responses = [
         AchievementUnlocked(
-            achievement_id=ach['achievement_id'],
-            achievement_key=ach['achievement_key'],
-            achievement_type=ach['achievement_type'].value if hasattr(ach['achievement_type'], 'value') else str(ach['achievement_type']),
-            title=ach['title'],
-            description=ach['description'],
-            icon=ach['icon'],
-            xp_reward=ach['xp_reward'],
-            unlocked_at=ach['unlocked_at']
+            achievement_id=ach["achievement_id"],
+            achievement_key=ach["achievement_key"],
+            achievement_type=(
+                ach["achievement_type"].value
+                if hasattr(ach["achievement_type"], "value")
+                else str(ach["achievement_type"])
+            ),
+            title=ach["title"],
+            description=ach["description"],
+            icon=ach["icon"],
+            xp_reward=ach["xp_reward"],
+            unlocked_at=ach["unlocked_at"],
         )
         for ach in achievements
     ]
@@ -187,7 +191,7 @@ async def create_intake_log(
     return IntakeLogWithAchievements(
         intake_log=db_intake_log,
         achievements=achievement_responses,
-        level_progress=level_progress
+        level_progress=level_progress,
     )
 
 

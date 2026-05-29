@@ -1,17 +1,14 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import (APIRouter, Depends, File, HTTPException, Query,
+                     UploadFile, status)
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud.scan_history import scan_history_crud
-from app.schemas.vision import (
-    ScanHistoryResponse,
-    ScanHistoryUpdate,
-    VisionEstimateRequest,
-    VisionEstimateResponse,
-)
+from app.schemas.vision import (ScanHistoryResponse, ScanHistoryUpdate,
+                                VisionEstimateRequest, VisionEstimateResponse)
 from app.services.vision_service import vision_service
 
 router = APIRouter()
@@ -40,7 +37,7 @@ async def estimate_volume(
     if image.content_type not in ["image/jpeg", "image/png", "image/jpg"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only JPEG and PNG images are supported"
+            detail="Only JPEG and PNG images are supported",
         )
 
     # Validate file size (max 10MB)
@@ -49,7 +46,7 @@ async def estimate_volume(
     if len(image_data) > max_size:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Image file too large. Maximum size is 10MB"
+            detail="Image file too large. Maximum size is 10MB",
         )
 
     try:
@@ -67,12 +64,12 @@ async def estimate_volume(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Image processing error: {str(e)}"
+            detail=f"Image processing error: {str(e)}",
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error during image processing"
+            detail="Internal server error during image processing",
         )
 
 
@@ -80,7 +77,9 @@ async def estimate_volume(
 async def get_scan_history(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-    validated_only: Optional[bool] = Query(None, description="Filter validated scans only"),
+    validated_only: Optional[bool] = Query(
+        None, description="Filter validated scans only"
+    ),
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
@@ -113,15 +112,13 @@ async def get_scan_by_id(
 
     if not scan:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Scan not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found"
         )
 
     # Verify scan belongs to current user
     if scan.user_id != current_user_id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this scan"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied to this scan"
         )
 
     return scan
@@ -145,15 +142,13 @@ async def update_scan_validation(
 
     if not scan:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Scan not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found"
         )
 
     # Verify scan belongs to current user
     if scan.user_id != current_user_id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this scan"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied to this scan"
         )
 
     # Update scan with validation
@@ -196,15 +191,13 @@ async def delete_scan(
 
     if not scan:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Scan not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found"
         )
 
     # Verify scan belongs to current user
     if scan.user_id != current_user_id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this scan"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied to this scan"
         )
 
     # Delete scan

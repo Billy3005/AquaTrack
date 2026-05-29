@@ -4,20 +4,20 @@ Enhanced Logging và Monitoring Middleware cho AquaTrack Production
 Structured logging, performance monitoring, error tracking và analytics collection
 """
 
-import time
-import json
-import uuid
-import traceback
 import asyncio
-from datetime import datetime, timezone
-from typing import Dict, Any, Optional, List, Set
+import json
+import logging
+import time
+import traceback
+import uuid
 from collections import defaultdict, deque
+from datetime import datetime, timezone
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Set
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
-import logging
-from logging.handlers import RotatingFileHandler
 
 
 class StructuredLogger:
@@ -34,8 +34,14 @@ class StructuredLogger:
 
         # Sensitive data patterns to filter
         self.sensitive_patterns = {
-            "password", "token", "secret", "key", "authorization",
-            "refresh_token", "access_token", "api_key"
+            "password",
+            "token",
+            "secret",
+            "key",
+            "authorization",
+            "refresh_token",
+            "access_token",
+            "api_key",
         }
 
         # Performance metrics tracking
@@ -43,9 +49,11 @@ class StructuredLogger:
             "request_count": 0,
             "error_count": 0,
             "slow_requests": deque(maxlen=100),  # Keep last 100 slow requests
-            "endpoint_performance": defaultdict(lambda: {"count": 0, "total_time": 0, "errors": 0}),
+            "endpoint_performance": defaultdict(
+                lambda: {"count": 0, "total_time": 0, "errors": 0}
+            ),
             "hourly_stats": defaultdict(lambda: {"requests": 0, "errors": 0}),
-            "user_activity": defaultdict(int)
+            "user_activity": defaultdict(int),
         }
 
     def setup_loggers(self):
@@ -53,37 +61,27 @@ class StructuredLogger:
 
         # Main application logger
         self.app_logger = self._create_logger(
-            name="aquatrack.app",
-            filename="app.log",
-            level=logging.INFO
+            name="aquatrack.app", filename="app.log", level=logging.INFO
         )
 
         # Error logger với detailed context
         self.error_logger = self._create_logger(
-            name="aquatrack.errors",
-            filename="errors.log",
-            level=logging.ERROR
+            name="aquatrack.errors", filename="errors.log", level=logging.ERROR
         )
 
         # Performance logger
         self.perf_logger = self._create_logger(
-            name="aquatrack.performance",
-            filename="performance.log",
-            level=logging.INFO
+            name="aquatrack.performance", filename="performance.log", level=logging.INFO
         )
 
         # Access logger cho request/response tracking
         self.access_logger = self._create_logger(
-            name="aquatrack.access",
-            filename="access.log",
-            level=logging.INFO
+            name="aquatrack.access", filename="access.log", level=logging.INFO
         )
 
         # Security logger cho authentication/authorization events
         self.security_logger = self._create_logger(
-            name="aquatrack.security",
-            filename="security.log",
-            level=logging.WARNING
+            name="aquatrack.security", filename="security.log", level=logging.WARNING
         )
 
     def _create_logger(self, name: str, filename: str, level: int) -> logging.Logger:
@@ -100,7 +98,7 @@ class StructuredLogger:
             self.log_dir / filename,
             maxBytes=10 * 1024 * 1024,  # 10MB
             backupCount=5,
-            encoding='utf-8'
+            encoding="utf-8",
         )
 
         # JSON formatter
@@ -150,7 +148,7 @@ class StructuredLogger:
                 "query_params": dict(request.query_params),
                 "user_agent": request.headers.get("user-agent"),
                 "client_ip": self._get_client_ip(request),
-                "user_id": user_id
+                "user_id": user_id,
             }
 
             # Headers (filtered)
@@ -177,7 +175,7 @@ class StructuredLogger:
         request_id: str,
         duration_ms: float,
         user_id: str = None,
-        error: Exception = None
+        error: Exception = None,
     ):
         """Log response với performance metrics"""
         try:
@@ -190,7 +188,7 @@ class StructuredLogger:
                 "path": request.url.path,
                 "status_code": response.status_code,
                 "duration_ms": round(duration_ms, 2),
-                "user_id": user_id
+                "user_id": user_id,
             }
 
             # Add error info if present
@@ -198,7 +196,7 @@ class StructuredLogger:
                 log_data["error"] = {
                     "type": type(error).__name__,
                     "message": str(error),
-                    "traceback": traceback.format_exc()
+                    "traceback": traceback.format_exc(),
                 }
                 self.metrics["error_count"] += 1
                 hour_key = datetime.now().strftime("%Y-%m-%d-%H")
@@ -207,11 +205,13 @@ class StructuredLogger:
             # Performance classification
             if duration_ms > 5000:  # > 5 seconds
                 log_data["performance"] = "very_slow"
-                self.metrics["slow_requests"].append({
-                    "path": request.url.path,
-                    "duration_ms": duration_ms,
-                    "timestamp": time.time()
-                })
+                self.metrics["slow_requests"].append(
+                    {
+                        "path": request.url.path,
+                        "duration_ms": duration_ms,
+                        "timestamp": time.time(),
+                    }
+                )
             elif duration_ms > 2000:  # > 2 seconds
                 log_data["performance"] = "slow"
             elif duration_ms > 1000:  # > 1 second
@@ -246,7 +246,7 @@ class StructuredLogger:
         event_type: str,
         request: Request,
         user_id: str = None,
-        details: Dict = None
+        details: Dict = None,
     ):
         """Log security-related events"""
         try:
@@ -257,7 +257,7 @@ class StructuredLogger:
                 "user_agent": request.headers.get("user-agent"),
                 "path": request.url.path,
                 "user_id": user_id,
-                "details": details or {}
+                "details": details or {},
             }
 
             self.security_logger.warning(json.dumps(log_data, ensure_ascii=False))
@@ -271,7 +271,7 @@ class StructuredLogger:
         message: str,
         user_id: str = None,
         context: Dict = None,
-        level: str = "info"
+        level: str = "info",
     ):
         """Log application-specific events"""
         try:
@@ -280,7 +280,7 @@ class StructuredLogger:
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "message": message,
                 "user_id": user_id,
-                "context": context or {}
+                "context": context or {},
             }
 
             log_message = json.dumps(log_data, ensure_ascii=False)
@@ -309,13 +309,14 @@ class StructuredLogger:
                 endpoint_perf[path] = {
                     "requests": stats["count"],
                     "avg_response_time_ms": round(avg_time, 2),
-                    "error_rate_percent": round(error_rate, 2)
+                    "error_rate_percent": round(error_rate, 2),
                 }
 
             # Recent slow requests (last hour)
             hour_ago = current_time - 3600
             recent_slow = [
-                req for req in self.metrics["slow_requests"]
+                req
+                for req in self.metrics["slow_requests"]
                 if req["timestamp"] > hour_ago
             ]
 
@@ -328,16 +329,23 @@ class StructuredLogger:
                     "total_requests": self.metrics["request_count"],
                     "total_errors": self.metrics["error_count"],
                     "error_rate_percent": round(
-                        (self.metrics["error_count"] / max(1, self.metrics["request_count"])) * 100, 2
+                        (
+                            self.metrics["error_count"]
+                            / max(1, self.metrics["request_count"])
+                        )
+                        * 100,
+                        2,
                     ),
                     "current_hour_requests": current_stats["requests"],
                     "current_hour_errors": current_stats["errors"],
                     "active_users": len(self.metrics["user_activity"]),
-                    "slow_requests_1h": len(recent_slow)
+                    "slow_requests_1h": len(recent_slow),
                 },
                 "endpoint_performance": endpoint_perf,
                 "recent_slow_requests": recent_slow[-10:],  # Last 10
-                "hourly_breakdown": dict(list(self.metrics["hourly_stats"].items())[-24:])  # Last 24 hours
+                "hourly_breakdown": dict(
+                    list(self.metrics["hourly_stats"].items())[-24:]
+                ),  # Last 24 hours
             }
 
         except Exception as e:
@@ -364,7 +372,9 @@ class JsonFormatter(logging.Formatter):
     def format(self, record):
         # Create log record
         log_record = {
-            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
+            "timestamp": datetime.fromtimestamp(
+                record.created, tz=timezone.utc
+            ).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -376,10 +386,29 @@ class JsonFormatter(logging.Formatter):
 
         # Add extra fields
         for key, value in record.__dict__.items():
-            if key not in ["name", "msg", "args", "levelname", "levelno", "pathname",
-                          "filename", "module", "lineno", "funcName", "created", "msecs",
-                          "relativeCreated", "thread", "threadName", "processName",
-                          "process", "message", "exc_info", "exc_text", "stack_info"]:
+            if key not in [
+                "name",
+                "msg",
+                "args",
+                "levelname",
+                "levelno",
+                "pathname",
+                "filename",
+                "module",
+                "lineno",
+                "funcName",
+                "created",
+                "msecs",
+                "relativeCreated",
+                "thread",
+                "threadName",
+                "processName",
+                "process",
+                "message",
+                "exc_info",
+                "exc_text",
+                "stack_info",
+            ]:
                 log_record[key] = value
 
         return json.dumps(log_record, ensure_ascii=False)
@@ -401,7 +430,7 @@ async def logging_middleware(request: Request, call_next):
     request.state.request_id = request_id
 
     # Extract user ID if available
-    user_id = getattr(request.state, 'user_id', None)
+    user_id = getattr(request.state, "user_id", None)
 
     # Log request start
     structured_logger.log_request(request, request_id, user_id)
@@ -434,8 +463,8 @@ async def logging_middleware(request: Request, call_next):
                 "error": "Internal server error",
                 "message": "An unexpected error occurred",
                 "request_id": request_id,
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
         )
 
         # Log error response
@@ -451,17 +480,20 @@ async def logging_middleware(request: Request, call_next):
 
 # Utility functions for application logging
 
+
 def log_user_action(user_id: str, action: str, details: Dict = None):
     """Log user actions cho audit trail"""
     structured_logger.log_application_event(
         event_type="user_action",
         message=f"User {user_id} performed: {action}",
         user_id=user_id,
-        context={"action": action, "details": details or {}}
+        context={"action": action, "details": details or {}},
     )
 
 
-def log_ai_coach_interaction(user_id: str, message: str, response_type: str, duration_ms: float):
+def log_ai_coach_interaction(
+    user_id: str, message: str, response_type: str, duration_ms: float
+):
     """Log AI Coach interactions cho analytics"""
     structured_logger.log_application_event(
         event_type="ai_coach_interaction",
@@ -470,12 +502,14 @@ def log_ai_coach_interaction(user_id: str, message: str, response_type: str, dur
         context={
             "message_length": len(message),
             "response_type": response_type,
-            "processing_time_ms": duration_ms
-        }
+            "processing_time_ms": duration_ms,
+        },
     )
 
 
-def log_vision_scan(user_id: str, confidence: float, volume_ml: int, processing_ms: float):
+def log_vision_scan(
+    user_id: str, confidence: float, volume_ml: int, processing_ms: float
+):
     """Log Vision API usage cho monitoring"""
     structured_logger.log_application_event(
         event_type="vision_scan",
@@ -484,8 +518,8 @@ def log_vision_scan(user_id: str, confidence: float, volume_ml: int, processing_
         context={
             "confidence_score": confidence,
             "estimated_volume_ml": volume_ml,
-            "processing_time_ms": processing_ms
-        }
+            "processing_time_ms": processing_ms,
+        },
     )
 
 
@@ -494,5 +528,5 @@ def log_security_violation(request: Request, violation_type: str, details: Dict 
     structured_logger.log_security_event(
         event_type="violation",
         request=request,
-        details={"violation_type": violation_type, **(details or {})}
+        details={"violation_type": violation_type, **(details or {})},
     )

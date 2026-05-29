@@ -32,11 +32,19 @@ async def get_user_profile(
     print(f"  age: {user.age} (type: {type(user.age)})")
     print(f"  height: {user.height} (type: {type(user.height)})")
     print(f"  weight: {user.weight} (type: {type(user.weight)})")
-    print(f"  activity_level: {user.activity_level} (type: {type(user.activity_level)})")
+    print(
+        f"  activity_level: {user.activity_level} (type: {type(user.activity_level)})"
+    )
     print(f"  job_type: {user.job_type} (type: {type(user.job_type)})")
-    print(f"  health_conditions: {user.health_conditions} (type: {type(user.health_conditions)})")
-    print(f"  coffee_cups_per_day: {user.coffee_cups_per_day} (type: {type(user.coffee_cups_per_day)})")
-    print(f"  alcohol_units_per_day: {user.alcohol_units_per_day} (type: {type(user.alcohol_units_per_day)})")
+    print(
+        f"  health_conditions: {user.health_conditions} (type: {type(user.health_conditions)})"
+    )
+    print(
+        f"  coffee_cups_per_day: {user.coffee_cups_per_day} (type: {type(user.coffee_cups_per_day)})"
+    )
+    print(
+        f"  alcohol_units_per_day: {user.alcohol_units_per_day} (type: {type(user.alcohol_units_per_day)})"
+    )
     print(f"  timezone: {user.timezone} (type: {type(user.timezone)})")
     print(f"=== END DEBUG ===\n")
 
@@ -70,10 +78,16 @@ async def update_user_profile(
             )
 
     # Check if this is an onboarding update (contains body info)
-    onboarding_fields = ['gender', 'age', 'height', 'weight', 'activity_level', 'job_type']
+    onboarding_fields = [
+        "gender",
+        "age",
+        "height",
+        "weight",
+        "activity_level",
+        "job_type",
+    ]
     is_onboarding_update = any(
-        getattr(user_update, field, None) is not None
-        for field in onboarding_fields
+        getattr(user_update, field, None) is not None for field in onboarding_fields
     )
 
     if is_onboarding_update:

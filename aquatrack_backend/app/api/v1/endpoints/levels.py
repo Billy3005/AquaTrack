@@ -282,7 +282,9 @@ async def get_leaderboard(
                 "rank": rank,
                 "user_id": entry.user_id,
                 "username": real_username,  # Real username from database!
-                "avatar_id": user.avatar_id if user else "avatar_1",  # Include user avatar
+                "avatar_id": (
+                    user.avatar_id if user else "avatar_1"
+                ),  # Include user avatar
                 "total_xp": entry.total_xp,
                 "level": user_level,
                 "total_logs": entry.total_logs,

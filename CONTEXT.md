@@ -25,8 +25,18 @@ last_updated: 2026-05-26
 
 **Computed vs Editable** — Daily Goal is computed field (read-only), while preferences (theme, notifications, avatar) remain user-editable.
 
+## AI Insights & Intelligence
+
+**Weather State** — Normalized weather data condition with confidence levels: fresh (recent API data), stale (cached within tolerance), fallbackCity (manual location), unavailable (offline fallback).
+
+**Insight Context** — Processed data structure combining StatsPattern, WeatherState, TimeContext, and UserProfile for AI insight generation. Normalized by Context Builder to abstract away API complexities.
+
+**AI Insights Layer** — Recommendation system that generates personalized hydration suggestions based on user patterns and environmental factors. Operates separately from Daily Goal calculation, providing supplementary advice without affecting goal completion status.
+
 ## UI Principles
 
 **Trust AI with Transparency** — Show final goal and weather recommendation without exposing internal calculation breakdown. Focus on clear action ("Uống 2.850ml hôm nay") rather than mathematical explanation.
 
 **Recommendation vs Requirement** — Visual distinction between mandatory goal and optional recommendations. Goal completion celebrations trigger at base goal achievement, with separate acknowledgment of recommendations.
+
+**Graceful Intelligence** — AI insights fallback through cache → static → generic tips to ensure consistent user experience. No "AI" branding, using natural language like "dựa trên thói quen của bạn".

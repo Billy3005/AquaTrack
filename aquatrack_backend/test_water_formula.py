@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
-import requests
 import json
 
+import requests
+
 BASE_URL = "http://localhost:8005/api/v1"
+
 
 def test_water_formula_flow():
     """Test complete water formula flow"""
@@ -13,11 +15,13 @@ def test_water_formula_flow():
     register_data = {
         "email": "waterformula_test@example.com",
         "password": "testpass123",
-        "full_name": "Water Formula Tester"
+        "full_name": "Water Formula Tester",
     }
 
     try:
-        register_response = requests.post(f"{BASE_URL}/auth/register", json=register_data)
+        register_response = requests.post(
+            f"{BASE_URL}/auth/register", json=register_data
+        )
         print(f"Registration Status: {register_response.status_code}")
 
         if register_response.status_code == 200:
@@ -53,7 +57,9 @@ def test_water_formula_flow():
         print(f"Profile Status: {profile_response.status_code}")
         if profile_response.status_code == 200:
             profile = profile_response.json()
-            print(f"[SUCCESS] Current profile complete: {profile.get('profile_complete', False)}")
+            print(
+                f"[SUCCESS] Current profile complete: {profile.get('profile_complete', False)}"
+            )
         else:
             print(f"[ERROR] Profile get failed: {profile_response.text}")
     except Exception as e:
@@ -71,17 +77,22 @@ def test_water_formula_flow():
         "health_conditions": ["none"],
         "veggie_intake": "medium",
         "coffee_cups_per_day": 1,
-        "alcohol_units_per_day": 0
+        "alcohol_units_per_day": 0,
     }
 
     try:
-        update_response = requests.put(f"{BASE_URL}/water-profile/",
-                                     json=profile_data, headers=headers)
+        update_response = requests.put(
+            f"{BASE_URL}/water-profile/", json=profile_data, headers=headers
+        )
         print(f"Update Status: {update_response.status_code}")
         if update_response.status_code == 200:
             updated_profile = update_response.json()
-            print(f"[SUCCESS] Profile updated! Complete: {updated_profile.get('profile_complete', False)}")
-            print(f"[CALC] Calculated goal: {updated_profile.get('calculated_daily_goal_ml', 'N/A')}ml")
+            print(
+                f"[SUCCESS] Profile updated! Complete: {updated_profile.get('profile_complete', False)}"
+            )
+            print(
+                f"[CALC] Calculated goal: {updated_profile.get('calculated_daily_goal_ml', 'N/A')}ml"
+            )
         else:
             print(f"[ERROR] Profile update failed: {update_response.text}")
             return
@@ -92,7 +103,9 @@ def test_water_formula_flow():
     # Step 5: Calculate water intake manually
     print("\n[INFO] Step 5: Manual water calculation...")
     try:
-        calc_response = requests.post(f"{BASE_URL}/water-profile/calculate", headers=headers)
+        calc_response = requests.post(
+            f"{BASE_URL}/water-profile/calculate", headers=headers
+        )
         print(f"Calculation Status: {calc_response.status_code}")
         if calc_response.status_code == 200:
             calc_result = calc_response.json()
@@ -102,7 +115,7 @@ def test_water_formula_flow():
             print(f"[LITERS] Liters: {calc_result['daily_goal_l']}L")
 
             # Show breakdown
-            breakdown = calc_result['breakdown']
+            breakdown = calc_result["breakdown"]
             print(f"[BREAKDOWN] Breakdown:")
             print(f"  - Base: {breakdown['base_ml']}ml")
             print(f"  - Activity: {breakdown['activity_add']}ml")
@@ -112,7 +125,7 @@ def test_water_formula_flow():
             print(f"  - Coffee: {breakdown['coffee_add']}ml")
             print(f"  - Alcohol: {breakdown['alcohol_add']}ml")
 
-            if calc_result.get('has_warnings'):
+            if calc_result.get("has_warnings"):
                 print(f"[WARNING] Warning: {calc_result.get('warning_message')}")
 
         else:
@@ -123,7 +136,9 @@ def test_water_formula_flow():
     # Step 6: Get user summary
     print("\n[INFO] Step 6: Getting user summary...")
     try:
-        summary_response = requests.get(f"{BASE_URL}/water-profile/summary", headers=headers)
+        summary_response = requests.get(
+            f"{BASE_URL}/water-profile/summary", headers=headers
+        )
         print(f"Summary Status: {summary_response.status_code}")
         if summary_response.status_code == 200:
             summary = summary_response.json()
@@ -136,6 +151,7 @@ def test_water_formula_flow():
             print(f"[ERROR] Summary failed: {summary_response.text}")
     except Exception as e:
         print(f"[ERROR] Summary error: {e}")
+
 
 if __name__ == "__main__":
     print("Testing AquaTrack Water Formula API")

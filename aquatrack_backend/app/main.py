@@ -1,7 +1,7 @@
 import asyncio
-import uvicorn
 from contextlib import asynccontextmanager
 
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -9,17 +9,14 @@ from fastapi.responses import JSONResponse
 from app.api.v1 import api_router
 from app.core.config import settings
 from app.core.database import init_db
-from app.core.monitoring import (
-    HealthChecker,
-    monitoring_middleware,
-    system_monitoring_task,
-    metrics
-)
+from app.core.monitoring import (HealthChecker, metrics, monitoring_middleware,
+                                 system_monitoring_task)
 from app.middleware.rate_limiting import rate_limit_middleware
 from app.services.email_service import cleanup_expired_tokens_task
 
 # Background task references for cleanup
 background_tasks = []
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -59,6 +56,7 @@ async def lifespan(app: FastAPI):
             pass
 
     print("AquaTrack API shutdown complete")
+
 
 # FastAPI app instance
 app = FastAPI(

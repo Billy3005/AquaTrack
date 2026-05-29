@@ -543,6 +543,58 @@ class ProfileNotifier extends _$ProfileNotifier {
     await _loadProfile();
   }
 
+  /// Update body information (body profile editing)
+  Future<void> updateBodyInfo({
+    String? gender,
+    int? age,
+    int? height,
+    double? weight,
+    String? activityLevel,
+    String? jobType,
+    List<String>? healthConditions,
+    String? veggieIntake,
+    int? coffeeCupsPerDay,
+    int? alcoholUnitsPerDay,
+  }) async {
+    debugPrint('🔄 ProfileNotifier: updateBodyInfo() called');
+
+    try {
+      // Prepare update data
+      final updateData = <String, dynamic>{};
+      if (gender != null) updateData['gender'] = gender;
+      if (age != null) updateData['age'] = age;
+      if (height != null) updateData['height'] = height;
+      if (weight != null) updateData['weight'] = weight;
+      if (activityLevel != null) updateData['activity_level'] = activityLevel;
+      if (jobType != null) updateData['job_type'] = jobType;
+      if (healthConditions != null)
+        updateData['health_conditions'] = healthConditions;
+      if (veggieIntake != null) updateData['veggie_intake'] = veggieIntake;
+      if (coffeeCupsPerDay != null)
+        updateData['coffee_cups_per_day'] = coffeeCupsPerDay;
+      if (alcoholUnitsPerDay != null)
+        updateData['alcohol_units_per_day'] = alcoholUnitsPerDay;
+
+      debugPrint('📤 ProfileNotifier: Sending body update: $updateData');
+
+      // Call API to update profile
+      final apiService = ApiService();
+      final response = await apiService.put('/users/profile', data: updateData);
+
+      if (response.statusCode == 200 && response.data != null) {
+        debugPrint('✅ ProfileNotifier: Body info updated successfully');
+
+        // Refresh profile data to get updated calculated goal
+        await refreshProfile();
+      } else {
+        throw Exception('Failed to update body info: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ ProfileNotifier: Error updating body info: $e');
+      rethrow;
+    }
+  }
+
   /// Get user stats summary
   ProfileStats getStats() {
     final homeState = ref.read(homeNotifierProvider);

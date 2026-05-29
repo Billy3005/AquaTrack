@@ -41,7 +41,9 @@ async def get_dashboard_stats(
     # Calculate today's progress vs user's daily goal
     today_volume = today_stats["total_effective_ml"]
     daily_goal = user.daily_goal_ml
-    progress_percentage = min(100, round((today_volume / daily_goal) * 100, 1)) if daily_goal > 0 else 0
+    progress_percentage = (
+        min(100, round((today_volume / daily_goal) * 100, 1)) if daily_goal > 0 else 0
+    )
 
     # This week's stats
     week_logs = intake_log_crud.get_by_user_date_range(
@@ -105,6 +107,11 @@ async def get_daily_trends(
     end_date = date.today()
     start_date = end_date - timedelta(days=days - 1)
 
+    # DEBUG: Print date range
+    print(
+        f"🧪 [DEBUG] Trends query: {start_date} to {end_date} for user {current_user_id}"
+    )
+
     # Get daily aggregated data
     daily_data = (
         db.query(
@@ -134,11 +141,24 @@ async def get_daily_trends(
     # Fill missing dates with zeros
     data_dict = {row.date: row for row in daily_data}
 
+    # DEBUG: Print actual data found
+    print(f"🧪 [DEBUG] Trends API - Found {len(daily_data)} data rows")
+    for row in daily_data:
+        print(
+            f"🧪 [DEBUG] Row: {row.date} ({type(row.date)}) - {row.total_volume}ml total"
+        )
+    print(f"🧪 [DEBUG] Date dict keys: {list(data_dict.keys())}")
+
     result = []
     current_date = start_date
     while current_date <= end_date:
-        if current_date in data_dict:
-            row = data_dict[current_date]
+        # Ensure current_date is same type as data_dict keys
+        check_date = current_date
+        print(
+            f"🧪 [DEBUG] Checking date: {check_date} ({type(check_date)}) - in dict: {check_date in data_dict}"
+        )
+        if check_date in data_dict:
+            row = data_dict[check_date]
             result.append(
                 {
                     "date": current_date,
@@ -392,7 +412,9 @@ async def get_streak_analytics(
         )
 
     # Current streak based on goal achievement
-    current_streak = await _calculate_current_streak(db, current_user_id, user.daily_goal_ml)
+    current_streak = await _calculate_current_streak(
+        db, current_user_id, user.daily_goal_ml
+    )
 
     # Real longest streak from user model
     longest_streak = user.longest_streak
@@ -501,7 +523,9 @@ async def get_ai_insights(
 
 
 # Helper functions
-async def _calculate_current_streak(db: Session, user_id: str, daily_goal_ml: int) -> int:
+async def _calculate_current_streak(
+    db: Session, user_id: str, daily_goal_ml: int
+) -> int:
     """Calculate current consecutive days streak based on goal achievement"""
     today = date.today()
     streak = 0

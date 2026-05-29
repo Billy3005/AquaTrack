@@ -4,18 +4,18 @@ Performance Monitoring và Metrics Collection cho AquaTrack Production
 Real-time performance tracking, health checks, resource monitoring và analytics
 """
 
-import time
-import psutil
 import asyncio
-import os
 import gc
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
+import json
+import os
+import threading
+import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-import threading
-import json
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple
 
+import psutil
 from fastapi import Request, Response
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -27,6 +27,7 @@ from ..middleware.logging import structured_logger
 @dataclass
 class PerformanceMetric:
     """Individual performance metric data point"""
+
     timestamp: float
     value: float
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -35,6 +36,7 @@ class PerformanceMetric:
 @dataclass
 class HealthCheckResult:
     """Health check result"""
+
     service: str
     status: str  # "healthy", "degraded", "unhealthy"
     response_time_ms: float
@@ -53,12 +55,12 @@ class PerformanceMonitor:
         self.metrics = {
             "response_times": defaultdict(lambda: deque(maxlen=1000)),  # Per endpoint
             "request_counts": defaultdict(lambda: deque(maxlen=1000)),  # Per endpoint
-            "error_rates": defaultdict(lambda: deque(maxlen=1000)),    # Per endpoint
+            "error_rates": defaultdict(lambda: deque(maxlen=1000)),  # Per endpoint
             "database_queries": deque(maxlen=500),
-            "memory_usage": deque(maxlen=300),      # 5 minutes at 1s intervals
+            "memory_usage": deque(maxlen=300),  # 5 minutes at 1s intervals
             "cpu_usage": deque(maxlen=300),
-            "disk_usage": deque(maxlen=60),         # 5 minutes at 5s intervals
-            "active_connections": deque(maxlen=1000)
+            "disk_usage": deque(maxlen=60),  # 5 minutes at 5s intervals
+            "active_connections": deque(maxlen=1000),
         }
 
         # Health check registry
@@ -67,12 +69,12 @@ class PerformanceMonitor:
 
         # Performance alerts
         self.alert_thresholds = {
-            "response_time_ms": 5000,      # 5 seconds
-            "error_rate_percent": 10,      # 10%
-            "memory_usage_percent": 85,    # 85%
-            "cpu_usage_percent": 80,       # 80%
-            "disk_usage_percent": 90,      # 90%
-            "database_connections": 50     # 50 connections
+            "response_time_ms": 5000,  # 5 seconds
+            "error_rate_percent": 10,  # 10%
+            "memory_usage_percent": 85,  # 85%
+            "cpu_usage_percent": 80,  # 80%
+            "disk_usage_percent": 90,  # 90%
+            "database_connections": 50,  # 50 connections
         }
 
         self.active_alerts = {}
@@ -100,8 +102,7 @@ class PerformanceMonitor:
         """Register custom health check"""
         self.health_checks[name] = check_func
         structured_logger.log_application_event(
-            "health_check_registered",
-            f"Health check '{name}' registered"
+            "health_check_registered", f"Health check '{name}' registered"
         )
 
     async def start_monitoring(self):
@@ -113,8 +114,7 @@ class PerformanceMonitor:
         self.monitoring_task = asyncio.create_task(self._monitoring_loop())
 
         structured_logger.log_application_event(
-            "performance_monitoring_started",
-            "Performance monitoring started"
+            "performance_monitoring_started", "Performance monitoring started"
         )
 
     async def stop_monitoring(self):
@@ -131,18 +131,21 @@ class PerformanceMonitor:
                 pass
 
         structured_logger.log_application_event(
-            "performance_monitoring_stopped",
-            "Performance monitoring stopped"
+            "performance_monitoring_stopped", "Performance monitoring stopped"
         )
 
-    def record_request_metrics(self, request: Request, response: Response, duration_ms: float):
+    def record_request_metrics(
+        self, request: Request, response: Response, duration_ms: float
+    ):
         """Record metrics for HTTP request"""
         endpoint = f"{request.method} {request.url.path}"
         timestamp = time.time()
 
         # Record response time
         self.metrics["response_times"][endpoint].append(
-            PerformanceMetric(timestamp, duration_ms, {"status_code": response.status_code})
+            PerformanceMetric(
+                timestamp, duration_ms, {"status_code": response.status_code}
+            )
         )
 
         # Record request count
@@ -193,7 +196,7 @@ class PerformanceMonitor:
                         status=status,
                         response_time_ms=response_time_ms,
                         message="OK" if result else "Check failed",
-                        timestamp=time.time()
+                        timestamp=time.time(),
                     )
 
                 health_results[name] = health_result
@@ -211,7 +214,7 @@ class PerformanceMonitor:
                     status="unhealthy",
                     response_time_ms=0,
                     message=f"Health check failed: {str(e)}",
-                    timestamp=time.time()
+                    timestamp=time.time(),
                 )
                 health_results[name] = error_result
                 self.last_health_results[name] = error_result
@@ -220,13 +223,21 @@ class PerformanceMonitor:
         return {
             "overall_status": overall_status,
             "timestamp": time.time(),
-            "checks": {name: result.__dict__ for name, result in health_results.items()},
+            "checks": {
+                name: result.__dict__ for name, result in health_results.items()
+            },
             "summary": {
                 "total_checks": len(health_results),
-                "healthy": sum(1 for r in health_results.values() if r.status == "healthy"),
-                "degraded": sum(1 for r in health_results.values() if r.status == "degraded"),
-                "unhealthy": sum(1 for r in health_results.values() if r.status == "unhealthy")
-            }
+                "healthy": sum(
+                    1 for r in health_results.values() if r.status == "healthy"
+                ),
+                "degraded": sum(
+                    1 for r in health_results.values() if r.status == "degraded"
+                ),
+                "unhealthy": sum(
+                    1 for r in health_results.values() if r.status == "unhealthy"
+                ),
+            },
         }
 
     def get_performance_summary(self, cache_ttl: int = None) -> Dict[str, Any]:
@@ -278,8 +289,12 @@ class PerformanceMonitor:
                 "avg_response_time_ms": round(avg_response_time, 2),
                 "max_response_time_ms": round(max_response_time, 2),
                 "min_response_time_ms": round(min_response_time, 2),
-                "p95_response_time_ms": round(sorted_times[p95_idx] if sorted_times else 0, 2),
-                "p99_response_time_ms": round(sorted_times[p99_idx] if sorted_times else 0, 2),
+                "p95_response_time_ms": round(
+                    sorted_times[p95_idx] if sorted_times else 0, 2
+                ),
+                "p99_response_time_ms": round(
+                    sorted_times[p99_idx] if sorted_times else 0, 2
+                ),
             }
 
         # System resource summary
@@ -300,8 +315,8 @@ class PerformanceMonitor:
             "database": db_summary,
             "alerts": {
                 "active": len(self.active_alerts),
-                "recent": list(self.alert_history)[-5:]  # Last 5 alerts
-            }
+                "recent": list(self.alert_history)[-5:],  # Last 5 alerts
+            },
         }
 
     def _get_current_system_metrics(self) -> Dict[str, Any]:
@@ -315,38 +330,40 @@ class PerformanceMonitor:
             cpu_percent = psutil.cpu_percent(interval=0.1)
 
             # Disk usage
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
             disk_used_percent = (disk.used / disk.total) * 100
 
             # Network connections (approximation for active connections)
             connections = psutil.net_connections()
-            active_connections = len([c for c in connections if c.status == 'ESTABLISHED'])
+            active_connections = len(
+                [c for c in connections if c.status == "ESTABLISHED"]
+            )
 
             return {
                 "memory": {
                     "used_percent": round(memory_used_percent, 2),
                     "used_mb": round(memory.used / 1024 / 1024, 2),
-                    "total_mb": round(memory.total / 1024 / 1024, 2)
+                    "total_mb": round(memory.total / 1024 / 1024, 2),
                 },
                 "cpu": {
                     "usage_percent": round(cpu_percent, 2),
-                    "core_count": psutil.cpu_count()
+                    "core_count": psutil.cpu_count(),
                 },
                 "disk": {
                     "used_percent": round(disk_used_percent, 2),
                     "used_gb": round(disk.used / 1024 / 1024 / 1024, 2),
-                    "total_gb": round(disk.total / 1024 / 1024 / 1024, 2)
+                    "total_gb": round(disk.total / 1024 / 1024 / 1024, 2),
                 },
                 "connections": {
                     "active": active_connections,
-                    "total": len(connections)
-                }
+                    "total": len(connections),
+                },
             }
         except Exception as e:
             structured_logger.log_application_event(
                 "system_metrics_error",
                 f"Failed to get system metrics: {str(e)}",
-                level="error"
+                level="error",
             )
             return {"error": f"Failed to get system metrics: {str(e)}"}
 
@@ -368,7 +385,9 @@ class PerformanceMonitor:
 
         # Count total requests for error rate calculation
         for endpoint, request_metrics in self.metrics["request_counts"].items():
-            recent_requests = [m for m in request_metrics if m.timestamp > since_timestamp]
+            recent_requests = [
+                m for m in request_metrics if m.timestamp > since_timestamp
+            ]
             total_requests += len(recent_requests)
 
         error_rate = (total_errors / max(1, total_requests)) * 100
@@ -377,20 +396,24 @@ class PerformanceMonitor:
             "total_errors": total_errors,
             "total_requests": total_requests,
             "error_rate_percent": round(error_rate, 2),
-            "errors_by_endpoint": dict(sorted(error_by_endpoint.items(), key=lambda x: x[1], reverse=True)[:10]),
-            "errors_by_status_code": dict(error_by_status)
+            "errors_by_endpoint": dict(
+                sorted(error_by_endpoint.items(), key=lambda x: x[1], reverse=True)[:10]
+            ),
+            "errors_by_status_code": dict(error_by_status),
         }
 
     def _analyze_database_performance(self, since_timestamp: float) -> Dict[str, Any]:
         """Analyze database query performance"""
-        recent_queries = [q for q in self.metrics["database_queries"] if q.timestamp > since_timestamp]
+        recent_queries = [
+            q for q in self.metrics["database_queries"] if q.timestamp > since_timestamp
+        ]
 
         if not recent_queries:
             return {
                 "query_count": 0,
                 "avg_query_time_ms": 0,
                 "max_query_time_ms": 0,
-                "slow_queries": 0
+                "slow_queries": 0,
             }
 
         query_times = [q.value for q in recent_queries]
@@ -403,37 +426,49 @@ class PerformanceMonitor:
             "avg_query_time_ms": round(avg_time, 2),
             "max_query_time_ms": round(max_time, 2),
             "slow_queries": slow_queries,
-            "slow_query_rate_percent": round((slow_queries / len(recent_queries)) * 100, 2)
+            "slow_query_rate_percent": round(
+                (slow_queries / len(recent_queries)) * 100, 2
+            ),
         }
 
-    def _check_performance_alerts(self, endpoint: str, response_time_ms: float, status_code: int):
+    def _check_performance_alerts(
+        self, endpoint: str, response_time_ms: float, status_code: int
+    ):
         """Check and trigger performance alerts"""
         current_time = time.time()
 
         # Response time alert
         if response_time_ms > self.alert_thresholds["response_time_ms"]:
             alert_key = f"slow_response_{endpoint}"
-            if alert_key not in self.active_alerts or current_time - self.active_alerts[alert_key] > 300:
+            if (
+                alert_key not in self.active_alerts
+                or current_time - self.active_alerts[alert_key] > 300
+            ):
                 self._trigger_alert(
                     alert_key,
                     f"Slow response on {endpoint}: {response_time_ms:.2f}ms",
-                    {"endpoint": endpoint, "response_time_ms": response_time_ms}
+                    {"endpoint": endpoint, "response_time_ms": response_time_ms},
                 )
 
         # Error rate alerts (calculated over last 10 requests)
         if status_code >= 400:
             recent_requests = list(self.metrics["request_counts"][endpoint])[-10:]
-            recent_errors = [m for m in recent_requests if m.metadata.get("status_code", 200) >= 400]
+            recent_errors = [
+                m for m in recent_requests if m.metadata.get("status_code", 200) >= 400
+            ]
 
             if len(recent_requests) >= 5:  # Only alert if we have enough data
                 error_rate = (len(recent_errors) / len(recent_requests)) * 100
                 if error_rate > self.alert_thresholds["error_rate_percent"]:
                     alert_key = f"high_error_rate_{endpoint}"
-                    if alert_key not in self.active_alerts or current_time - self.active_alerts[alert_key] > 300:
+                    if (
+                        alert_key not in self.active_alerts
+                        or current_time - self.active_alerts[alert_key] > 300
+                    ):
                         self._trigger_alert(
                             alert_key,
                             f"High error rate on {endpoint}: {error_rate:.1f}%",
-                            {"endpoint": endpoint, "error_rate": error_rate}
+                            {"endpoint": endpoint, "error_rate": error_rate},
                         )
 
     def _trigger_alert(self, alert_key: str, message: str, metadata: Dict[str, Any]):
@@ -445,16 +480,13 @@ class PerformanceMonitor:
             "alert_key": alert_key,
             "message": message,
             "metadata": metadata,
-            "timestamp": current_time
+            "timestamp": current_time,
         }
 
         self.alert_history.append(alert_info)
 
         structured_logger.log_application_event(
-            "performance_alert",
-            message,
-            level="warning",
-            context=metadata
+            "performance_alert", message, level="warning", context=metadata
         )
 
     async def _monitoring_loop(self):
@@ -468,12 +500,16 @@ class PerformanceMonitor:
                 # Store metrics
                 if "memory" in system_metrics:
                     self.metrics["memory_usage"].append(
-                        PerformanceMetric(timestamp, system_metrics["memory"]["used_percent"])
+                        PerformanceMetric(
+                            timestamp, system_metrics["memory"]["used_percent"]
+                        )
                     )
 
                 if "cpu" in system_metrics:
                     self.metrics["cpu_usage"].append(
-                        PerformanceMetric(timestamp, system_metrics["cpu"]["usage_percent"])
+                        PerformanceMetric(
+                            timestamp, system_metrics["cpu"]["usage_percent"]
+                        )
                     )
 
                 # Check system alerts
@@ -488,7 +524,7 @@ class PerformanceMonitor:
                 structured_logger.log_application_event(
                     "monitoring_loop_error",
                     f"Monitoring loop error: {str(e)}",
-                    level="error"
+                    level="error",
                 )
                 await asyncio.sleep(10)  # Wait longer on error
 
@@ -501,11 +537,14 @@ class PerformanceMonitor:
             memory_percent = system_metrics["memory"]["used_percent"]
             if memory_percent > self.alert_thresholds["memory_usage_percent"]:
                 alert_key = "high_memory_usage"
-                if alert_key not in self.active_alerts or current_time - self.active_alerts[alert_key] > 600:
+                if (
+                    alert_key not in self.active_alerts
+                    or current_time - self.active_alerts[alert_key] > 600
+                ):
                     self._trigger_alert(
                         alert_key,
                         f"High memory usage: {memory_percent:.1f}%",
-                        {"memory_usage_percent": memory_percent}
+                        {"memory_usage_percent": memory_percent},
                     )
 
         # CPU usage alert
@@ -513,11 +552,14 @@ class PerformanceMonitor:
             cpu_percent = system_metrics["cpu"]["usage_percent"]
             if cpu_percent > self.alert_thresholds["cpu_usage_percent"]:
                 alert_key = "high_cpu_usage"
-                if alert_key not in self.active_alerts or current_time - self.active_alerts[alert_key] > 600:
+                if (
+                    alert_key not in self.active_alerts
+                    or current_time - self.active_alerts[alert_key] > 600
+                ):
                     self._trigger_alert(
                         alert_key,
                         f"High CPU usage: {cpu_percent:.1f}%",
-                        {"cpu_usage_percent": cpu_percent}
+                        {"cpu_usage_percent": cpu_percent},
                     )
 
         # Disk usage alert
@@ -525,11 +567,14 @@ class PerformanceMonitor:
             disk_percent = system_metrics["disk"]["used_percent"]
             if disk_percent > self.alert_thresholds["disk_usage_percent"]:
                 alert_key = "high_disk_usage"
-                if alert_key not in self.active_alerts or current_time - self.active_alerts[alert_key] > 1800:
+                if (
+                    alert_key not in self.active_alerts
+                    or current_time - self.active_alerts[alert_key] > 1800
+                ):
                     self._trigger_alert(
                         alert_key,
                         f"High disk usage: {disk_percent:.1f}%",
-                        {"disk_usage_percent": disk_percent}
+                        {"disk_usage_percent": disk_percent},
                     )
 
     # Built-in health checks
@@ -560,7 +605,7 @@ class PerformanceMonitor:
                     response_time_ms=response_time_ms,
                     message=message,
                     timestamp=time.time(),
-                    metadata={"query_result": result}
+                    metadata={"query_result": result},
                 )
 
             finally:
@@ -573,7 +618,7 @@ class PerformanceMonitor:
                 status="unhealthy",
                 response_time_ms=response_time_ms,
                 message=f"Database connection failed: {str(e)}",
-                timestamp=time.time()
+                timestamp=time.time(),
             )
 
     def _check_memory_health(self) -> HealthCheckResult:
@@ -601,8 +646,8 @@ class PerformanceMonitor:
                 metadata={
                     "usage_percent": usage_percent,
                     "used_mb": round(memory.used / 1024 / 1024, 2),
-                    "total_mb": round(memory.total / 1024 / 1024, 2)
-                }
+                    "total_mb": round(memory.total / 1024 / 1024, 2),
+                },
             )
 
         except Exception as e:
@@ -611,13 +656,13 @@ class PerformanceMonitor:
                 status="unhealthy",
                 response_time_ms=1.0,
                 message=f"Memory check failed: {str(e)}",
-                timestamp=time.time()
+                timestamp=time.time(),
             )
 
     def _check_disk_health(self) -> HealthCheckResult:
         """Check disk usage health"""
         try:
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
             usage_percent = (disk.used / disk.total) * 100
 
             if usage_percent < 80:
@@ -639,8 +684,8 @@ class PerformanceMonitor:
                 metadata={
                     "usage_percent": round(usage_percent, 2),
                     "used_gb": round(disk.used / 1024 / 1024 / 1024, 2),
-                    "total_gb": round(disk.total / 1024 / 1024 / 1024, 2)
-                }
+                    "total_gb": round(disk.total / 1024 / 1024 / 1024, 2),
+                },
             )
 
         except Exception as e:
@@ -649,7 +694,7 @@ class PerformanceMonitor:
                 status="unhealthy",
                 response_time_ms=1.0,
                 message=f"Disk check failed: {str(e)}",
-                timestamp=time.time()
+                timestamp=time.time(),
             )
 
     def _check_cpu_health(self) -> HealthCheckResult:
@@ -675,8 +720,8 @@ class PerformanceMonitor:
                 timestamp=time.time(),
                 metadata={
                     "usage_percent": round(cpu_percent, 2),
-                    "core_count": psutil.cpu_count()
-                }
+                    "core_count": psutil.cpu_count(),
+                },
             )
 
         except Exception as e:
@@ -685,7 +730,7 @@ class PerformanceMonitor:
                 status="unhealthy",
                 response_time_ms=100.0,
                 message=f"CPU check failed: {str(e)}",
-                timestamp=time.time()
+                timestamp=time.time(),
             )
 
 
@@ -694,6 +739,7 @@ performance_monitor = PerformanceMonitor()
 
 
 # Middleware function for performance tracking
+
 
 async def performance_monitoring_middleware(request: Request, call_next):
     """Performance monitoring middleware"""
@@ -714,6 +760,7 @@ async def performance_monitoring_middleware(request: Request, call_next):
 
 # Utility functions
 
+
 async def get_performance_dashboard_data():
     """Get comprehensive performance data cho admin dashboard"""
     try:
@@ -724,14 +771,10 @@ async def get_performance_dashboard_data():
             "status": "success",
             "health": health_status,
             "performance": performance_summary,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
     except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e),
-            "timestamp": time.time()
-        }
+        return {"status": "error", "error": str(e), "timestamp": time.time()}
 
 
 def record_database_operation(operation_type: str, duration_ms: float):

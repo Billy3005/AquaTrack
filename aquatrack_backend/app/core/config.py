@@ -69,7 +69,9 @@ class Settings(BaseSettings):
 
     # Frontend URLs
     FRONTEND_URL: str = "http://localhost:3000"  # Flutter web or mobile deep link base
-    APP_STORE_URL: str = "https://play.google.com/store/apps/details?id=com.aquatrack.app"
+    APP_STORE_URL: str = (
+        "https://play.google.com/store/apps/details?id=com.aquatrack.app"
+    )
 
     # Security Settings (Production)
     ENABLE_RATE_LIMITING: bool = False  # Disabled for development testing

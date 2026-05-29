@@ -259,7 +259,9 @@ class CRUDLeaderboard(CRUDBase[LeaderboardEntry, dict, dict]):
         if current_user_entry:
             entry, user = current_user_entry
             result["current_user_rank"] = entry.rank_position
-            result["current_user_entry"] = format_entry(current_user_entry, is_current_user=True)
+            result["current_user_entry"] = format_entry(
+                current_user_entry, is_current_user=True
+            )
 
         return result
 
