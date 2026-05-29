@@ -6,22 +6,23 @@ Asynchronous task processing với queue system, retry mechanisms và monitoring
 
 import asyncio
 import json
-import uuid
+import threading
 import time
 import traceback
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, Callable, List, Union
-from dataclasses import dataclass, field
-from enum import Enum
+import uuid
 from collections import defaultdict, deque
-import threading
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from ..middleware.logging import structured_logger
 
 
 class TaskStatus(Enum):
     """Task execution status"""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -32,6 +33,7 @@ class TaskStatus(Enum):
 
 class TaskPriority(Enum):
     """Task priority levels"""
+
     LOW = 1
     NORMAL = 2
     HIGH = 3
@@ -41,6 +43,7 @@ class TaskPriority(Enum):
 @dataclass
 class BackgroundTask:
     """Background task definition"""
+
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     name: str = ""
     func_name: str = ""
@@ -49,7 +52,7 @@ class BackgroundTask:
     priority: TaskPriority = TaskPriority.NORMAL
     max_retries: int = 3
     retry_delay: int = 5  # seconds
-    timeout: int = 300    # seconds
+    timeout: int = 300  # seconds
 
     # State tracking
     status: TaskStatus = TaskStatus.PENDING
@@ -82,7 +85,7 @@ class BackgroundTask:
             "user_id": self.user_id,
             "request_id": self.request_id,
             "metadata": self.metadata,
-            "duration_ms": self._get_duration_ms()
+            "duration_ms": self._get_duration_ms(),
         }
 
     def _get_duration_ms(self) -> Optional[float]:
@@ -104,7 +107,7 @@ class BackgroundTaskManager:
             TaskPriority.CRITICAL: asyncio.Queue(),
             TaskPriority.HIGH: asyncio.Queue(),
             TaskPriority.NORMAL: asyncio.Queue(),
-            TaskPriority.LOW: asyncio.Queue()
+            TaskPriority.LOW: asyncio.Queue(),
         }
 
         # Task registry và tracking
@@ -129,7 +132,9 @@ class BackgroundTaskManager:
             "task_types": defaultdict(int),
             "completion_times": deque(maxlen=100),
             "recent_errors": deque(maxlen=50),
-            "hourly_stats": defaultdict(lambda: {"submitted": 0, "completed": 0, "failed": 0})
+            "hourly_stats": defaultdict(
+                lambda: {"submitted": 0, "completed": 0, "failed": 0}
+            ),
         }
 
         # Cleanup task
@@ -153,7 +158,7 @@ class BackgroundTaskManager:
         structured_logger.log_application_event(
             "task_registered",
             f"Background task '{name}' registered",
-            context={"task_name": name}
+            context={"task_name": name},
         )
 
     async def start(self):
@@ -173,7 +178,7 @@ class BackgroundTaskManager:
 
         structured_logger.log_application_event(
             "task_manager_started",
-            f"Background task manager started with {self.max_workers} workers"
+            f"Background task manager started with {self.max_workers} workers",
         )
 
     async def stop(self):
@@ -198,8 +203,7 @@ class BackgroundTaskManager:
         self.thread_executor.shutdown(wait=True)
 
         structured_logger.log_application_event(
-            "task_manager_stopped",
-            "Background task manager stopped"
+            "task_manager_stopped", "Background task manager stopped"
         )
 
     async def submit_task(
@@ -213,7 +217,7 @@ class BackgroundTaskManager:
         user_id: str = None,
         request_id: str = None,
         metadata: Dict[str, Any] = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         """
         Submit background task for processing
@@ -236,7 +240,7 @@ class BackgroundTaskManager:
             timeout=timeout,
             user_id=user_id,
             request_id=request_id,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         # Store task
@@ -259,8 +263,8 @@ class BackgroundTaskManager:
                 "task_id": task.id,
                 "func_name": func_name,
                 "priority": priority.name,
-                "request_id": request_id
-            }
+                "request_id": request_id,
+            },
         )
 
         return task.id
@@ -290,7 +294,7 @@ class BackgroundTaskManager:
         structured_logger.log_application_event(
             "task_cancelled",
             f"Task '{task.name}' cancelled",
-            context={"task_id": task_id}
+            context={"task_id": task_id},
         )
 
         return True
@@ -298,8 +302,7 @@ class BackgroundTaskManager:
     async def _worker(self, worker_name: str):
         """Background worker để process tasks"""
         structured_logger.log_application_event(
-            "worker_started",
-            f"Background worker '{worker_name}' started"
+            "worker_started", f"Background worker '{worker_name}' started"
         )
 
         while self.is_running:
@@ -320,18 +323,22 @@ class BackgroundTaskManager:
                     "worker_error",
                     f"Worker '{worker_name}' error: {str(e)}",
                     level="error",
-                    context={"worker": worker_name, "error": str(e)}
+                    context={"worker": worker_name, "error": str(e)},
                 )
                 await asyncio.sleep(1)
 
         structured_logger.log_application_event(
-            "worker_stopped",
-            f"Background worker '{worker_name}' stopped"
+            "worker_stopped", f"Background worker '{worker_name}' stopped"
         )
 
     async def _get_next_task(self) -> Optional[BackgroundTask]:
         """Get next task from queues (priority order)"""
-        for priority in [TaskPriority.CRITICAL, TaskPriority.HIGH, TaskPriority.NORMAL, TaskPriority.LOW]:
+        for priority in [
+            TaskPriority.CRITICAL,
+            TaskPriority.HIGH,
+            TaskPriority.NORMAL,
+            TaskPriority.LOW,
+        ]:
             try:
                 task = self.queues[priority].get_nowait()
                 return task
@@ -348,7 +355,7 @@ class BackgroundTaskManager:
             "task_started",
             f"Task '{task.name}' started by {worker_name}",
             user_id=task.user_id,
-            context={"task_id": task.id, "worker": worker_name}
+            context={"task_id": task.id, "worker": worker_name},
         )
 
         try:
@@ -361,7 +368,9 @@ class BackgroundTaskManager:
             else:
                 # Run CPU-bound task in thread pool
                 loop = asyncio.get_event_loop()
-                coro = loop.run_in_executor(self.thread_executor, func, *task.args, **task.kwargs)
+                coro = loop.run_in_executor(
+                    self.thread_executor, func, *task.args, **task.kwargs
+                )
 
             # Execute with timeout
             async_task = asyncio.create_task(coro)
@@ -391,8 +400,8 @@ class BackgroundTaskManager:
                     context={
                         "task_id": task.id,
                         "duration_ms": completion_time,
-                        "worker": worker_name
-                    }
+                        "worker": worker_name,
+                    },
                 )
 
             except asyncio.TimeoutError:
@@ -424,9 +433,9 @@ class BackgroundTaskManager:
                     context={
                         "task_id": task.id,
                         "error": error_msg,
-                        "retry_count": task.retry_count
+                        "retry_count": task.retry_count,
                     },
-                    level="warning"
+                    level="warning",
                 )
 
                 self.stats["total_retried"] += 1
@@ -438,13 +447,15 @@ class BackgroundTaskManager:
 
                 # Update statistics
                 self.stats["total_failed"] += 1
-                self.stats["recent_errors"].append({
-                    "task_id": task.id,
-                    "task_name": task.name,
-                    "error": error_msg,
-                    "timestamp": time.time(),
-                    "user_id": task.user_id
-                })
+                self.stats["recent_errors"].append(
+                    {
+                        "task_id": task.id,
+                        "task_name": task.name,
+                        "error": error_msg,
+                        "timestamp": time.time(),
+                        "user_id": task.user_id,
+                    }
+                )
 
                 hour_key = datetime.now().strftime("%Y-%m-%d-%H")
                 self.stats["hourly_stats"][hour_key]["failed"] += 1
@@ -457,9 +468,9 @@ class BackgroundTaskManager:
                         "task_id": task.id,
                         "error": error_msg,
                         "retry_count": task.retry_count,
-                        "traceback": traceback.format_exc()
+                        "traceback": traceback.format_exc(),
                     },
-                    level="error"
+                    level="error",
                 )
 
     async def _retry_task(self, task: BackgroundTask):
@@ -477,8 +488,16 @@ class BackgroundTaskManager:
 
                 tasks_to_remove = []
                 for task_id, task in self.tasks.items():
-                    if (task.status in [TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED] and
-                        task.completed_at and task.completed_at < cleanup_threshold):
+                    if (
+                        task.status
+                        in [
+                            TaskStatus.COMPLETED,
+                            TaskStatus.FAILED,
+                            TaskStatus.CANCELLED,
+                        ]
+                        and task.completed_at
+                        and task.completed_at < cleanup_threshold
+                    ):
                         tasks_to_remove.append(task_id)
 
                 for task_id in tasks_to_remove:
@@ -487,7 +506,7 @@ class BackgroundTaskManager:
                 if tasks_to_remove:
                     structured_logger.log_application_event(
                         "tasks_cleaned_up",
-                        f"Cleaned up {len(tasks_to_remove)} old completed tasks"
+                        f"Cleaned up {len(tasks_to_remove)} old completed tasks",
                     )
 
                 # Sleep for 1 hour before next cleanup
@@ -497,9 +516,7 @@ class BackgroundTaskManager:
                 break
             except Exception as e:
                 structured_logger.log_application_event(
-                    "cleanup_error",
-                    f"Task cleanup error: {str(e)}",
-                    level="error"
+                    "cleanup_error", f"Task cleanup error: {str(e)}", level="error"
                 )
                 await asyncio.sleep(60)  # Wait 1 minute before retry
 
@@ -510,7 +527,8 @@ class BackgroundTaskManager:
         # Calculate averages
         avg_completion_time = (
             sum(self.stats["completion_times"]) / len(self.stats["completion_times"])
-            if self.stats["completion_times"] else 0
+            if self.stats["completion_times"]
+            else 0
         )
 
         # Active task counts
@@ -531,22 +549,31 @@ class BackgroundTaskManager:
                 "total_failed": self.stats["total_failed"],
                 "total_retried": self.stats["total_retried"],
                 "success_rate_percent": round(
-                    (self.stats["total_completed"] / max(1, self.stats["total_submitted"])) * 100, 2
+                    (
+                        self.stats["total_completed"]
+                        / max(1, self.stats["total_submitted"])
+                    )
+                    * 100,
+                    2,
                 ),
                 "avg_completion_time_ms": round(avg_completion_time, 2),
                 "active_workers": len(self.workers),
-                "is_running": self.is_running
+                "is_running": self.is_running,
             },
             "active_task_counts": active_counts,
             "queue_sizes": queue_sizes,
             "task_types": dict(self.stats["task_types"]),
             "recent_errors": list(self.stats["recent_errors"])[-10:],  # Last 10 errors
-            "hourly_stats": dict(list(self.stats["hourly_stats"].items())[-24:])  # Last 24 hours
+            "hourly_stats": dict(
+                list(self.stats["hourly_stats"].items())[-24:]
+            ),  # Last 24 hours
         }
 
     # Built-in task implementations
 
-    async def _ai_coach_processing_task(self, user_id: str, message: str, context: Dict = None):
+    async def _ai_coach_processing_task(
+        self, user_id: str, message: str, context: Dict = None
+    ):
         """Process AI coach request in background"""
         from ..services.ai_coach_service import enhanced_ai_coach_service
 
@@ -555,18 +582,20 @@ class BackgroundTaskManager:
                 user_message=message,
                 user_context=context or {},
                 hydration_data={},  # Will be populated from database
-                user_id=user_id
+                user_id=user_id,
             )
 
             return {
                 "status": "success",
                 "response": response,
-                "processing_time_ms": response.get("processing_time_ms", 0)
+                "processing_time_ms": response.get("processing_time_ms", 0),
             }
         except Exception as e:
             raise Exception(f"AI Coach processing failed: {str(e)}")
 
-    async def _vision_processing_task(self, user_id: str, image_data: bytes, image_format: str):
+    async def _vision_processing_task(
+        self, user_id: str, image_data: bytes, image_format: str
+    ):
         """Process vision image analysis in background"""
         # Placeholder for vision processing
         # In real implementation, this would call vision service
@@ -576,10 +605,12 @@ class BackgroundTaskManager:
             "container_class": "water_bottle",
             "fill_level_percent": 75.0,
             "confidence": 0.92,
-            "estimated_volume_ml": 375
+            "estimated_volume_ml": 375,
         }
 
-    async def _analytics_calculation_task(self, user_id: str, calculation_type: str, date_range: Dict):
+    async def _analytics_calculation_task(
+        self, user_id: str, calculation_type: str, date_range: Dict
+    ):
         """Calculate analytics in background"""
         from ..services.analytics_service import analytics_service
 
@@ -589,7 +620,7 @@ class BackgroundTaskManager:
         return {
             "calculation_type": calculation_type,
             "date_range": date_range,
-            "insights": ["Good hydration pattern", "Consistent morning intake"]
+            "insights": ["Good hydration pattern", "Consistent morning intake"],
         }
 
     def _database_cleanup_task(self, cleanup_type: str, days_old: int = 30):
@@ -600,7 +631,7 @@ class BackgroundTaskManager:
         return {
             "cleanup_type": cleanup_type,
             "records_cleaned": 150,
-            "days_old": days_old
+            "days_old": days_old,
         }
 
     async def _user_insights_task(self, user_id: str):
@@ -611,9 +642,9 @@ class BackgroundTaskManager:
         return {
             "insights": [
                 "Your hydration improved 15% this week",
-                "Best hydration time: 10-11 AM"
+                "Best hydration time: 10-11 AM",
             ],
-            "score": 85
+            "score": 85,
         }
 
     async def _daily_summary_task(self, user_id: str, date: str):
@@ -625,7 +656,7 @@ class BackgroundTaskManager:
             "date": date,
             "total_volume_ml": 2100,
             "goal_achieved": True,
-            "streak_days": 5
+            "streak_days": 5,
         }
 
 
@@ -635,50 +666,59 @@ task_manager = BackgroundTaskManager()
 
 # Utility functions for application use
 
+
 async def submit_ai_coach_task(
     user_id: str,
     message: str,
     context: Dict = None,
-    priority: TaskPriority = TaskPriority.HIGH
+    priority: TaskPriority = TaskPriority.HIGH,
 ) -> str:
     """Submit AI coach processing task"""
     return await task_manager.submit_task(
         "ai_coach_processing",
-        user_id, message, context,
+        user_id,
+        message,
+        context,
         task_name=f"AI Coach for user {user_id}",
         priority=priority,
         user_id=user_id,
-        timeout=120  # Increased for Ollama AI responses
+        timeout=120,  # Increased for Ollama AI responses
     )
+
 
 async def submit_vision_task(
     user_id: str,
     image_data: bytes,
     image_format: str,
-    priority: TaskPriority = TaskPriority.HIGH
+    priority: TaskPriority = TaskPriority.HIGH,
 ) -> str:
     """Submit vision processing task"""
     return await task_manager.submit_task(
         "vision_image_processing",
-        user_id, image_data, image_format,
+        user_id,
+        image_data,
+        image_format,
         task_name=f"Vision scan for user {user_id}",
         priority=priority,
         user_id=user_id,
-        timeout=120  # Vision processing can take longer
+        timeout=120,  # Vision processing can take longer
     )
+
 
 async def submit_analytics_task(
     user_id: str,
     calculation_type: str,
     date_range: Dict,
-    priority: TaskPriority = TaskPriority.NORMAL
+    priority: TaskPriority = TaskPriority.NORMAL,
 ) -> str:
     """Submit analytics calculation task"""
     return await task_manager.submit_task(
         "analytics_calculation",
-        user_id, calculation_type, date_range,
+        user_id,
+        calculation_type,
+        date_range,
         task_name=f"Analytics for user {user_id}",
         priority=priority,
         user_id=user_id,
-        timeout=180
+        timeout=180,
     )

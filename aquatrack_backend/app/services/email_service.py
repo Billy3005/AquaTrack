@@ -2,6 +2,7 @@
 Email service for user verification, notifications, and marketing
 Supports multiple providers: SMTP, SendGrid, AWS SES
 """
+
 import asyncio
 import secrets
 import smtplib
@@ -60,7 +61,8 @@ class EmailVerificationService:
         """Remove expired tokens to prevent memory leaks"""
         current_time = datetime.utcnow()
         expired_tokens = [
-            token for token, data in self.verification_tokens.items()
+            token
+            for token, data in self.verification_tokens.items()
             if current_time > data["expires_at"]
         ]
 
@@ -68,24 +70,22 @@ class EmailVerificationService:
             del self.verification_tokens[token]
 
     async def send_verification_email(
-        self,
-        user_email: str,
-        user_name: str,
-        verification_token: str
+        self, user_email: str, user_name: str, verification_token: str
     ) -> bool:
         """Send email verification email"""
         try:
-            verification_link = f"{settings.FRONTEND_URL}/verify-email?token={verification_token}"
+            verification_link = (
+                f"{settings.FRONTEND_URL}/verify-email?token={verification_token}"
+            )
 
             html_content = self._get_verification_email_template(
-                user_name=user_name,
-                verification_link=verification_link
+                user_name=user_name, verification_link=verification_link
             )
 
             success = await self._send_email(
                 to_email=user_email,
                 subject="Xác thực tài khoản AquaTrack của bạn",
-                html_content=html_content
+                html_content=html_content,
             )
 
             return success
@@ -94,7 +94,9 @@ class EmailVerificationService:
             print(f"Failed to send verification email: {e}")
             return False
 
-    def _get_verification_email_template(self, user_name: str, verification_link: str) -> str:
+    def _get_verification_email_template(
+        self, user_name: str, verification_link: str
+    ) -> str:
         """Generate HTML email template for verification"""
         return f"""
         <!DOCTYPE html>
@@ -156,24 +158,20 @@ class EmailNotificationService:
     """Service for sending various notification emails"""
 
     async def send_password_reset_email(
-        self,
-        user_email: str,
-        user_name: str,
-        reset_token: str
+        self, user_email: str, user_name: str, reset_token: str
     ) -> bool:
         """Send password reset email"""
         try:
             reset_link = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
 
             html_content = self._get_password_reset_template(
-                user_name=user_name,
-                reset_link=reset_link
+                user_name=user_name, reset_link=reset_link
             )
 
             success = await self._send_email(
                 to_email=user_email,
                 subject="Đặt lại mật khẩu AquaTrack",
-                html_content=html_content
+                html_content=html_content,
             )
 
             return success
@@ -182,11 +180,7 @@ class EmailNotificationService:
             print(f"Failed to send password reset email: {e}")
             return False
 
-    async def send_welcome_email(
-        self,
-        user_email: str,
-        user_name: str
-    ) -> bool:
+    async def send_welcome_email(self, user_email: str, user_name: str) -> bool:
         """Send welcome email after verification"""
         try:
             html_content = self._get_welcome_email_template(user_name)
@@ -194,7 +188,7 @@ class EmailNotificationService:
             success = await self._send_email(
                 to_email=user_email,
                 subject="🌊 Chào mừng bạn đến với AquaTrack!",
-                html_content=html_content
+                html_content=html_content,
             )
 
             return success
@@ -208,20 +202,20 @@ class EmailNotificationService:
         user_email: str,
         user_name: str,
         current_progress: int,
-        daily_goal: int = 2000
+        daily_goal: int = 2000,
     ) -> bool:
         """Send hydration reminder email"""
         try:
             html_content = self._get_hydration_reminder_template(
                 user_name=user_name,
                 current_progress=current_progress,
-                daily_goal=daily_goal
+                daily_goal=daily_goal,
             )
 
             success = await self._send_email(
                 to_email=user_email,
                 subject="💧 Nhắc nhở hydration từ AquaTrack",
-                html_content=html_content
+                html_content=html_content,
             )
 
             return success
@@ -350,10 +344,7 @@ class EmailNotificationService:
         """
 
     def _get_hydration_reminder_template(
-        self,
-        user_name: str,
-        current_progress: int,
-        daily_goal: int
+        self, user_name: str, current_progress: int, daily_goal: int
     ) -> str:
         """Generate hydration reminder email template"""
         percentage = int((current_progress / daily_goal) * 100)
@@ -425,31 +416,30 @@ class EmailService:
             "use_tls": settings.SMTP_USE_TLS,
         }
 
-    async def _send_email(
-        self,
-        to_email: str,
-        subject: str,
-        html_content: str
-    ) -> bool:
+    async def _send_email(self, to_email: str, subject: str, html_content: str) -> bool:
         """Send email using configured SMTP"""
         try:
             # Create message
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = subject
-            msg['From'] = settings.FROM_EMAIL
-            msg['To'] = to_email
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = settings.FROM_EMAIL
+            msg["To"] = to_email
 
             # Add HTML content
-            html_part = MIMEText(html_content, 'html', 'utf-8')
+            html_part = MIMEText(html_content, "html", "utf-8")
             msg.attach(html_part)
 
             # Send email
-            with smtplib.SMTP(self.smtp_config["host"], self.smtp_config["port"]) as server:
+            with smtplib.SMTP(
+                self.smtp_config["host"], self.smtp_config["port"]
+            ) as server:
                 if self.smtp_config["use_tls"]:
                     server.starttls()
 
                 if self.smtp_config["username"] and self.smtp_config["password"]:
-                    server.login(self.smtp_config["username"], self.smtp_config["password"])
+                    server.login(
+                        self.smtp_config["username"], self.smtp_config["password"]
+                    )
 
                 server.send_message(msg)
                 return True
@@ -459,13 +449,12 @@ class EmailService:
             return False
 
     async def send_verification_email(
-        self,
-        user_id: str,
-        user_email: str,
-        user_name: str
+        self, user_id: str, user_email: str, user_name: str
     ) -> Optional[str]:
         """Generate and send verification email"""
-        token = self.verification_service.generate_verification_token(user_id, user_email)
+        token = self.verification_service.generate_verification_token(
+            user_id, user_email
+        )
         success = await self.verification_service.send_verification_email(
             user_email, user_name, token
         )

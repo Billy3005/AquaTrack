@@ -4,12 +4,12 @@ Analyzes user patterns, behavior, and preferences for enhanced coaching
 """
 
 import statistics
-from datetime import datetime, date, timedelta
+from collections import Counter, defaultdict
+from datetime import date, datetime, timedelta
 from typing import Dict, List, Optional, Tuple
-from collections import defaultdict, Counter
 
+from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
 
 from app.crud.intake_log import intake_log_crud
 from app.crud.user import user_crud
@@ -28,10 +28,7 @@ class AnalyticsService:
         self.analysis_window_days = 30  # Default analysis window
 
     async def get_user_analytics_profile(
-        self,
-        db: Session,
-        user_id: str,
-        days: int = 30
+        self, db: Session, user_id: str, days: int = 30
     ) -> Dict:
         """
         Generate comprehensive user analytics profile for AI coaching
@@ -58,11 +55,15 @@ class AnalyticsService:
             "timing_preferences": self._analyze_timing_preferences(logs),
             "liquid_preferences": self._analyze_liquid_preferences(logs),
             "consistency_metrics": self._analyze_consistency(logs, days),
-            "goal_achievement": self._analyze_goal_achievement(logs, user.daily_goal_ml),
+            "goal_achievement": self._analyze_goal_achievement(
+                logs, user.daily_goal_ml
+            ),
             "behavioral_insights": self._analyze_behavior(logs, days),
-            "coaching_recommendations": self._generate_coaching_recommendations(logs, user),
+            "coaching_recommendations": self._generate_coaching_recommendations(
+                logs, user
+            ),
             "personalization_context": self._build_personalization_context(logs, user),
-            "risk_factors": self._identify_risk_factors(logs, user, days)
+            "risk_factors": self._identify_risk_factors(logs, user, days),
         }
 
         return profile
@@ -81,7 +82,9 @@ class AnalyticsService:
         for log in logs:
             daily_volumes[log.logged_at.date()] += log.effective_volume_ml
 
-        avg_daily_volume = statistics.mean(daily_volumes.values()) if daily_volumes else 0
+        avg_daily_volume = (
+            statistics.mean(daily_volumes.values()) if daily_volumes else 0
+        )
 
         # Segment classification
         if engagement_rate >= 80 and avg_daily_volume >= 2000:
@@ -100,7 +103,7 @@ class AnalyticsService:
             "engagement_rate": round(engagement_rate, 1),
             "avg_daily_logs": round(avg_daily_logs, 1),
             "avg_daily_volume": round(avg_daily_volume),
-            "active_days": days_with_logs
+            "active_days": days_with_logs,
         }
 
     def _analyze_hydration_patterns(self, logs: List[IntakeLog]) -> Dict:
@@ -122,25 +125,50 @@ class AnalyticsService:
             "std_dev": round(statistics.stdev(volumes)) if len(volumes) > 1 else 0,
             "min": min(volumes),
             "max": max(volumes),
-            "consistency_score": self._calculate_consistency_score(volumes)
+            "consistency_score": self._calculate_consistency_score(volumes),
         }
 
         # Trend analysis (last 7 days vs previous 7 days)
-        recent_logs = [log for log in logs if log.logged_at.date() >= date.today() - timedelta(days=7)]
-        previous_logs = [log for log in logs
-                        if log.logged_at.date() < date.today() - timedelta(days=7)
-                        and log.logged_at.date() >= date.today() - timedelta(days=14)]
+        recent_logs = [
+            log
+            for log in logs
+            if log.logged_at.date() >= date.today() - timedelta(days=7)
+        ]
+        previous_logs = [
+            log
+            for log in logs
+            if log.logged_at.date() < date.today() - timedelta(days=7)
+            and log.logged_at.date() >= date.today() - timedelta(days=14)
+        ]
 
-        recent_avg = statistics.mean([log.effective_volume_ml for log in recent_logs]) if recent_logs else 0
-        previous_avg = statistics.mean([log.effective_volume_ml for log in previous_logs]) if previous_logs else 0
+        recent_avg = (
+            statistics.mean([log.effective_volume_ml for log in recent_logs])
+            if recent_logs
+            else 0
+        )
+        previous_avg = (
+            statistics.mean([log.effective_volume_ml for log in previous_logs])
+            if previous_logs
+            else 0
+        )
 
-        trend = "improving" if recent_avg > previous_avg * 1.1 else \
-                "declining" if recent_avg < previous_avg * 0.9 else "stable"
+        trend = (
+            "improving"
+            if recent_avg > previous_avg * 1.1
+            else "declining" if recent_avg < previous_avg * 0.9 else "stable"
+        )
 
         return {
             "volume_stats": volume_stats,
             "trend": trend,
-            "trend_change": round(((recent_avg - previous_avg) / previous_avg * 100) if previous_avg > 0 else 0, 1)
+            "trend_change": round(
+                (
+                    ((recent_avg - previous_avg) / previous_avg * 100)
+                    if previous_avg > 0
+                    else 0
+                ),
+                1,
+            ),
         }
 
     def _analyze_timing_preferences(self, logs: List[IntakeLog]) -> Dict:
@@ -160,24 +188,32 @@ class AnalyticsService:
             peak_period = "afternoon"
 
         # Time period distribution
-        morning_count = sum(count for hour, count in hourly_count.items() if 6 <= hour < 12)
-        afternoon_count = sum(count for hour, count in hourly_count.items() if 12 <= hour < 18)
-        evening_count = sum(count for hour, count in hourly_count.items() if 18 <= hour < 22)
-        night_count = sum(count for hour, count in hourly_count.items() if hour >= 22 or hour < 6)
+        morning_count = sum(
+            count for hour, count in hourly_count.items() if 6 <= hour < 12
+        )
+        afternoon_count = sum(
+            count for hour, count in hourly_count.items() if 12 <= hour < 18
+        )
+        evening_count = sum(
+            count for hour, count in hourly_count.items() if 18 <= hour < 22
+        )
+        night_count = sum(
+            count for hour, count in hourly_count.items() if hour >= 22 or hour < 6
+        )
 
         total = len(logs)
         period_distribution = {
             "morning": round((morning_count / total) * 100, 1) if total > 0 else 0,
             "afternoon": round((afternoon_count / total) * 100, 1) if total > 0 else 0,
             "evening": round((evening_count / total) * 100, 1) if total > 0 else 0,
-            "night": round((night_count / total) * 100, 1) if total > 0 else 0
+            "night": round((night_count / total) * 100, 1) if total > 0 else 0,
         }
 
         return {
             "peak_hour": peak_hour,
             "peak_period": peak_period,
             "period_distribution": period_distribution,
-            "most_active_periods": self._get_most_active_periods(period_distribution)
+            "most_active_periods": self._get_most_active_periods(period_distribution),
         }
 
     def _analyze_liquid_preferences(self, logs: List[IntakeLog]) -> Dict:
@@ -189,10 +225,7 @@ class AnalyticsService:
         total = len(logs)
 
         preferences = {
-            liquid_type: {
-                "count": count,
-                "percentage": round((count / total) * 100, 1)
-            }
+            liquid_type: {"count": count, "percentage": round((count / total) * 100, 1)}
             for liquid_type, count in liquid_count.most_common()
         }
 
@@ -201,7 +234,9 @@ class AnalyticsService:
         return {
             "preferences": preferences,
             "diversity_score": min(round(diversity_score, 1), 100),
-            "most_preferred": liquid_count.most_common(1)[0][0] if liquid_count else "water"
+            "most_preferred": (
+                liquid_count.most_common(1)[0][0] if liquid_count else "water"
+            ),
         }
 
     def _analyze_consistency(self, logs: List[IntakeLog], days: int) -> Dict:
@@ -222,14 +257,23 @@ class AnalyticsService:
         weekly_consistency = 0
         if len(weekly_patterns) > 1:
             weekly_volumes = [sum(volumes) for volumes in weekly_patterns.values()]
-            weekly_consistency = 100 - (statistics.stdev(weekly_volumes) / statistics.mean(weekly_volumes) * 100) if weekly_volumes else 0
+            weekly_consistency = (
+                100
+                - (
+                    statistics.stdev(weekly_volumes)
+                    / statistics.mean(weekly_volumes)
+                    * 100
+                )
+                if weekly_volumes
+                else 0
+            )
             weekly_consistency = max(0, min(100, weekly_consistency))
 
         return {
             "daily_consistency": round(consistency_rate, 1),
             "weekly_consistency": round(weekly_consistency, 1),
             "active_days": len(dates_with_logs),
-            "streak_potential": self._calculate_streak_potential(logs)
+            "streak_potential": self._calculate_streak_potential(logs),
         }
 
     def _analyze_goal_achievement(self, logs: List[IntakeLog], daily_goal: int) -> Dict:
@@ -242,25 +286,46 @@ class AnalyticsService:
         for log in logs:
             daily_volumes[log.logged_at.date()] += log.effective_volume_ml
 
-        achievement_days = sum(1 for volume in daily_volumes.values() if volume >= daily_goal)
+        achievement_days = sum(
+            1 for volume in daily_volumes.values() if volume >= daily_goal
+        )
         total_days = len(daily_volumes)
-        achievement_rate = (achievement_days / total_days) * 100 if total_days > 0 else 0
+        achievement_rate = (
+            (achievement_days / total_days) * 100 if total_days > 0 else 0
+        )
 
         # Achievement trend (last week vs previous week)
-        last_week_days = [date for date in daily_volumes.keys()
-                         if date >= date.today() - timedelta(days=7)]
-        prev_week_days = [date for date in daily_volumes.keys()
-                         if date >= date.today() - timedelta(days=14)
-                         and date < date.today() - timedelta(days=7)]
+        last_week_days = [
+            date
+            for date in daily_volumes.keys()
+            if date >= date.today() - timedelta(days=7)
+        ]
+        prev_week_days = [
+            date
+            for date in daily_volumes.keys()
+            if date >= date.today() - timedelta(days=14)
+            and date < date.today() - timedelta(days=7)
+        ]
 
-        last_week_achievement = sum(1 for d in last_week_days if daily_volumes[d] >= daily_goal)
-        prev_week_achievement = sum(1 for d in prev_week_days if daily_volumes[d] >= daily_goal)
+        last_week_achievement = sum(
+            1 for d in last_week_days if daily_volumes[d] >= daily_goal
+        )
+        prev_week_achievement = sum(
+            1 for d in prev_week_days if daily_volumes[d] >= daily_goal
+        )
 
-        last_week_rate = (last_week_achievement / len(last_week_days)) * 100 if last_week_days else 0
-        prev_week_rate = (prev_week_achievement / len(prev_week_days)) * 100 if prev_week_days else 0
+        last_week_rate = (
+            (last_week_achievement / len(last_week_days)) * 100 if last_week_days else 0
+        )
+        prev_week_rate = (
+            (prev_week_achievement / len(prev_week_days)) * 100 if prev_week_days else 0
+        )
 
-        trend = "improving" if last_week_rate > prev_week_rate else \
-                "declining" if last_week_rate < prev_week_rate else "stable"
+        trend = (
+            "improving"
+            if last_week_rate > prev_week_rate
+            else "declining" if last_week_rate < prev_week_rate else "stable"
+        )
 
         return {
             "overall_achievement_rate": round(achievement_rate, 1),
@@ -269,8 +334,8 @@ class AnalyticsService:
             "recent_trend": trend,
             "weekly_comparison": {
                 "last_week": round(last_week_rate, 1),
-                "previous_week": round(prev_week_rate, 1)
-            }
+                "previous_week": round(prev_week_rate, 1),
+            },
         }
 
     def _analyze_behavior(self, logs: List[IntakeLog], days: int) -> Dict:
@@ -287,7 +352,9 @@ class AnalyticsService:
         for log in logs:
             daily_log_counts[log.logged_at.date()] += 1
 
-        avg_logs_per_day = statistics.mean(daily_log_counts.values()) if daily_log_counts else 0
+        avg_logs_per_day = (
+            statistics.mean(daily_log_counts.values()) if daily_log_counts else 0
+        )
 
         # Behavioral classification
         if avg_volume_per_log >= 400:
@@ -301,10 +368,12 @@ class AnalyticsService:
             "avg_volume_per_log": round(avg_volume_per_log),
             "avg_logs_per_day": round(avg_logs_per_day, 1),
             "drinking_style": drinking_style,
-            "total_interactions": len(logs)
+            "total_interactions": len(logs),
         }
 
-    def _generate_coaching_recommendations(self, logs: List[IntakeLog], user: User) -> List[Dict]:
+    def _generate_coaching_recommendations(
+        self, logs: List[IntakeLog], user: User
+    ) -> List[Dict]:
         """Generate personalized coaching recommendations"""
         recommendations = []
 
@@ -321,33 +390,41 @@ class AnalyticsService:
         if volumes:
             avg_volume = statistics.mean(volumes)
             if avg_volume < user.daily_goal_ml * 0.7:
-                recommendations.append({
-                    "type": "volume_increase",
-                    "priority": "high",
-                    "message": "Tăng từ từ lượng nước mỗi ngày",
-                    "action": "Thêm 200ml vào buổi sáng và chiều"
-                })
+                recommendations.append(
+                    {
+                        "type": "volume_increase",
+                        "priority": "high",
+                        "message": "Tăng từ từ lượng nước mỗi ngày",
+                        "action": "Thêm 200ml vào buổi sáng và chiều",
+                    }
+                )
 
         # Timing-based recommendations
         if hourly_counts:
-            morning_logs = sum(count for hour, count in hourly_counts.items() if 6 <= hour < 12)
+            morning_logs = sum(
+                count for hour, count in hourly_counts.items() if 6 <= hour < 12
+            )
             if morning_logs < len(logs) * 0.3:
-                recommendations.append({
-                    "type": "morning_hydration",
-                    "priority": "medium",
-                    "message": "Tăng cường uống nước buổi sáng",
-                    "action": "Uống 1 ly nước ngay sau khi thức dậy"
-                })
+                recommendations.append(
+                    {
+                        "type": "morning_hydration",
+                        "priority": "medium",
+                        "message": "Tăng cường uống nước buổi sáng",
+                        "action": "Uống 1 ly nước ngay sau khi thức dậy",
+                    }
+                )
 
         # Consistency-based recommendations
         active_days = len(set(log.logged_at.date() for log in logs))
         if active_days < 21:  # Less than 21 days in last 30
-            recommendations.append({
-                "type": "consistency_improvement",
-                "priority": "high",
-                "message": "Xây dựng thói quen tracking đều đặn",
-                "action": "Set reminder mỗi 3 tiếng để log nước"
-            })
+            recommendations.append(
+                {
+                    "type": "consistency_improvement",
+                    "priority": "high",
+                    "message": "Xây dựng thói quen tracking đều đặn",
+                    "action": "Set reminder mỗi 3 tiếng để log nước",
+                }
+            )
 
         return recommendations
 
@@ -357,7 +434,11 @@ class AnalyticsService:
             return {}
 
         # Recent performance
-        recent_logs = [log for log in logs if log.logged_at.date() >= date.today() - timedelta(days=7)]
+        recent_logs = [
+            log
+            for log in logs
+            if log.logged_at.date() >= date.today() - timedelta(days=7)
+        ]
         recent_volume = sum(log.effective_volume_ml for log in recent_logs)
         recent_days = len(set(log.logged_at.date() for log in recent_logs))
         recent_avg = recent_volume / recent_days if recent_days > 0 else 0
@@ -370,44 +451,59 @@ class AnalyticsService:
             "recent_performance": {
                 "avg_daily_volume": round(recent_avg),
                 "days_active": recent_days,
-                "goal_gap": max(0, user.daily_goal_ml - recent_avg)
+                "goal_gap": max(0, user.daily_goal_ml - recent_avg),
             },
             "preferred_times": preferred_times,
             "motivation_indicators": motivation_indicators,
-            "coaching_style_preference": self._determine_coaching_style(logs, user)
+            "coaching_style_preference": self._determine_coaching_style(logs, user),
         }
 
-    def _identify_risk_factors(self, logs: List[IntakeLog], user: User, days: int) -> List[Dict]:
+    def _identify_risk_factors(
+        self, logs: List[IntakeLog], user: User, days: int
+    ) -> List[Dict]:
         """Identify potential risk factors for goal achievement"""
         risks = []
 
         # Low engagement risk
         active_days = len(set(log.logged_at.date() for log in logs))
         if active_days < days * 0.5:
-            risks.append({
-                "type": "low_engagement",
-                "severity": "high",
-                "description": "Ít tương tác với app",
-                "mitigation": "Tăng frequency của notifications"
-            })
+            risks.append(
+                {
+                    "type": "low_engagement",
+                    "severity": "high",
+                    "description": "Ít tương tác với app",
+                    "mitigation": "Tăng frequency của notifications",
+                }
+            )
 
         # Declining trend risk
-        recent_logs = [log for log in logs if log.logged_at.date() >= date.today() - timedelta(days=7)]
-        older_logs = [log for log in logs
-                     if log.logged_at.date() < date.today() - timedelta(days=7)
-                     and log.logged_at.date() >= date.today() - timedelta(days=14)]
+        recent_logs = [
+            log
+            for log in logs
+            if log.logged_at.date() >= date.today() - timedelta(days=7)
+        ]
+        older_logs = [
+            log
+            for log in logs
+            if log.logged_at.date() < date.today() - timedelta(days=7)
+            and log.logged_at.date() >= date.today() - timedelta(days=14)
+        ]
 
         if recent_logs and older_logs:
-            recent_avg = statistics.mean([log.effective_volume_ml for log in recent_logs])
+            recent_avg = statistics.mean(
+                [log.effective_volume_ml for log in recent_logs]
+            )
             older_avg = statistics.mean([log.effective_volume_ml for log in older_logs])
 
             if recent_avg < older_avg * 0.8:
-                risks.append({
-                    "type": "declining_intake",
-                    "severity": "medium",
-                    "description": "Lượng nước giảm dần",
-                    "mitigation": "Intervention coaching cần thiết"
-                })
+                risks.append(
+                    {
+                        "type": "declining_intake",
+                        "severity": "medium",
+                        "description": "Lượng nước giảm dần",
+                        "mitigation": "Intervention coaching cần thiết",
+                    }
+                )
 
         return risks
 
@@ -427,11 +523,11 @@ class AnalyticsService:
                     "type": "getting_started",
                     "priority": "high",
                     "message": "Chào mừng đến AquaTrack!",
-                    "action": "Bắt đầu với 1 ly nước ngay bây giờ"
+                    "action": "Bắt đầu với 1 ly nước ngay bây giờ",
                 }
             ],
             "personalization_context": {},
-            "risk_factors": []
+            "risk_factors": [],
         }
 
     def _get_new_user_profile(self, user: User) -> Dict:
@@ -443,9 +539,9 @@ class AnalyticsService:
                     "type": "onboarding",
                     "priority": "high",
                     "message": f"Hãy bắt đầu hành trình hydration với mục tiêu {user.daily_goal_ml}ml!",
-                    "action": "Log ly nước đầu tiên"
+                    "action": "Log ly nước đầu tiên",
                 }
-            ]
+            ],
         }
 
     def _get_time_period(self, hour: int) -> str:
@@ -490,7 +586,7 @@ class AnalyticsService:
         for i, date_val in enumerate(dates):
             if i == 0:
                 current_streak = 1
-            elif (date_val - dates[i-1]).days == 1:
+            elif (date_val - dates[i - 1]).days == 1:
                 current_streak += 1
             else:
                 current_streak = 1
@@ -515,10 +611,15 @@ class AnalyticsService:
 
         # Recent activity trend
         recent_days = 7
-        recent_logs = [log for log in logs
-                      if log.logged_at.date() >= date.today() - timedelta(days=recent_days)]
+        recent_logs = [
+            log
+            for log in logs
+            if log.logged_at.date() >= date.today() - timedelta(days=recent_days)
+        ]
 
-        activity_score = len(set(log.logged_at.date() for log in recent_logs)) / recent_days * 100
+        activity_score = (
+            len(set(log.logged_at.date() for log in recent_logs)) / recent_days * 100
+        )
 
         if activity_score >= 80:
             level = "high"
@@ -530,7 +631,7 @@ class AnalyticsService:
         return {
             "level": level,
             "activity_score": round(activity_score, 1),
-            "recent_engagement": len(recent_logs)
+            "recent_engagement": len(recent_logs),
         }
 
     def _determine_coaching_style(self, logs: List[IntakeLog], user: User) -> str:

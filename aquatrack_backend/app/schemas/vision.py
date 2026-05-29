@@ -18,34 +18,53 @@ class VisionEstimateResponse(BaseModel):
 
     # AI Detection Results - exact field names expected by Flutter
     container_class: str = Field(..., description="Container type classification")
-    fill_level_percent: float = Field(..., ge=0.0, le=1.0, description="Fill level as decimal (0.0-1.0)")
+    fill_level_percent: float = Field(
+        ..., ge=0.0, le=1.0, description="Fill level as decimal (0.0-1.0)"
+    )
     liquid_type: str = Field(..., description="Detected liquid type")
     confidence: float = Field(..., ge=0.0, le=1.0, description="AI confidence score")
 
     # Volume Calculations
-    estimated_volume_ml: int = Field(..., ge=1, le=5000, description="Raw volume estimate in ml")
-    effective_volume_ml: int = Field(..., ge=1, le=5000, description="Hydration-adjusted volume in ml")
+    estimated_volume_ml: int = Field(
+        ..., ge=1, le=5000, description="Raw volume estimate in ml"
+    )
+    effective_volume_ml: int = Field(
+        ..., ge=1, le=5000, description="Hydration-adjusted volume in ml"
+    )
 
     # Optional metadata
     scan_id: Optional[str] = Field(None, description="Scan history ID if saved")
-    processing_time_ms: Optional[int] = Field(None, description="Processing time in milliseconds")
+    processing_time_ms: Optional[int] = Field(
+        None, description="Processing time in milliseconds"
+    )
 
     @validator("container_class")
     def validate_container_class(cls, v):
         allowed_containers = [
-            "glass_small", "glass_large", "cup_plastic",
-            "bottle_500", "bottle_750", "bottle_1000", "bottle_1500",
-            "mug", "can_330", "other"
+            "glass_small",
+            "glass_large",
+            "cup_plastic",
+            "bottle_500",
+            "bottle_750",
+            "bottle_1000",
+            "bottle_1500",
+            "mug",
+            "can_330",
+            "other",
         ]
         if v not in allowed_containers:
-            raise ValueError(f'Container class must be one of: {", ".join(allowed_containers)}')
+            raise ValueError(
+                f'Container class must be one of: {", ".join(allowed_containers)}'
+            )
         return v
 
     @validator("liquid_type")
     def validate_liquid_type(cls, v):
         allowed_liquids = ["water", "tea", "coffee", "juice", "smoothie"]
         if v not in allowed_liquids:
-            raise ValueError(f'Liquid type must be one of: {", ".join(allowed_liquids)}')
+            raise ValueError(
+                f'Liquid type must be one of: {", ".join(allowed_liquids)}'
+            )
         return v
 
 
@@ -63,19 +82,30 @@ class ScanHistoryCreate(BaseModel):
     @validator("container_type")
     def validate_container_type(cls, v):
         allowed_containers = [
-            "glass_small", "glass_large", "cup_plastic",
-            "bottle_500", "bottle_750", "bottle_1000", "bottle_1500",
-            "mug", "can_330", "other"
+            "glass_small",
+            "glass_large",
+            "cup_plastic",
+            "bottle_500",
+            "bottle_750",
+            "bottle_1000",
+            "bottle_1500",
+            "mug",
+            "can_330",
+            "other",
         ]
         if v not in allowed_containers:
-            raise ValueError(f'Container type must be one of: {", ".join(allowed_containers)}')
+            raise ValueError(
+                f'Container type must be one of: {", ".join(allowed_containers)}'
+            )
         return v
 
     @validator("liquid_type")
     def validate_liquid_type(cls, v):
         allowed_liquids = ["water", "tea", "coffee", "juice", "smoothie"]
         if v not in allowed_liquids:
-            raise ValueError(f'Liquid type must be one of: {", ".join(allowed_liquids)}')
+            raise ValueError(
+                f'Liquid type must be one of: {", ".join(allowed_liquids)}'
+            )
         return v
 
 

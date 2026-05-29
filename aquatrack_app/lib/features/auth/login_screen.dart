@@ -273,46 +273,48 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       padding: const EdgeInsets.fromLTRB(22, 20, 22, 24),
       child: Form(
         key: _formKey,
-        child: Column(
-          children: [
-            // Email field
-            _buildField(
-              label: 'Email',
-              controller: _emailController,
-              placeholder: 'ban@vidu.com',
-              keyboardType: TextInputType.emailAddress,
-              icon: Icons.email_outlined,
-            ),
-            // Password field
-            _buildField(
-              label: 'Mật khẩu',
-              controller: _passwordController,
-              placeholder: 'Ít nhất 8 ký tự',
-              obscureText: _obscurePassword,
-              icon: Icons.lock_outlined,
-              trailing: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                  color: const Color(0xFF64748B),
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Email field
+              _buildField(
+                label: 'Email',
+                controller: _emailController,
+                placeholder: 'ban@vidu.com',
+                keyboardType: TextInputType.emailAddress,
+                icon: Icons.email_outlined,
               ),
-            ),
-            // Remember me row
-            _buildRememberMeRow(),
-            // Submit button
-            _buildSubmitButton(),
-            // Divider
-            _buildOrDivider(),
-            // Social buttons
-            _buildSocialButtons(),
-            // Register link
-            _buildRegisterLink(),
-          ],
+              // Password field
+              _buildField(
+                label: 'Mật khẩu',
+                controller: _passwordController,
+                placeholder: 'Ít nhất 8 ký tự',
+                obscureText: _obscurePassword,
+                icon: Icons.lock_outlined,
+                trailing: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                    color: const Color(0xFF64748B),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                ),
+              ),
+              // Remember me row
+              _buildRememberMeRow(),
+              // Submit button
+              _buildSubmitButton(),
+              // Divider
+              _buildOrDivider(),
+              // Social buttons
+              _buildSocialButtons(),
+              // Register link
+              _buildRegisterLink(),
+            ],
+          ),
         ),
       ),
     );

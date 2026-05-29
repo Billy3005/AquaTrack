@@ -8,7 +8,7 @@ from .intake_log import IntakeLog
 from .leaderboard import LeaderboardEntry
 from .scan_history import ScanHistory
 from .user import User
-from .user_insights import UserInsight, InsightType, PriorityLevel
+from .user_insights import InsightType, PriorityLevel, UserInsight
 
 __all__ = [
     "User",

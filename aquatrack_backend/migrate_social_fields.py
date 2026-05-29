@@ -5,9 +5,10 @@ Manual migration script để add social fields vào User table
 - is_online: boolean
 """
 
-import sqlite3
 import os
+import sqlite3
 from pathlib import Path
+
 
 def migrate_social_fields():
     """Add social fields to users table"""
@@ -30,7 +31,7 @@ def migrate_social_fields():
         print(f"INFO: Existing columns: {', '.join(columns)}")
 
         # Add status column if not exists
-        if 'status' not in columns:
+        if "status" not in columns:
             print("INFO: Adding 'status' column...")
             cursor.execute("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'normal'")
             print("SUCCESS: Added status column")
@@ -38,9 +39,11 @@ def migrate_social_fields():
             print("INFO: Status column already exists")
 
         # Add is_online column if not exists
-        if 'is_online' not in columns:
+        if "is_online" not in columns:
             print("INFO: Adding 'is_online' column...")
-            cursor.execute("ALTER TABLE users ADD COLUMN is_online BOOLEAN DEFAULT FALSE")
+            cursor.execute(
+                "ALTER TABLE users ADD COLUMN is_online BOOLEAN DEFAULT FALSE"
+            )
             print("SUCCESS: Added is_online column")
         else:
             print("INFO: is_online column already exists")
@@ -66,6 +69,7 @@ def migrate_social_fields():
     finally:
         if conn:
             conn.close()
+
 
 if __name__ == "__main__":
     migrate_social_fields()

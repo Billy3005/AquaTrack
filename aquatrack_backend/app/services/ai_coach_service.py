@@ -1,8 +1,8 @@
+import asyncio
 import os
 import random
 from datetime import datetime
 from typing import Dict, Optional, Tuple
-import asyncio
 
 try:
     import ollama
@@ -31,6 +31,7 @@ try:
 except ImportError:
     # Define CoachResponse locally if import fails
     from typing import List
+
     from pydantic import BaseModel, Field
 
     class CoachResponse(BaseModel):
@@ -89,16 +90,20 @@ class AICoachService:
                 print("OK Ollama local AI initialized")
 
                 # Check if our model is available
-                model_names = [model['name'] for model in models.get('models', [])]
+                model_names = [model["name"] for model in models.get("models", [])]
                 if self.ollama_model not in model_names:
-                    print(f"[WARN] Model {self.ollama_model} not found. Available: {model_names}")
+                    print(
+                        f"[WARN] Model {self.ollama_model} not found. Available: {model_names}"
+                    )
                     if model_names:
                         self.ollama_model = model_names[0]
                         print(f"[INFO] Using model: {self.ollama_model}")
 
             except Exception as e:
                 print(f"Ollama not available: {str(e)}")
-                print("To use AI Coach: Install Ollama and run 'ollama pull qwen2.5:3b'")
+                print(
+                    "To use AI Coach: Install Ollama and run 'ollama pull qwen2.5:3b'"
+                )
 
         # Determine AI mode with priority: Anthropic > OpenAI > Ollama > Rules
         if self.anthropic_available:
@@ -122,7 +127,7 @@ class AICoachService:
         user_context: Dict,
         hydration_data: Dict,
         user_id: str = None,
-        db = None
+        db=None,
     ) -> CoachResponse:
         """
         Generate coach response with priority-based AI provider selection
@@ -135,14 +140,20 @@ class AICoachService:
         # Try Anthropic Claude first
         if self.anthropic_available:
             try:
-                return await self._generate_anthropic_response(user_message, user_context, hydration_data, user_id, db)
+                return await self._generate_anthropic_response(
+                    user_message, user_context, hydration_data, user_id, db
+                )
             except Exception as e:
-                print(f"[FALLBACK] Anthropic failed, fallback to next provider: {str(e)}")
+                print(
+                    f"[FALLBACK] Anthropic failed, fallback to next provider: {str(e)}"
+                )
 
         # Fallback to OpenAI
         if self.openai_available:
             try:
-                return await self._generate_openai_response(user_message, user_context, hydration_data, user_id, db)
+                return await self._generate_openai_response(
+                    user_message, user_context, hydration_data, user_id, db
+                )
             except Exception as e:
                 print(f"[FALLBACK] OpenAI failed, fallback to next provider: {str(e)}")
 
@@ -150,12 +161,16 @@ class AICoachService:
         if self.ollama_available:
             try:
                 print("[DEBUG] Calling Qwen via Ollama...")
-                return await self._generate_ollama_response(user_message, user_context, hydration_data, user_id, db)
+                return await self._generate_ollama_response(
+                    user_message, user_context, hydration_data, user_id, db
+                )
             except Exception as e:
                 print(f"[FALLBACK] Ollama failed, fallback to rules: {str(e)}")
 
         # Final fallback to enhanced rules
-        return await self._generate_enhanced_rule_response(user_message, user_context, hydration_data)
+        return await self._generate_enhanced_rule_response(
+            user_message, user_context, hydration_data
+        )
 
     async def _generate_anthropic_response(
         self,
@@ -163,7 +178,7 @@ class AICoachService:
         user_context: Dict,
         hydration_data: Dict,
         user_id: str = None,
-        db = None
+        db=None,
     ) -> CoachResponse:
         """Generate response using Anthropic Claude"""
         try:
@@ -194,26 +209,23 @@ class AICoachService:
 - Lời khuyên y tế chuyên sâu
 - Response quá dài
 - Ngôn ngữ khô khan""",
-                messages=[
-                    {
-                        "role": "user",
-                        "content": context_prompt
-                    }
-                ]
+                messages=[{"role": "user", "content": context_prompt}],
             )
 
             ai_text = response.content[0].text.strip()
 
             # Parse and structure response
             suggestions, action_items = self._parse_ai_response(ai_text, hydration_data)
-            coaching_type, motivation_level = self._analyze_response_intent(ai_text, hydration_data)
+            coaching_type, motivation_level = self._analyze_response_intent(
+                ai_text, hydration_data
+            )
 
             return CoachResponse(
                 response=ai_text,
                 suggestions=suggestions,
                 action_items=action_items,
                 motivation_level=motivation_level,
-                coaching_type=coaching_type
+                coaching_type=coaching_type,
             )
 
         except Exception as e:
@@ -226,7 +238,7 @@ class AICoachService:
         user_context: Dict,
         hydration_data: Dict,
         user_id: str = None,
-        db = None
+        db=None,
     ) -> CoachResponse:
         """Generate response using OpenAI GPT"""
         try:
@@ -258,27 +270,26 @@ class AICoachService:
 🚫 TRÁNH:
 - Lời khuyên y tế chuyên sâu
 - Response dài
-- Ngôn ngữ formal"""
+- Ngôn ngữ formal""",
                     },
-                    {
-                        "role": "user",
-                        "content": context_prompt
-                    }
-                ]
+                    {"role": "user", "content": context_prompt},
+                ],
             )
 
             ai_text = response.choices[0].message.content.strip()
 
             # Parse and structure response
             suggestions, action_items = self._parse_ai_response(ai_text, hydration_data)
-            coaching_type, motivation_level = self._analyze_response_intent(ai_text, hydration_data)
+            coaching_type, motivation_level = self._analyze_response_intent(
+                ai_text, hydration_data
+            )
 
             return CoachResponse(
                 response=ai_text,
                 suggestions=suggestions,
                 action_items=action_items,
                 motivation_level=motivation_level,
-                coaching_type=coaching_type
+                coaching_type=coaching_type,
             )
 
         except Exception as e:
@@ -291,7 +302,7 @@ class AICoachService:
         user_context: Dict,
         hydration_data: Dict,
         user_id: str = None,
-        db = None
+        db=None,
     ) -> CoachResponse:
         """Generate response using Qwen via Ollama AI"""
         try:
@@ -306,8 +317,8 @@ class AICoachService:
                 model=self.ollama_model,
                 messages=[
                     {
-                        'role': 'system',
-                        'content': '''Bạn là AQUA AI - trợ lý hydration thông minh của app AquaTrack Việt Nam.
+                        "role": "system",
+                        "content": """Bạn là AQUA AI - trợ lý hydration thông minh của app AquaTrack Việt Nam.
 
 NHIỆM VỤ:
 - Khuyến khích người dùng uống nước đều đặn
@@ -327,34 +338,33 @@ TRÁNH:
 - Câu trả lời quá dài
 - Ngôn ngữ formal/khô khan
 
-Hãy trả lời bằng tiếng Việt thân thiện và khuyến khích.'''
+Hãy trả lời bằng tiếng Việt thân thiện và khuyến khích.""",
                     },
-                    {
-                        'role': 'user',
-                        'content': prompt
-                    }
+                    {"role": "user", "content": prompt},
                 ],
                 options={
-                    'temperature': 0.8,  # Creative but not too random
-                    'top_p': 0.9,
-                    'num_predict': 150   # Keep responses concise
-                }
+                    "temperature": 0.8,  # Creative but not too random
+                    "top_p": 0.9,
+                    "num_predict": 150,  # Keep responses concise
+                },
             )
 
-            ai_text = response['message']['content'].strip()
+            ai_text = response["message"]["content"].strip()
 
             # Parse response for suggestions and actions
             suggestions, action_items = self._parse_ai_response(ai_text, hydration_data)
 
             # Determine coaching type and motivation level
-            coaching_type, motivation_level = self._analyze_response_intent(ai_text, hydration_data)
+            coaching_type, motivation_level = self._analyze_response_intent(
+                ai_text, hydration_data
+            )
 
             return CoachResponse(
                 response=ai_text,
                 suggestions=suggestions,
                 action_items=action_items,
                 motivation_level=motivation_level,
-                coaching_type=coaching_type
+                coaching_type=coaching_type,
             )
 
         except Exception as e:
@@ -367,7 +377,7 @@ Hãy trả lời bằng tiếng Việt thân thiện và khuyến khích.'''
         user_context: Dict,
         hydration_data: Dict,
         user_id: str = None,
-        db = None
+        db=None,
     ) -> str:
         """Build comprehensive AI context with advanced personalization"""
         total_today = hydration_data.get("total_today", 0)
@@ -391,16 +401,24 @@ Hãy trả lời bằng tiếng Việt thân thiện và khuyến khích.'''
         # Hydration status analysis
         goal_percentage = (total_today / 2000) * 100
         if total_today >= 2000:
-            hydration_status = f"đã hoàn thành mục tiêu ({total_today}ml = {goal_percentage:.0f}%)"
+            hydration_status = (
+                f"đã hoàn thành mục tiêu ({total_today}ml = {goal_percentage:.0f}%)"
+            )
         elif total_today >= 1500:
             remaining = 2000 - total_today
             hydration_status = f"sắp đạt mục tiêu ({total_today}ml, còn {remaining}ml)"
         elif total_today >= 1000:
-            hydration_status = f"đang tiến bộ ({total_today}ml = {goal_percentage:.0f}% mục tiêu)"
+            hydration_status = (
+                f"đang tiến bộ ({total_today}ml = {goal_percentage:.0f}% mục tiêu)"
+            )
         elif total_today >= 500:
-            hydration_status = f"cần cố gắng thêm ({total_today}ml = {goal_percentage:.0f}%)"
+            hydration_status = (
+                f"cần cố gắng thêm ({total_today}ml = {goal_percentage:.0f}%)"
+            )
         else:
-            hydration_status = f"cần bắt kịp ngay ({total_today}ml = {goal_percentage:.0f}%)"
+            hydration_status = (
+                f"cần bắt kịp ngay ({total_today}ml = {goal_percentage:.0f}%)"
+            )
 
         # Activity pattern analysis
         if log_count == 0:
@@ -416,7 +434,9 @@ Hãy trả lời bằng tiếng Việt thân thiện và khuyến khích.'''
         context_details = ""
         if user_context:
             if user_context.get("activity_level"):
-                context_details += f"- Mức độ hoạt động: {user_context['activity_level']}\n"
+                context_details += (
+                    f"- Mức độ hoạt động: {user_context['activity_level']}\n"
+                )
             if user_context.get("mood"):
                 context_details += f"- Tâm trạng: {user_context['mood']}\n"
             if user_context.get("location"):
@@ -451,11 +471,13 @@ Hãy response như AQUA AI coach thông minh với deep understanding về user.
         user_context: Dict,
         hydration_data: Dict,
         user_id: str = None,
-        db = None
+        db=None,
     ) -> str:
         """Build analytics-enhanced context for AI responses"""
         # Start with basic context - pass all parameters correctly
-        base_context = self._build_advanced_context(user_message, user_context, hydration_data, user_id, db)
+        base_context = self._build_advanced_context(
+            user_message, user_context, hydration_data, user_id, db
+        )
 
         # Add analytics insights if available
         if not (analytics_service and user_id and db):
@@ -463,12 +485,20 @@ Hãy response như AQUA AI coach thông minh với deep understanding về user.
 
         try:
             # Get user analytics profile
-            profile = await analytics_service.get_user_analytics_profile(db, user_id, days=14)
+            profile = await analytics_service.get_user_analytics_profile(
+                db, user_id, days=14
+            )
 
             # Extract key insights for AI context
             user_segment = profile.get("user_segment", {}).get("segment", "unknown")
-            coaching_style = profile.get("personalization_context", {}).get("coaching_style_preference", "encouraging")
-            motivation_level = profile.get("personalization_context", {}).get("motivation_indicators", {}).get("level", "medium")
+            coaching_style = profile.get("personalization_context", {}).get(
+                "coaching_style_preference", "encouraging"
+            )
+            motivation_level = (
+                profile.get("personalization_context", {})
+                .get("motivation_indicators", {})
+                .get("level", "medium")
+            )
 
             # Get top recommendations
             recommendations = profile.get("coaching_recommendations", [])[:2]
@@ -505,7 +535,9 @@ Hãy response như AQUA AI coach thông minh với deep understanding về user.
             print(f"[ANALYTICS] Error getting enhanced context: {str(e)}")
             return base_context
 
-    def _parse_ai_response(self, ai_text: str, hydration_data: Dict) -> Tuple[List[str], List[str]]:
+    def _parse_ai_response(
+        self, ai_text: str, hydration_data: Dict
+    ) -> Tuple[List[str], List[str]]:
         """Parse AI response to extract suggestions and actions"""
         suggestions = []
         action_items = []
@@ -528,7 +560,9 @@ Hãy response như AQUA AI coach thông minh với deep understanding về user.
 
         return suggestions, action_items
 
-    def _analyze_response_intent(self, ai_text: str, hydration_data: Dict) -> Tuple[str, str]:
+    def _analyze_response_intent(
+        self, ai_text: str, hydration_data: Dict
+    ) -> Tuple[str, str]:
         """Analyze AI response to determine coaching type and motivation level"""
         text_lower = ai_text.lower()
         total_today = hydration_data.get("total_today", 0)
@@ -549,17 +583,14 @@ Hãy response như AQUA AI coach thông minh với deep understanding về user.
         if total_today < 500:
             motivation_level = "high"  # Need strong motivation
         elif total_today >= 2000:
-            motivation_level = "low"   # Maintenance mode
+            motivation_level = "low"  # Maintenance mode
         else:
             motivation_level = "medium"
 
         return coaching_type, motivation_level
 
     async def _generate_enhanced_rule_response(
-        self,
-        user_message: str,
-        user_context: Dict,
-        hydration_data: Dict
+        self, user_message: str, user_context: Dict, hydration_data: Dict
     ) -> CoachResponse:
         """Enhanced rule-based responses when AI is not available"""
 
@@ -575,7 +606,10 @@ Hãy response như AQUA AI coach thông minh với deep understanding về user.
         coaching_type = "general"
 
         # Enhanced greeting responses
-        if any(word in user_message_lower for word in ["xin chào", "chào", "hello", "hi", "hey"]):
+        if any(
+            word in user_message_lower
+            for word in ["xin chào", "chào", "hello", "hi", "hey"]
+        ):
             time_responses = {
                 "morning": [
                     f"Chào buổi sáng! ☀️ Bạn đã uống {total_today}ml rồi. Hãy bắt đầu ngày mới với năng lượng tích cực! 💧",
@@ -588,7 +622,7 @@ Hãy response như AQUA AI coach thông minh với deep understanding về user.
                 "evening": [
                     f"Chào buổi tối! 🌙 Hôm nay đã {total_today}ml - thành tích tuyệt vời! 🌟",
                     f"Tối tốt lành! ✨ {total_today}ml hôm nay, cơ thể bạn cảm ơn! 🙏",
-                ]
+                ],
             }
 
             if current_hour < 12:
@@ -601,7 +635,10 @@ Hãy response như AQUA AI coach thông minh với deep understanding về user.
             coaching_type = "greeting"
 
         # Progress inquiry responses
-        elif any(word in user_message_lower for word in ["tiến độ", "progress", "thế nào", "how am i"]):
+        elif any(
+            word in user_message_lower
+            for word in ["tiến độ", "progress", "thế nào", "how am i"]
+        ):
             if total_today >= 2000:
                 response = f"Xuất sắc! 🎉 {total_today}ml - bạn đã vượt mục tiêu! Cơ thể đang hoạt động tối ưu! 💫"
                 motivation_level = "high"
@@ -621,7 +658,10 @@ Hãy response như AQUA AI coach thông minh với deep understanding về user.
                 action_items.append("Uống 500ml nước ngay bây giờ")
 
         # Motivation requests
-        elif any(word in user_message_lower for word in ["động lực", "motivation", "khuyến khích", "encourage"]):
+        elif any(
+            word in user_message_lower
+            for word in ["động lực", "motivation", "khuyến khích", "encourage"]
+        ):
             motivational_responses = [
                 "Mỗi giọt nước là một món quà cho cơ thể! 🎁 Bạn đang đầu tư vào sức khỏe tương lai! ✨",
                 "Nước = năng lượng = thành công! ⚡ Bạn có thể làm được! 💪",
@@ -633,19 +673,27 @@ Hãy response như AQUA AI coach thông minh với deep understanding về user.
             coaching_type = "encouragement"
 
         # Hydration advice
-        elif any(word in user_message_lower for word in ["bao nhiều", "how much", "uống", "drink"]):
+        elif any(
+            word in user_message_lower
+            for word in ["bao nhiều", "how much", "uống", "drink"]
+        ):
             if current_hour < 10:
                 response = "Buổi sáng nên uống 500-700ml để khởi động! 🌅 Nước ấm hoặc nước lọc đều tốt! 💧"
             elif current_hour < 15:
                 response = "Buổi trưa uống 300-500ml mỗi 2-3 tiếng! ⏰ Nghe cơ thể mình nói nhé! 👂"
             elif current_hour < 19:
-                response = "Buổi chiều là thời điểm vàng! ✨ 400-600ml để tăng tập trung! 🎯"
+                response = (
+                    "Buổi chiều là thời điểm vàng! ✨ 400-600ml để tăng tập trung! 🎯"
+                )
             else:
                 response = "Tối uống vừa phải thôi! 🌙 200-300ml để không ảnh hưởng giấc ngủ! 😴"
             suggestions.append("Set timer mỗi 2 tiếng để nhắc uống nước")
 
         # Energy/tiredness
-        elif any(word in user_message_lower for word in ["mệt", "tired", "năng lượng", "energy"]):
+        elif any(
+            word in user_message_lower
+            for word in ["mệt", "tired", "năng lượng", "energy"]
+        ):
             if total_today < 1000:
                 response = "Mệt mỏi có thể do thiếu nước! 😴 Uống 1-2 ly nước và cảm nhận sự khác biệt! ✨"
                 action_items.append("Uống 400ml nước để tăng năng lượng")
@@ -681,7 +729,7 @@ Hãy response như AQUA AI coach thông minh với deep understanding về user.
             suggestions=suggestions,
             action_items=action_items,
             motivation_level=motivation_level,
-            coaching_type=coaching_type
+            coaching_type=coaching_type,
         )
 
     def get_proactive_suggestion(self, hydration_data: Dict) -> Optional[str]:
@@ -694,11 +742,15 @@ Hãy response như AQUA AI coach thông minh với deep understanding về user.
 
         # Time-based suggestions
         if current_hour == 8 and log_count == 0:
-            suggestions.append("🌅 Chào buổi sáng! Uống 1 ly nước ấm để đánh thức cơ thể nhé!")
+            suggestions.append(
+                "🌅 Chào buổi sáng! Uống 1 ly nước ấm để đánh thức cơ thể nhé!"
+            )
         elif current_hour == 12 and total_today < 800:
             suggestions.append("🍽️ Giờ ăn trưa rồi! Nhớ uống nước cùng bữa ăn nhé!")
         elif current_hour == 15 and total_today < 1200:
-            suggestions.append("☀️ Buổi chiều cần năng lượng! Uống nước để tăng tập trung!")
+            suggestions.append(
+                "☀️ Buổi chiều cần năng lượng! Uống nước để tăng tập trung!"
+            )
         elif current_hour == 18 and total_today < 1600:
             suggestions.append("🌆 Sắp hết ngày rồi! Cố gắng uống thêm nước nhé!")
 

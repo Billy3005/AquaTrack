@@ -69,7 +69,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         xp_gained: int = 0,
         volume_ml: int = 0,
         new_level: Optional[int] = None,
-        new_streak: Optional[int] = None
+        new_streak: Optional[int] = None,
     ) -> User:
         """Update user statistics (XP, volume, level, streak)"""
         user = self.get(db, user_id)

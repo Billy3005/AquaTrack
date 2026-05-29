@@ -17,7 +17,12 @@ class SocialService:
         pass
 
     async def send_friend_request(
-        self, db: Session, *, sender_id: str, receiver_username: str, message: Optional[str] = None
+        self,
+        db: Session,
+        *,
+        sender_id: str,
+        receiver_username: str,
+        message: Optional[str] = None,
     ) -> Dict:
         """Send a friend request by username"""
         # Find receiver by username
@@ -47,7 +52,9 @@ class SocialService:
         except ValueError as e:
             return {"success": False, "message": str(e)}
 
-    async def accept_friend_request(self, db: Session, *, request_id: str, user_id: str) -> Dict:
+    async def accept_friend_request(
+        self, db: Session, *, request_id: str, user_id: str
+    ) -> Dict:
         """Accept a friend request"""
         try:
             friend_request = friend_request_crud.accept_request(
@@ -66,7 +73,9 @@ class SocialService:
         except ValueError as e:
             return {"success": False, "message": str(e)}
 
-    async def decline_friend_request(self, db: Session, *, request_id: str, user_id: str) -> Dict:
+    async def decline_friend_request(
+        self, db: Session, *, request_id: str, user_id: str
+    ) -> Dict:
         """Decline a friend request"""
         try:
             friend_request = friend_request_crud.decline_request(
@@ -92,7 +101,9 @@ class SocialService:
             raise ValueError(f"User '{friend_username}' not found")
 
         # Check if they are friends
-        if not friend_crud.are_friends(db, user_id=user_id, other_user_id=friend_user.id):
+        if not friend_crud.are_friends(
+            db, user_id=user_id, other_user_id=friend_user.id
+        ):
             return {"success": False, "message": "You are not friends with this user"}
 
         # Remove friendship
@@ -132,10 +143,14 @@ class SocialService:
         best_week_rank = leaderboard_crud.get_user_best_rank(db, user_id=user_id)
 
         # Get participation count
-        weeks_participated = leaderboard_crud.get_participation_count(db, user_id=user_id)
+        weeks_participated = leaderboard_crud.get_participation_count(
+            db, user_id=user_id
+        )
 
         # Get recent friend activity (simplified)
-        recent_activity = self._get_recent_friend_activity(db, user_id=user_id, friends=friends)
+        recent_activity = self._get_recent_friend_activity(
+            db, user_id=user_id, friends=friends
+        )
 
         return {
             "total_friends": total_friends,
@@ -157,7 +172,10 @@ class SocialService:
             from app.crud.intake_log import intake_log_crud
 
             friend_recent_logs = intake_log_crud.get_by_user(
-                db, user_id=friend["friend_user_id"], skip=0, limit=5  # Get more recent logs
+                db,
+                user_id=friend["friend_user_id"],
+                skip=0,
+                limit=5,  # Get more recent logs
             )
 
             for log in friend_recent_logs[:3]:  # Show top 3 activities
@@ -170,11 +188,11 @@ class SocialService:
                     "friend_avatar_id": friend["friend_avatar_id"],
                     "activity_type": "logged_drink",
                     "volume_ml": log.effective_volume_ml,  # Correct field name
-                    "liquid_type": log.liquid_type,       # Correct field name
-                    "container_type": log.container_type, # Additional info
-                    "xp_earned": log.xp_earned,          # Show XP gained
+                    "liquid_type": log.liquid_type,  # Correct field name
+                    "container_type": log.container_type,  # Additional info
+                    "xp_earned": log.xp_earned,  # Show XP gained
                     "activity_time": log.logged_at.isoformat(),
-                    "hours_ago": hours_ago,              # User-friendly time
+                    "hours_ago": hours_ago,  # User-friendly time
                 }
                 recent_activity.append(activity)
 
@@ -197,11 +215,18 @@ class SocialService:
             return {"success": False, "message": f"User '{friend_username}' not found"}
 
         # Check if they are friends
-        if not friend_crud.are_friends(db, user_id=sender_id, other_user_id=friend_user.id):
-            return {"success": False, "message": "You can only send reminders to friends"}
+        if not friend_crud.are_friends(
+            db, user_id=sender_id, other_user_id=friend_user.id
+        ):
+            return {
+                "success": False,
+                "message": "You can only send reminders to friends",
+            }
 
         # Create notification record
-        default_message = "Stay hydrated! 💧 Your friend is reminding you to drink water!"
+        default_message = (
+            "Stay hydrated! 💧 Your friend is reminding you to drink water!"
+        )
         reminder_message = message or default_message
 
         # Store notification in user's push_token field as JSON log (simple implementation)
@@ -211,7 +236,11 @@ class SocialService:
             "title": "Hydration Reminder",
             "body": reminder_message,
             "sender_id": sender_id,
-            "sender_username": user_crud.get(db, id=sender_id).username if user_crud.get(db, id=sender_id) else "Friend",
+            "sender_username": (
+                user_crud.get(db, id=sender_id).username
+                if user_crud.get(db, id=sender_id)
+                else "Friend"
+            ),
             "timestamp": datetime.utcnow().isoformat(),
         }
 
@@ -233,7 +262,9 @@ class SocialService:
         current_week_start = leaderboard_crud.get_current_week_start()
 
         # Get all active users
-        active_users = user_crud.get_active_users(db, limit=10000)  # Implement in user_crud
+        active_users = user_crud.get_active_users(
+            db, limit=10000
+        )  # Implement in user_crud
         updated_count = 0
 
         for user in active_users:
@@ -271,7 +302,11 @@ class SocialService:
 
         # Get similar level users
         similar_users = user_crud.get_by_level_range(
-            db, min_level=min_level, max_level=max_level, exclude_user_id=user_id, limit=limit*2
+            db,
+            min_level=min_level,
+            max_level=max_level,
+            exclude_user_id=user_id,
+            limit=limit * 2,
         )
 
         # Filter out existing friends and pending requests
@@ -279,8 +314,12 @@ class SocialService:
         friend_ids = {f.friend_user_id for f in existing_friends}
 
         # Get both sent and received pending requests
-        sent_requests = friend_request_crud.get_user_requests(db, user_id=user_id, request_type="sent")
-        received_requests = friend_request_crud.get_user_requests(db, user_id=user_id, request_type="received")
+        sent_requests = friend_request_crud.get_user_requests(
+            db, user_id=user_id, request_type="sent"
+        )
+        received_requests = friend_request_crud.get_user_requests(
+            db, user_id=user_id, request_type="received"
+        )
 
         # Extract user IDs from pending requests
         pending_ids = set()
@@ -296,7 +335,9 @@ class SocialService:
             if user.id not in friend_ids and user.id not in pending_ids:
                 # Calculate compatibility score based on multiple factors
                 level_diff = abs(user.current_level - current_user.current_level)
-                level_score = max(0, 100 - (level_diff * 20))  # Lower level diff = higher score
+                level_score = max(
+                    0, 100 - (level_diff * 20)
+                )  # Lower level diff = higher score
 
                 # Activity similarity (based on recent logs)
                 activity_score = 50  # Default base score
@@ -304,16 +345,21 @@ class SocialService:
                 # Total compatibility score
                 compatibility_score = (level_score + activity_score) / 2
 
-                suggestions.append({
-                    "user_id": user.id,
-                    "username": user.username,
-                    "avatar_id": user.avatar_id,
-                    "level": user.current_level,
-                    "total_xp": user.total_xp,
-                    "current_streak": user.current_streak,
-                    "compatibility_score": round(compatibility_score, 1),
-                    "common_interests": ["hydration", "health"],  # Default interests
-                })
+                suggestions.append(
+                    {
+                        "user_id": user.id,
+                        "username": user.username,
+                        "avatar_id": user.avatar_id,
+                        "level": user.current_level,
+                        "total_xp": user.total_xp,
+                        "current_streak": user.current_streak,
+                        "compatibility_score": round(compatibility_score, 1),
+                        "common_interests": [
+                            "hydration",
+                            "health",
+                        ],  # Default interests
+                    }
+                )
 
         # Sort by compatibility score
         suggestions.sort(key=lambda x: x["compatibility_score"], reverse=True)

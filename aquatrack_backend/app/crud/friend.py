@@ -62,32 +62,42 @@ class CRUDFriend(CRUDBase[Friend, dict, dict]):
             # Calculate friendship duration
             friendship_duration = (datetime.utcnow() - friend.created_at).days
 
-            result.append({
-                "id": friend.id,
-                "user_id": friend.user_id,
-                "friend_user_id": friend.friend_user_id,
-                "is_active": friend.is_active,
-                "is_blocked": friend.is_blocked,
-                "created_at": friend.created_at,
-                "friend_username": friend_user.username,
-                "friend_avatar_id": friend_user.avatar_id,
-                "friend_current_level": friend_user.current_level,
-                "friend_total_xp": friend_user.total_xp,
-                "friendship_duration_days": friendship_duration,
-                "last_seen": friend_user.last_login,
-            })
+            result.append(
+                {
+                    "id": friend.id,
+                    "user_id": friend.user_id,
+                    "friend_user_id": friend.friend_user_id,
+                    "is_active": friend.is_active,
+                    "is_blocked": friend.is_blocked,
+                    "created_at": friend.created_at,
+                    "friend_username": friend_user.username,
+                    "friend_avatar_id": friend_user.avatar_id,
+                    "friend_current_level": friend_user.current_level,
+                    "friend_total_xp": friend_user.total_xp,
+                    "friendship_duration_days": friendship_duration,
+                    "last_seen": friend_user.last_login,
+                }
+            )
 
         return result
 
-    def remove_friendship(self, db: Session, *, user_id: str, friend_user_id: str) -> bool:
+    def remove_friendship(
+        self, db: Session, *, user_id: str, friend_user_id: str
+    ) -> bool:
         """Remove mutual friendship between two users"""
         # Remove both directions of friendship
         removed_count = (
             db.query(Friend)
             .filter(
                 or_(
-                    and_(Friend.user_id == user_id, Friend.friend_user_id == friend_user_id),
-                    and_(Friend.user_id == friend_user_id, Friend.friend_user_id == user_id),
+                    and_(
+                        Friend.user_id == user_id,
+                        Friend.friend_user_id == friend_user_id,
+                    ),
+                    and_(
+                        Friend.user_id == friend_user_id,
+                        Friend.friend_user_id == user_id,
+                    ),
                 )
             )
             .delete(synchronize_session=False)
@@ -188,7 +198,9 @@ class CRUDFriend(CRUDBase[Friend, dict, dict]):
         result = []
         for user in users:
             # Check friendship status
-            is_friend = self.are_friends(db, user_id=current_user_id, other_user_id=user.id)
+            is_friend = self.are_friends(
+                db, user_id=current_user_id, other_user_id=user.id
+            )
 
             # Check pending requests
             has_pending_request = friend_request_crud.has_pending_request(
@@ -197,15 +209,17 @@ class CRUDFriend(CRUDBase[Friend, dict, dict]):
                 db, sender_id=user.id, receiver_id=current_user_id
             )
 
-            result.append({
-                "id": user.id,
-                "username": user.username,
-                "avatar_id": user.avatar_id,
-                "current_level": user.current_level,
-                "total_xp": user.total_xp,
-                "is_already_friend": is_friend,
-                "has_pending_request": has_pending_request,
-            })
+            result.append(
+                {
+                    "id": user.id,
+                    "username": user.username,
+                    "avatar_id": user.avatar_id,
+                    "current_level": user.current_level,
+                    "total_xp": user.total_xp,
+                    "is_already_friend": is_friend,
+                    "has_pending_request": has_pending_request,
+                }
+            )
 
         return result
 
@@ -236,6 +250,7 @@ class CRUDFriend(CRUDBase[Friend, dict, dict]):
 
         # Get friend's recent activity (intake logs)
         from app.crud.intake_log import intake_log_crud
+
         recent_logs = intake_log_crud.get_by_user(
             db, user_id=friend_user_id, skip=0, limit=5
         )
@@ -245,6 +260,7 @@ class CRUDFriend(CRUDBase[Friend, dict, dict]):
 
         # Get friend's weekly stats if available
         from app.crud.leaderboard import leaderboard_crud
+
         current_week_start = leaderboard_crud.get_current_week_start()
         weekly_stats = leaderboard_crud.get_user_week_stats(
             db, user_id=friend_user_id, week_start=current_week_start
@@ -254,26 +270,41 @@ class CRUDFriend(CRUDBase[Friend, dict, dict]):
             "id": friend_user.id,
             "username": friend_user.username,
             "display_name": friend_user.full_name,
-            "avatar_url": f"/avatars/{friend_user.avatar_id}" if friend_user.avatar_id else None,
-            "hydration_level": weekly_stats.get("hydration_percentage", 0.0) if weekly_stats else 0.0,
-            "daily_progress": weekly_stats.get("daily_progress", 0.0) if weekly_stats else 0.0,
+            "avatar_url": (
+                f"/avatars/{friend_user.avatar_id}" if friend_user.avatar_id else None
+            ),
+            "hydration_level": (
+                weekly_stats.get("hydration_percentage", 0.0) if weekly_stats else 0.0
+            ),
+            "daily_progress": (
+                weekly_stats.get("daily_progress", 0.0) if weekly_stats else 0.0
+            ),
             "current_streak": friend_user.current_streak,
-            "is_online": friend_user.is_online if hasattr(friend_user, 'is_online') else False,
-            "status": getattr(friend_user, 'status', 'normal'),
+            "is_online": (
+                friend_user.is_online if hasattr(friend_user, "is_online") else False
+            ),
+            "status": getattr(friend_user, "status", "normal"),
             "last_active": friend_user.last_login,
             "weekly_rank": weekly_stats.get("rank", None) if weekly_stats else None,
-            "weekly_score": weekly_stats.get("weekly_score", None) if weekly_stats else None,
+            "weekly_score": (
+                weekly_stats.get("weekly_score", None) if weekly_stats else None
+            ),
             "friendship_duration_days": friendship_duration,
-            "recent_activity": [{
-                "volume_ml": log.effective_volume_ml,
-                "liquid_type": log.liquid_type,
-                "logged_at": log.logged_at.isoformat(),
-                "xp_earned": log.xp_earned,
-            } for log in recent_logs[:3]],
+            "recent_activity": [
+                {
+                    "volume_ml": log.effective_volume_ml,
+                    "liquid_type": log.liquid_type,
+                    "logged_at": log.logged_at.isoformat(),
+                    "xp_earned": log.xp_earned,
+                }
+                for log in recent_logs[:3]
+            ],
         }
 
 
-class CRUDFriendRequest(CRUDBase[FriendRequest, FriendRequestCreate, FriendRequestUpdate]):
+class CRUDFriendRequest(
+    CRUDBase[FriendRequest, FriendRequestCreate, FriendRequestUpdate]
+):
     """CRUD operations for FriendRequest model"""
 
     def create_request(
@@ -281,11 +312,15 @@ class CRUDFriendRequest(CRUDBase[FriendRequest, FriendRequestCreate, FriendReque
     ) -> FriendRequest:
         """Create a friend request"""
         # Check if users are already friends
-        if friend_crud.are_friends(db, user_id=sender_id, other_user_id=obj_in.receiver_id):
+        if friend_crud.are_friends(
+            db, user_id=sender_id, other_user_id=obj_in.receiver_id
+        ):
             raise ValueError("Users are already friends")
 
         # Check if sender is blocked by receiver
-        if friend_crud.is_blocked(db, user_id=obj_in.receiver_id, other_user_id=sender_id):
+        if friend_crud.is_blocked(
+            db, user_id=obj_in.receiver_id, other_user_id=sender_id
+        ):
             raise ValueError("Cannot send friend request to this user")
 
         # Check for existing pending request
@@ -310,7 +345,9 @@ class CRUDFriendRequest(CRUDBase[FriendRequest, FriendRequestCreate, FriendReque
         )
 
         if existing_request:
-            raise ValueError("A pending friend request already exists between these users")
+            raise ValueError(
+                "A pending friend request already exists between these users"
+            )
 
         request_data = obj_in.model_dump()
         request_data["sender_id"] = sender_id
@@ -363,25 +400,37 @@ class CRUDFriendRequest(CRUDBase[FriendRequest, FriendRequestCreate, FriendReque
         for request in requests:
             other_user = getattr(request, other_user_attr)
 
-            result.append({
-                "id": request.id,
-                "sender_id": request.sender_id,
-                "receiver_id": request.receiver_id,
-                "status": request.status,
-                "message": request.message,
-                "created_at": request.created_at,
-                "updated_at": request.updated_at,
-                "responded_at": request.responded_at,
-                # Other user info
-                "sender_username": request.sender.username if request.sender else None,
-                "sender_avatar_id": request.sender.avatar_id if request.sender else None,
-                "receiver_username": request.receiver.username if request.receiver else None,
-                "receiver_avatar_id": request.receiver.avatar_id if request.receiver else None,
-            })
+            result.append(
+                {
+                    "id": request.id,
+                    "sender_id": request.sender_id,
+                    "receiver_id": request.receiver_id,
+                    "status": request.status,
+                    "message": request.message,
+                    "created_at": request.created_at,
+                    "updated_at": request.updated_at,
+                    "responded_at": request.responded_at,
+                    # Other user info
+                    "sender_username": (
+                        request.sender.username if request.sender else None
+                    ),
+                    "sender_avatar_id": (
+                        request.sender.avatar_id if request.sender else None
+                    ),
+                    "receiver_username": (
+                        request.receiver.username if request.receiver else None
+                    ),
+                    "receiver_avatar_id": (
+                        request.receiver.avatar_id if request.receiver else None
+                    ),
+                }
+            )
 
         return result
 
-    def accept_request(self, db: Session, *, request_id: str, user_id: str) -> FriendRequest:
+    def accept_request(
+        self, db: Session, *, request_id: str, user_id: str
+    ) -> FriendRequest:
         """Accept a friend request and create friendship"""
         request = self.get(db, id=request_id)
         if not request:
@@ -406,7 +455,9 @@ class CRUDFriendRequest(CRUDBase[FriendRequest, FriendRequestCreate, FriendReque
 
         return request
 
-    def decline_request(self, db: Session, *, request_id: str, user_id: str) -> FriendRequest:
+    def decline_request(
+        self, db: Session, *, request_id: str, user_id: str
+    ) -> FriendRequest:
         """Decline a friend request"""
         request = self.get(db, id=request_id)
         if not request:
@@ -426,7 +477,9 @@ class CRUDFriendRequest(CRUDBase[FriendRequest, FriendRequestCreate, FriendReque
 
         return request
 
-    def cancel_request(self, db: Session, *, request_id: str, user_id: str) -> FriendRequest:
+    def cancel_request(
+        self, db: Session, *, request_id: str, user_id: str
+    ) -> FriendRequest:
         """Cancel a friend request (by sender)"""
         request = self.get(db, id=request_id)
         if not request:

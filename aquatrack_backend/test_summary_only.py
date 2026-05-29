@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 
-import requests
 import json
 
+import requests
+
 BASE_URL = "http://localhost:8005/api/v1"
+
 
 def test_summary():
     # Register new user
     register_data = {
         "email": "summary_test2@example.com",
         "password": "testpass123",
-        "full_name": "Summary Tester"
+        "full_name": "Summary Tester",
     }
 
     register_response = requests.post(f"{BASE_URL}/auth/register", json=register_data)
@@ -33,13 +35,15 @@ def test_summary():
         "veggie_intake": "medium",
         "health_conditions": ["none"],
         "coffee_cups_per_day": 1,
-        "alcohol_units_per_day": 0
+        "alcohol_units_per_day": 0,
     }
 
     requests.put(f"{BASE_URL}/water-profile/", json=profile_data, headers=headers)
 
     # Test summary
-    summary_response = requests.get(f"{BASE_URL}/water-profile/summary", headers=headers)
+    summary_response = requests.get(
+        f"{BASE_URL}/water-profile/summary", headers=headers
+    )
     print(f"Summary Status: {summary_response.status_code}")
 
     if summary_response.status_code == 200:
@@ -48,6 +52,7 @@ def test_summary():
         print("SUCCESS: Summary endpoint working!")
     else:
         print(f"Summary error status code: {summary_response.status_code}")
+
 
 if __name__ == "__main__":
     test_summary()

@@ -4,11 +4,11 @@ class AppConfig {
   AppConfig._();
 
   // API Configuration (updated to match running backend port)
-  static const String apiBaseUrl = 'http://localhost:8002';
+  static const String apiBaseUrl = 'http://localhost:8001';
   static const String apiVersion = 'v1';
 
   // Simple endpoints for CORS testing
-  static const String simpleLoginUrl = 'http://localhost:8002/simple-login';
+  static const String simpleLoginUrl = 'http://localhost:8001/simple-login';
   static const Duration apiTimeout =
       Duration(seconds: 90); // Increased for AI responses
   static const Duration connectTimeout = Duration(seconds: 15);

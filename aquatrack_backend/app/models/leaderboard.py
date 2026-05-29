@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Optional
 
 from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, String
@@ -22,8 +22,12 @@ class LeaderboardEntry(Base):
 
     # Hydration metrics
     total_volume_ml = Column(Integer, default=0, nullable=False)
-    goal_achievement_days = Column(Integer, default=0, nullable=False)  # Days goal was met
-    streak_days = Column(Integer, default=0, nullable=False)  # Current streak in that week
+    goal_achievement_days = Column(
+        Integer, default=0, nullable=False
+    )  # Days goal was met
+    streak_days = Column(
+        Integer, default=0, nullable=False
+    )  # Current streak in that week
     average_daily_ml = Column(Integer, default=0, nullable=False)  # Average per day
 
     # Ranking
@@ -58,7 +62,11 @@ class LeaderboardEntry(Base):
     @property
     def goal_achievement_percentage(self) -> float:
         """Calculate goal achievement percentage for the week"""
-        return (self.goal_achievement_days / 7) * 100 if self.goal_achievement_days > 0 else 0.0
+        return (
+            (self.goal_achievement_days / 7) * 100
+            if self.goal_achievement_days > 0
+            else 0.0
+        )
 
     @property
     def rank_suffix(self) -> str:
@@ -80,7 +88,9 @@ class LeaderboardEntry(Base):
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "week_start_date": self.week_start_date.isoformat() if self.week_start_date else None,
+            "week_start_date": (
+                self.week_start_date.isoformat() if self.week_start_date else None
+            ),
             "week_year": self.week_year,
             "total_volume_ml": self.total_volume_ml,
             "goal_achievement_days": self.goal_achievement_days,
@@ -95,5 +105,7 @@ class LeaderboardEntry(Base):
             "is_current_week": self.is_current_week,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-            "calculated_at": self.calculated_at.isoformat() if self.calculated_at else None,
+            "calculated_at": (
+                self.calculated_at.isoformat() if self.calculated_at else None
+            ),
         }

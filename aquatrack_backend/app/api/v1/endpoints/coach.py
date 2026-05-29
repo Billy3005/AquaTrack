@@ -1,6 +1,6 @@
+import logging
 import random
 import uuid
-import logging
 from datetime import date, datetime, timedelta
 from typing import List, Optional
 
@@ -19,7 +19,8 @@ from app.schemas.conversation import (ChatMessageRequest, ChatMessageResponse,
                                       ConversationSessionCreate,
                                       ConversationSessionListResponse,
                                       MessageCreate, MessageResponse,
-                                      QuickReplyActionRequest, QuickReplySchema)
+                                      QuickReplyActionRequest,
+                                      QuickReplySchema)
 from app.services.ai_coach_service import ai_coach_service
 
 router = APIRouter()
@@ -82,10 +83,10 @@ async def chat_with_coach(
         hydration_data={
             "total_today": total_today,
             "log_count": log_count_today,
-            "current_hour": current_hour
+            "current_hour": current_hour,
         },
         user_id=None,  # Bypass user lookup for testing
-        db=None  # Bypass database for testing
+        db=None,  # Bypass database for testing
     )
     print(f"[ENDPOINT DEBUG] ai_coach_service returned response successfully")
 
@@ -410,10 +411,10 @@ async def send_conversation_message(
             hydration_data={
                 "total_today": today_stats["total_effective_ml"],
                 "log_count": today_stats["log_count"],
-                "current_hour": datetime.now().hour
+                "current_hour": datetime.now().hour,
             },
             user_id=current_user_id,
-            db=db
+            db=db,
         )
 
         # Prepare quick replies for storage (JSON serializable format)
@@ -429,7 +430,11 @@ async def send_conversation_message(
                 )
 
         # Convert suggestions to quick replies if no action items
-        if not quick_replies_data and hasattr(ai_response, "suggestions") and ai_response.suggestions:
+        if (
+            not quick_replies_data
+            and hasattr(ai_response, "suggestions")
+            and ai_response.suggestions
+        ):
             for suggestion in ai_response.suggestions:
                 quick_replies_data.append(
                     {

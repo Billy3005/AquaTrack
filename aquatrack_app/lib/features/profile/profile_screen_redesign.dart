@@ -8,6 +8,7 @@ import '../../core/constants/app_text_styles.dart';
 import '../../core/repositories/auth_repository.dart';
 import '../../shared/widgets/coin_badge.dart';
 import 'providers/profile_provider.dart';
+import 'edit_body_info_screen.dart';
 
 /// Profile Screen - Complete redesign matching aquatrack/project/components/profile.jsx
 class ProfileScreenRedesign extends ConsumerStatefulWidget {
@@ -1294,6 +1295,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
               title: 'Hồ sơ cơ thể',
               subtitle: 'Dùng để AI tính goal',
               trailing: GestureDetector(
+                onTap: () => _navigateToEditBodyInfo(context),
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(10, 4, 10, 4),
                   decoration: BoxDecoration(
@@ -1493,6 +1495,16 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                   ),
                 ),
       ],
+    );
+  }
+
+  /// Navigate to edit body info screen
+  void _navigateToEditBodyInfo(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const EditBodyInfoScreen(),
+      ),
     );
   }
 }

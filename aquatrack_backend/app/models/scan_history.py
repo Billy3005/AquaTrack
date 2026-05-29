@@ -1,6 +1,7 @@
 import uuid
 
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
+                        String)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -33,7 +34,9 @@ class ScanHistory(Base):
 
     # Validation and Correction
     is_validated = Column(Boolean, default=False)  # User confirmed accuracy
-    user_corrected_volume_ml = Column(Integer, nullable=True)  # User's manual correction
+    user_corrected_volume_ml = Column(
+        Integer, nullable=True
+    )  # User's manual correction
     validated_at = Column(DateTime(timezone=True), nullable=True)
 
     # Metadata

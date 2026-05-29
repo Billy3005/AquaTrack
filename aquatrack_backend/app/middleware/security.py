@@ -4,21 +4,21 @@ Security Middleware cho AquaTrack Production
 Comprehensive security protection: input validation, XSS, injection prevention, security headers
 """
 
-import re
-import json
-import time
 import hashlib
+import json
+import re
 import secrets
-from datetime import datetime, timedelta
-from typing import Dict, List, Set, Optional, Any, Tuple
-from urllib.parse import unquote
+import time
 from collections import defaultdict, deque
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Set, Tuple
+from urllib.parse import unquote
 
-from fastapi import Request, Response, HTTPException, status
+from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
-from .logging import structured_logger, log_security_violation
+from .logging import log_security_violation, structured_logger
 
 
 class SecurityConfig:
@@ -26,8 +26,8 @@ class SecurityConfig:
 
     # Request size limits (bytes)
     MAX_REQUEST_SIZE = 50 * 1024 * 1024  # 50MB for image uploads
-    MAX_JSON_SIZE = 1 * 1024 * 1024      # 1MB for JSON requests
-    MAX_HEADER_SIZE = 8 * 1024           # 8KB for headers
+    MAX_JSON_SIZE = 1 * 1024 * 1024  # 1MB for JSON requests
+    MAX_HEADER_SIZE = 8 * 1024  # 8KB for headers
 
     # Content type whitelist
     ALLOWED_CONTENT_TYPES = {
@@ -37,7 +37,7 @@ class SecurityConfig:
         "image/jpeg",
         "image/png",
         "image/webp",
-        "text/plain"
+        "text/plain",
     }
 
     # Suspicious patterns for injection detection
@@ -79,9 +79,18 @@ class SecurityValidator:
 
     def __init__(self):
         # Compile regex patterns for performance
-        self.sql_patterns = [re.compile(pattern, re.IGNORECASE) for pattern in SecurityConfig.SQL_INJECTION_PATTERNS]
-        self.xss_patterns = [re.compile(pattern, re.IGNORECASE) for pattern in SecurityConfig.XSS_PATTERNS]
-        self.path_patterns = [re.compile(pattern, re.IGNORECASE) for pattern in SecurityConfig.PATH_TRAVERSAL_PATTERNS]
+        self.sql_patterns = [
+            re.compile(pattern, re.IGNORECASE)
+            for pattern in SecurityConfig.SQL_INJECTION_PATTERNS
+        ]
+        self.xss_patterns = [
+            re.compile(pattern, re.IGNORECASE)
+            for pattern in SecurityConfig.XSS_PATTERNS
+        ]
+        self.path_patterns = [
+            re.compile(pattern, re.IGNORECASE)
+            for pattern in SecurityConfig.PATH_TRAVERSAL_PATTERNS
+        ]
 
         # Threat tracking
         self.threat_tracking = {
@@ -89,7 +98,7 @@ class SecurityValidator:
             "xss_attempts": defaultdict(int),
             "path_traversal_attempts": defaultdict(int),
             "suspicious_ips": set(),
-            "blocked_requests": deque(maxlen=1000)
+            "blocked_requests": deque(maxlen=1000),
         }
 
     def validate_request_size(self, request: Request, body: bytes = None) -> bool:
@@ -112,7 +121,9 @@ class SecurityValidator:
 
     def validate_content_type(self, request: Request) -> bool:
         """Validate content type"""
-        content_type = request.headers.get("content-type", "").split(";")[0].strip().lower()
+        content_type = (
+            request.headers.get("content-type", "").split(";")[0].strip().lower()
+        )
 
         # Skip validation for GET requests
         if request.method == "GET":
@@ -175,7 +186,7 @@ class SecurityValidator:
         replacements = {
             "<": "&lt;",
             ">": "&gt;",
-            "\"": "&quot;",
+            '"': "&quot;",
             "'": "&#x27;",
             "&": "&amp;",
         }
@@ -218,16 +229,16 @@ class SecurityValidator:
             structured_logger.log_application_event(
                 "security_validation_error",
                 f"Input validation error: {str(e)}",
-                level="error"
+                level="error",
             )
             return False, "validation_error"
 
     def is_suspicious_ip(self, client_ip: str) -> bool:
         """Check if IP has suspicious activity"""
         total_attempts = (
-            self.threat_tracking["sql_injection_attempts"][client_ip] +
-            self.threat_tracking["xss_attempts"][client_ip] +
-            self.threat_tracking["path_traversal_attempts"][client_ip]
+            self.threat_tracking["sql_injection_attempts"][client_ip]
+            + self.threat_tracking["xss_attempts"][client_ip]
+            + self.threat_tracking["path_traversal_attempts"][client_ip]
         )
 
         # Mark as suspicious if > 5 attack attempts
@@ -237,7 +248,9 @@ class SecurityValidator:
 
         return client_ip in self.threat_tracking["suspicious_ips"]
 
-    def record_blocked_request(self, request: Request, violation_type: str, client_ip: str):
+    def record_blocked_request(
+        self, request: Request, violation_type: str, client_ip: str
+    ):
         """Record blocked request for analysis"""
         blocked_info = {
             "timestamp": time.time(),
@@ -245,7 +258,7 @@ class SecurityValidator:
             "method": request.method,
             "path": request.url.path,
             "violation_type": violation_type,
-            "user_agent": request.headers.get("user-agent", "unknown")
+            "user_agent": request.headers.get("user-agent", "unknown"),
         }
 
         self.threat_tracking["blocked_requests"].append(blocked_info)
@@ -257,7 +270,8 @@ class SecurityValidator:
 
         # Recent blocked requests
         recent_blocks = [
-            req for req in self.threat_tracking["blocked_requests"]
+            req
+            for req in self.threat_tracking["blocked_requests"]
             if req["timestamp"] > hour_ago
         ]
 
@@ -270,23 +284,31 @@ class SecurityValidator:
         for ip, count in self.threat_tracking["path_traversal_attempts"].items():
             attack_counts[ip] += count
 
-        top_attackers = sorted(attack_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+        top_attackers = sorted(attack_counts.items(), key=lambda x: x[1], reverse=True)[
+            :10
+        ]
 
         return {
             "overview": {
-                "total_sql_attempts": sum(self.threat_tracking["sql_injection_attempts"].values()),
-                "total_xss_attempts": sum(self.threat_tracking["xss_attempts"].values()),
-                "total_path_traversal": sum(self.threat_tracking["path_traversal_attempts"].values()),
+                "total_sql_attempts": sum(
+                    self.threat_tracking["sql_injection_attempts"].values()
+                ),
+                "total_xss_attempts": sum(
+                    self.threat_tracking["xss_attempts"].values()
+                ),
+                "total_path_traversal": sum(
+                    self.threat_tracking["path_traversal_attempts"].values()
+                ),
                 "suspicious_ips": len(self.threat_tracking["suspicious_ips"]),
-                "blocks_last_hour": len(recent_blocks)
+                "blocks_last_hour": len(recent_blocks),
             },
             "recent_blocks": recent_blocks[-20:],  # Last 20
             "top_attackers": top_attackers,
             "attack_types": {
                 "sql_injection": dict(self.threat_tracking["sql_injection_attempts"]),
                 "xss": dict(self.threat_tracking["xss_attempts"]),
-                "path_traversal": dict(self.threat_tracking["path_traversal_attempts"])
-            }
+                "path_traversal": dict(self.threat_tracking["path_traversal_attempts"]),
+            },
         }
 
 
@@ -301,7 +323,6 @@ class SecurityHeaders:
             "X-Content-Type-Options": "nosniff",
             "X-Frame-Options": "DENY",
             "X-XSS-Protection": "1; mode=block",
-
             # Content Security Policy
             "Content-Security-Policy": (
                 "default-src 'self'; "
@@ -312,22 +333,17 @@ class SecurityHeaders:
                 "connect-src 'self' https:; "
                 "frame-ancestors 'none'"
             ),
-
             # HSTS (HTTP Strict Transport Security)
             "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-
             # Hide server information
             "Server": "AquaTrack-API",
-
             # Referrer Policy
             "Referrer-Policy": "strict-origin-when-cross-origin",
-
             # Feature Policy / Permissions Policy
             "Permissions-Policy": (
                 "geolocation=(), camera=(), microphone=(), "
                 "payment=(), usb=(), magnetometer=(), gyroscope=()"
             ),
-
             # Cache control for sensitive endpoints
             "Cache-Control": "no-store, no-cache, must-revalidate, private",
         }
@@ -355,8 +371,9 @@ async def security_middleware(request: Request, call_next):
         # 1. Check if IP is marked as suspicious
         if security_validator.is_suspicious_ip(client_ip):
             log_security_violation(
-                request, "suspicious_ip_blocked",
-                {"client_ip": client_ip, "reason": "repeated_violations"}
+                request,
+                "suspicious_ip_blocked",
+                {"client_ip": client_ip, "reason": "repeated_violations"},
             )
 
             return JSONResponse(
@@ -364,20 +381,21 @@ async def security_middleware(request: Request, call_next):
                 content={
                     "error": "Access denied",
                     "message": "Your IP has been flagged for suspicious activity",
-                    "timestamp": datetime.utcnow().isoformat()
-                }
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
             )
 
         # 2. Validate content type
         if not security_validator.validate_content_type(request):
             log_security_violation(
-                request, "invalid_content_type",
-                {"content_type": request.headers.get("content-type")}
+                request,
+                "invalid_content_type",
+                {"content_type": request.headers.get("content-type")},
             )
 
             return JSONResponse(
                 status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                content={"error": "Unsupported content type"}
+                content={"error": "Unsupported content type"},
             )
 
         # 3. Read and validate request body if present
@@ -388,34 +406,42 @@ async def security_middleware(request: Request, call_next):
                 # Validate request size
                 if not security_validator.validate_request_size(request, body):
                     log_security_violation(
-                        request, "request_too_large",
-                        {"size": len(body) if body else 0}
+                        request, "request_too_large", {"size": len(body) if body else 0}
                     )
 
                     return JSONResponse(
                         status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                        content={"error": "Request too large"}
+                        content={"error": "Request too large"},
                     )
 
                 # Validate JSON body for injection attacks
-                if body and "application/json" in request.headers.get("content-type", "").lower():
+                if (
+                    body
+                    and "application/json"
+                    in request.headers.get("content-type", "").lower()
+                ):
                     try:
                         json_data = json.loads(body)
-                        is_valid, violation_type = security_validator.validate_input_data(json_data, client_ip)
+                        is_valid, violation_type = (
+                            security_validator.validate_input_data(json_data, client_ip)
+                        )
 
                         if not is_valid:
-                            security_validator.record_blocked_request(request, violation_type, client_ip)
+                            security_validator.record_blocked_request(
+                                request, violation_type, client_ip
+                            )
                             log_security_violation(
-                                request, f"input_validation_failed_{violation_type}",
-                                {"violation_type": violation_type}
+                                request,
+                                f"input_validation_failed_{violation_type}",
+                                {"violation_type": violation_type},
                             )
 
                             return JSONResponse(
                                 status_code=status.HTTP_400_BAD_REQUEST,
                                 content={
                                     "error": "Invalid input data",
-                                    "message": "Request contains potentially dangerous content"
-                                }
+                                    "message": "Request contains potentially dangerous content",
+                                },
                             )
 
                     except json.JSONDecodeError:
@@ -426,26 +452,31 @@ async def security_middleware(request: Request, call_next):
                 structured_logger.log_application_event(
                     "security_middleware_error",
                     f"Error processing request body: {str(e)}",
-                    level="error"
+                    level="error",
                 )
 
         # 4. Validate URL path and query parameters
         full_url = str(request.url)
-        is_valid, violation_type = security_validator.validate_input_data(full_url, client_ip)
+        is_valid, violation_type = security_validator.validate_input_data(
+            full_url, client_ip
+        )
 
         if not is_valid:
-            security_validator.record_blocked_request(request, violation_type, client_ip)
+            security_validator.record_blocked_request(
+                request, violation_type, client_ip
+            )
             log_security_violation(
-                request, f"url_validation_failed_{violation_type}",
-                {"violation_type": violation_type, "url": request.url.path}
+                request,
+                f"url_validation_failed_{violation_type}",
+                {"violation_type": violation_type, "url": request.url.path},
             )
 
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={
                     "error": "Invalid request",
-                    "message": "URL contains potentially dangerous content"
-                }
+                    "message": "URL contains potentially dangerous content",
+                },
             )
 
         # 5. Process request
@@ -466,7 +497,7 @@ async def security_middleware(request: Request, call_next):
             "security_middleware_critical_error",
             f"Critical security middleware error: {str(e)}",
             context={"client_ip": client_ip, "path": request.url.path},
-            level="error"
+            level="error",
         )
 
         # Fail secure - return error response
@@ -474,8 +505,8 @@ async def security_middleware(request: Request, call_next):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "error": "Security check failed",
-                "message": "Unable to validate request security"
-            }
+                "message": "Unable to validate request security",
+            },
         )
 
 
@@ -496,6 +527,7 @@ def _get_client_ip(request: Request) -> str:
 
 # Utility functions for application-level security
 
+
 def validate_user_input(data: Any, client_ip: str = "unknown") -> Tuple[bool, str]:
     """
     Validate user input data in application code
@@ -513,17 +545,9 @@ async def get_security_analytics():
     """Get security analytics cho admin dashboard"""
     try:
         stats = security_validator.get_security_stats()
-        return {
-            "status": "success",
-            "analytics": stats,
-            "timestamp": time.time()
-        }
+        return {"status": "success", "analytics": stats, "timestamp": time.time()}
     except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e),
-            "timestamp": time.time()
-        }
+        return {"status": "error", "error": str(e), "timestamp": time.time()}
 
 
 async def manage_security_ip(ip: str, action: str, reason: str = "admin action"):
@@ -547,17 +571,21 @@ async def manage_security_ip(ip: str, action: str, reason: str = "admin action")
         elif action == "get_status":
             is_suspicious = security_validator.is_suspicious_ip(ip)
             attacks = (
-                security_validator.threat_tracking["sql_injection_attempts"][ip] +
-                security_validator.threat_tracking["xss_attempts"][ip] +
-                security_validator.threat_tracking["path_traversal_attempts"][ip]
+                security_validator.threat_tracking["sql_injection_attempts"][ip]
+                + security_validator.threat_tracking["xss_attempts"][ip]
+                + security_validator.threat_tracking["path_traversal_attempts"][ip]
             )
             result = {
                 "ip": ip,
                 "is_blocked": is_suspicious,
                 "total_attacks": attacks,
-                "sql_attempts": security_validator.threat_tracking["sql_injection_attempts"][ip],
+                "sql_attempts": security_validator.threat_tracking[
+                    "sql_injection_attempts"
+                ][ip],
                 "xss_attempts": security_validator.threat_tracking["xss_attempts"][ip],
-                "traversal_attempts": security_validator.threat_tracking["path_traversal_attempts"][ip]
+                "traversal_attempts": security_validator.threat_tracking[
+                    "path_traversal_attempts"
+                ][ip],
             }
 
         else:
@@ -569,8 +597,4 @@ async def manage_security_ip(ip: str, action: str, reason: str = "admin action")
         return result
 
     except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e),
-            "timestamp": time.time()
-        }
+        return {"status": "error", "error": str(e), "timestamp": time.time()}

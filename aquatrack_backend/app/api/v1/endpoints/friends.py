@@ -7,18 +7,11 @@ from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud.friend import friend_crud, friend_request_crud
 from app.crud.leaderboard import leaderboard_crud
-from app.schemas.social import (
-    FriendReminderRequest,
-    FriendReminderResponse,
-    FriendRequestCreate,
-    FriendRequestResponse,
-    FriendRequestUpdate,
-    FriendResponse,
-    LeaderboardEntryResponse,
-    SocialStatsResponse,
-    UserSearchResult,
-    WeeklyLeaderboardResponse,
-)
+from app.schemas.social import (FriendReminderRequest, FriendReminderResponse,
+                                FriendRequestCreate, FriendRequestResponse,
+                                FriendRequestUpdate, FriendResponse,
+                                LeaderboardEntryResponse, SocialStatsResponse,
+                                UserSearchResult, WeeklyLeaderboardResponse)
 from app.services.social_service import social_service
 
 router = APIRouter()
@@ -46,8 +39,7 @@ async def send_friend_request(
 
     if not username:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username is required"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Username is required"
         )
 
     result = await social_service.send_friend_request(
@@ -56,8 +48,7 @@ async def send_friend_request(
 
     if not result["success"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=result["message"]
+            status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
         )
 
     return result
@@ -77,7 +68,7 @@ async def respond_to_friend_request(
     if action not in ["accept", "decline"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Action must be 'accept' or 'decline'"
+            detail="Action must be 'accept' or 'decline'",
         )
 
     if action == "accept":
@@ -91,8 +82,7 @@ async def respond_to_friend_request(
 
     if not result["success"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=result["message"]
+            status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
         )
 
     return result
@@ -141,8 +131,7 @@ async def accept_friend_request(
 
     if not result["success"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=result["message"]
+            status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
         )
 
     return result
@@ -161,8 +150,7 @@ async def decline_friend_request(
 
     if not result["success"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=result["message"]
+            status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
         )
 
     return result
@@ -181,10 +169,7 @@ async def cancel_friend_request(
         )
         return None
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 # Friends management endpoints
@@ -212,12 +197,12 @@ async def remove_friend_by_id(
     """Remove a friend by friend ID (Flutter compatible)"""
     # Get friend username from user ID
     from app.crud.user import user_crud
+
     friend_user = user_crud.get(db, id=friend_id)
 
     if not friend_user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Friend not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Friend not found"
         )
 
     result = await social_service.remove_friend(
@@ -226,8 +211,7 @@ async def remove_friend_by_id(
 
     if not result["success"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=result["message"]
+            status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
         )
 
     return result
@@ -246,8 +230,7 @@ async def remove_friend_by_username(
 
     if not result["success"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=result["message"]
+            status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
         )
 
     return result
@@ -263,12 +246,12 @@ async def send_hydration_reminder(
     """Send hydration reminder to a friend (Flutter compatible)"""
     # Get friend username from user ID
     from app.crud.user import user_crud
+
     friend_user = user_crud.get(db, id=friend_id)
 
     if not friend_user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Friend not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Friend not found"
         )
 
     result = await social_service.send_hydration_reminder(
@@ -280,8 +263,7 @@ async def send_hydration_reminder(
 
     if not result["success"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=result["message"]
+            status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
         )
 
     return result
@@ -311,10 +293,12 @@ async def get_friend_profile(
 ):
     """Get friend profile by friend ID"""
     # Check if they are friends
-    if not friend_crud.are_friends(db, user_id=current_user_id, other_user_id=friend_id):
+    if not friend_crud.are_friends(
+        db, user_id=current_user_id, other_user_id=friend_id
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only view profiles of friends"
+            detail="You can only view profiles of friends",
         )
 
     # Get friend data
@@ -324,8 +308,7 @@ async def get_friend_profile(
 
     if not friend_data:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Friend not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Friend not found"
         )
 
     return friend_data
@@ -343,18 +326,19 @@ async def update_my_status(
     if status_value not in ["normal", "thirsty", "stressed", "offline"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Status must be one of: normal, thirsty, stressed, offline"
+            detail="Status must be one of: normal, thirsty, stressed, offline",
         )
 
     # Update user status in database
     from app.crud.user import user_crud
+
     user_crud.update_status(db, user_id=current_user_id, status=status_value)
 
     return {
         "success": True,
         "message": f"Status updated to {status_value}",
         "status": status_value,
-        "updated_at": "datetime.utcnow().isoformat()"
+        "updated_at": "datetime.utcnow().isoformat()",
     }
 
 
@@ -413,14 +397,12 @@ async def block_user(
     user_to_block = user_crud.get_by_username(db, username=username)
     if not user_to_block:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User '{username}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"User '{username}' not found"
         )
 
     if user_to_block.id == current_user_id:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot block yourself"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot block yourself"
         )
 
     success = friend_crud.block_user(
@@ -435,8 +417,7 @@ async def block_user(
         }
     else:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to block user"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to block user"
         )
 
 
@@ -453,8 +434,7 @@ async def unblock_user(
     user_to_unblock = user_crud.get_by_username(db, username=username)
     if not user_to_unblock:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User '{username}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"User '{username}' not found"
         )
 
     success = friend_crud.unblock_user(
@@ -470,5 +450,5 @@ async def unblock_user(
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User was not blocked or failed to unblock"
+            detail="User was not blocked or failed to unblock",
         )

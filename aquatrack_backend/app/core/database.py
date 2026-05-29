@@ -39,18 +39,8 @@ def init_db() -> None:
     This should be called when the application starts.
     """
     # Import all models here to ensure they're registered
-    from app.models import (
-        Achievement,
-        Conversation,
-        ConversationSession,
-        DailySummary,
-        Friend,
-        FriendRequest,
-        IntakeLog,
-        LeaderboardEntry,
-        ScanHistory,
-        User,
-        UserInsight,
-    )
+    from app.models import (Achievement, Conversation, ConversationSession,
+                            DailySummary, Friend, FriendRequest, IntakeLog,
+                            LeaderboardEntry, ScanHistory, User, UserInsight)
 
     Base.metadata.create_all(bind=engine)

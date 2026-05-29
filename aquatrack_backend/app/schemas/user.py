@@ -18,7 +18,9 @@ class UserCreate(BaseModel):
     password: str = Field(..., min_length=6, max_length=100)
     username: Optional[str] = Field(None, max_length=50)
     full_name: Optional[str] = Field(None, max_length=100)
-    daily_goal_ml: Optional[int] = Field(2000, ge=1000, le=5000, description="Daily hydration goal in ml")
+    daily_goal_ml: Optional[int] = Field(
+        2000, ge=1000, le=5000, description="Daily hydration goal in ml"
+    )
 
     @validator("username")
     def username_alphanumeric(cls, v):
@@ -47,11 +49,15 @@ class UserUpdate(BaseModel):
     weight: Optional[float] = Field(None, ge=30, le=150, description="Weight in kg")
 
     # Lifestyle fields
-    activity_level: Optional[str] = Field(None, pattern="^(sedentary|light|moderate|active|athlete)$")
+    activity_level: Optional[str] = Field(
+        None, pattern="^(sedentary|light|moderate|active|athlete)$"
+    )
     job_type: Optional[str] = Field(None, pattern="^(office|mixed|field|manual|sport)$")
 
     # Health conditions (JSON array)
-    health_conditions: Optional[list] = Field(None, description="List of health conditions")
+    health_conditions: Optional[list] = Field(
+        None, description="List of health conditions"
+    )
 
     # Diet fields
     veggie_intake: Optional[str] = Field(None, pattern="^(low|mid|high)$")

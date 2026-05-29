@@ -63,10 +63,7 @@ class CRUDScanHistory(CRUDBase[ScanHistory, ScanHistoryCreate, ScanHistoryUpdate
             query = query.filter(self.model.is_validated == validated_only)
 
         return (
-            query.order_by(desc(self.model.created_at))
-            .offset(skip)
-            .limit(limit)
-            .all()
+            query.order_by(desc(self.model.created_at)).offset(skip).limit(limit).all()
         )
 
     def get_by_user_and_date(
@@ -142,7 +139,9 @@ class CRUDScanHistory(CRUDBase[ScanHistory, ScanHistoryCreate, ScanHistoryUpdate
             }
 
         corrected_scans = [
-            scan for scan in validated_scans if scan.user_corrected_volume_ml is not None
+            scan
+            for scan in validated_scans
+            if scan.user_corrected_volume_ml is not None
         ]
 
         correction_rate = len(corrected_scans) / len(validated_scans)
@@ -152,7 +151,9 @@ class CRUDScanHistory(CRUDBase[ScanHistory, ScanHistoryCreate, ScanHistoryUpdate
                 abs(scan.estimated_volume_ml - scan.user_corrected_volume_ml)
                 for scan in corrected_scans
             ]
-            avg_correction_difference = sum(correction_differences) / len(correction_differences)
+            avg_correction_difference = sum(correction_differences) / len(
+                correction_differences
+            )
         else:
             avg_correction_difference = 0.0
 

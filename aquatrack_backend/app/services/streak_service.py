@@ -7,7 +7,7 @@ Calculates consecutive days where user achieved their daily hydration goal.
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-from sqlalchemy import func, and_
+from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
 from app.crud.user import user_crud
@@ -34,10 +34,16 @@ class StreakService:
         today = date.today()
 
         # Check all daily summaries in reverse chronological order
-        summaries = db.query(DailySummary).filter(
-            DailySummary.user_id == user_id,
-            DailySummary.total_effective_ml >= daily_goal_ml * 0.8  # 80% threshold for "achieved"
-        ).order_by(DailySummary.date.desc()).all()
+        summaries = (
+            db.query(DailySummary)
+            .filter(
+                DailySummary.user_id == user_id,
+                DailySummary.total_effective_ml
+                >= daily_goal_ml * 0.8,  # 80% threshold for "achieved"
+            )
+            .order_by(DailySummary.date.desc())
+            .all()
+        )
 
         if not summaries:
             return 0
@@ -47,7 +53,11 @@ class StreakService:
         current_date = today
 
         for summary in summaries:
-            summary_date = summary.date.date() if isinstance(summary.date, datetime) else summary.date
+            summary_date = (
+                summary.date.date()
+                if isinstance(summary.date, datetime)
+                else summary.date
+            )
 
             # If this summary is for the current date we're checking
             if summary_date == current_date:
@@ -60,7 +70,9 @@ class StreakService:
         return streak
 
     @staticmethod
-    def update_streak_for_user(db: Session, user_id: str, achieved_goal_today: bool = False) -> tuple[int, int]:
+    def update_streak_for_user(
+        db: Session, user_id: str, achieved_goal_today: bool = False
+    ) -> tuple[int, int]:
         """
         Update user's current and longest streak.
 
@@ -84,11 +96,7 @@ class StreakService:
 
         # Update user stats only if streak changed or goal achieved today
         if new_current_streak != user.current_streak or achieved_goal_today:
-            user_crud.update_stats(
-                db,
-                user_id=user_id,
-                new_streak=new_current_streak
-            )
+            user_crud.update_stats(db, user_id=user_id, new_streak=new_current_streak)
 
             # Update longest streak separately if needed
             if new_longest_streak > user.longest_streak:
@@ -101,9 +109,7 @@ class StreakService:
 
     @staticmethod
     def check_and_update_daily_achievement(
-        db: Session,
-        user_id: str,
-        today_total_ml: int
+        db: Session, user_id: str, today_total_ml: int
     ) -> tuple[bool, int, int]:
         """
         Check if user achieved daily goal and update streak accordingly.
@@ -141,10 +147,10 @@ class StreakService:
         user = user_crud.get(db, user_id)
         if not user:
             return {
-                'current_streak': 0,
-                'longest_streak': 0,
-                'goal_achieved_today': False,
-                'days_with_goal': 0
+                "current_streak": 0,
+                "longest_streak": 0,
+                "goal_achieved_today": False,
+                "days_with_goal": 0,
             }
 
         # Get current streak (fresh calculation)
@@ -152,30 +158,38 @@ class StreakService:
 
         # Check if goal achieved today
         today = date.today()
-        today_summary = db.query(DailySummary).filter(
-            and_(
-                DailySummary.user_id == user_id,
-                func.date(DailySummary.date) == today
+        today_summary = (
+            db.query(DailySummary)
+            .filter(
+                and_(
+                    DailySummary.user_id == user_id,
+                    func.date(DailySummary.date) == today,
+                )
             )
-        ).first()
+            .first()
+        )
 
         daily_goal_ml = user.daily_goal_ml or 2000
         goal_achieved_today = (
-            today_summary is not None and
-            today_summary.total_effective_ml >= (daily_goal_ml * 0.8)
+            today_summary is not None
+            and today_summary.total_effective_ml >= (daily_goal_ml * 0.8)
         )
 
         # Count total days with goal achieved
-        days_with_goal = db.query(DailySummary).filter(
-            DailySummary.user_id == user_id,
-            DailySummary.total_effective_ml >= (daily_goal_ml * 0.8)
-        ).count()
+        days_with_goal = (
+            db.query(DailySummary)
+            .filter(
+                DailySummary.user_id == user_id,
+                DailySummary.total_effective_ml >= (daily_goal_ml * 0.8),
+            )
+            .count()
+        )
 
         return {
-            'current_streak': current_streak,
-            'longest_streak': user.longest_streak,
-            'goal_achieved_today': goal_achieved_today,
-            'days_with_goal': days_with_goal
+            "current_streak": current_streak,
+            "longest_streak": user.longest_streak,
+            "goal_achieved_today": goal_achieved_today,
+            "days_with_goal": days_with_goal,
         }
 
     @staticmethod
@@ -187,11 +201,7 @@ class StreakService:
             bool: Success status
         """
         try:
-            user_crud.update_stats(
-                db,
-                user_id=user_id,
-                new_streak=0
-            )
+            user_crud.update_stats(db, user_id=user_id, new_streak=0)
 
             user = user_crud.get(db, user_id)
             if user:

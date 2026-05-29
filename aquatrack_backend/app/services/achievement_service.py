@@ -2,6 +2,7 @@
 Achievement service for automatic progression and XP calculation
 Handles achievement unlocking, level progression, and rewards
 """
+
 from datetime import date, datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
@@ -72,10 +73,11 @@ class AchievementService:
 
         if current_level >= settings.MAX_LEVEL:
             return {
-                'current_level': current_level,
-                'current_level_xp': total_xp - self.calculate_xp_for_level(current_level),
-                'next_level_xp': 0,
-                'progress_percent': 100
+                "current_level": current_level,
+                "current_level_xp": total_xp
+                - self.calculate_xp_for_level(current_level),
+                "next_level_xp": 0,
+                "progress_percent": 100,
             }
 
         current_level_min_xp = self.calculate_xp_for_level(current_level)
@@ -84,20 +86,19 @@ class AchievementService:
         current_level_xp = total_xp - current_level_min_xp
         next_level_xp = next_level_min_xp - current_level_min_xp
 
-        progress_percent = int((current_level_xp / next_level_xp) * 100) if next_level_xp > 0 else 0
+        progress_percent = (
+            int((current_level_xp / next_level_xp) * 100) if next_level_xp > 0 else 0
+        )
 
         return {
-            'current_level': current_level,
-            'current_level_xp': current_level_xp,
-            'next_level_xp': next_level_xp,
-            'progress_percent': min(progress_percent, 100)
+            "current_level": current_level,
+            "current_level_xp": current_level_xp,
+            "next_level_xp": next_level_xp,
+            "progress_percent": min(progress_percent, 100),
         }
 
     async def process_intake_log_achievements(
-        self,
-        db: Session,
-        user_id: str,
-        intake_log: IntakeLog
+        self, db: Session, user_id: str, intake_log: IntakeLog
     ) -> List[Dict[str, any]]:
         """Process all achievements triggered by a new intake log"""
         unlocked_achievements = []
@@ -133,7 +134,7 @@ class AchievementService:
 
         # Calculate total XP gained
         total_xp_gained = sum(
-            self.xp_rewards.get(AchievementType(ach['achievement_type']), 0)
+            self.xp_rewards.get(AchievementType(ach["achievement_type"]), 0)
             for ach in unlocked_achievements
         )
 
@@ -144,10 +145,7 @@ class AchievementService:
             new_level = self.calculate_level_from_xp(new_total_xp)
 
             user_crud.update_stats(
-                db,
-                user_id=user_id,
-                xp_gained=total_xp_gained,
-                new_level=new_level
+                db, user_id=user_id, xp_gained=total_xp_gained, new_level=new_level
             )
 
             # Check for level-up achievements
@@ -160,10 +158,7 @@ class AchievementService:
         return unlocked_achievements
 
     def _update_daily_summary(
-        self,
-        db: Session,
-        daily_summary: DailySummary,
-        intake_log: IntakeLog
+        self, db: Session, daily_summary: DailySummary, intake_log: IntakeLog
     ):
         """Update daily summary with new intake log"""
         daily_summary.total_volume_ml += intake_log.effective_volume_ml
@@ -171,22 +166,21 @@ class AchievementService:
         daily_summary.last_log_at = intake_log.logged_at
 
         # Update goal achievement
-        daily_summary.goal_achieved = daily_summary.total_volume_ml >= daily_summary.daily_goal_ml
+        daily_summary.goal_achieved = (
+            daily_summary.total_volume_ml >= daily_summary.daily_goal_ml
+        )
 
         # Calculate completion percentage
         daily_summary.completion_percentage = min(
             int((daily_summary.total_volume_ml / daily_summary.daily_goal_ml) * 100),
-            100
+            100,
         )
 
         db.add(daily_summary)
         db.commit()
 
     async def _check_hydration_achievements(
-        self,
-        db: Session,
-        user_id: str,
-        daily_summary: DailySummary
+        self, db: Session, user_id: str, daily_summary: DailySummary
     ) -> List[Dict[str, any]]:
         """Check for daily hydration achievements"""
         achievements = []
@@ -194,38 +188,43 @@ class AchievementService:
         # First Goal Achievement
         if daily_summary.goal_achieved and daily_summary.log_count == 1:
             if not self._is_achievement_unlocked(db, user_id, "FIRST_GOAL"):
-                achievements.append(await self._unlock_achievement(
-                    db, user_id, "FIRST_GOAL", AchievementType.DAILY_GOAL
-                ))
+                achievements.append(
+                    await self._unlock_achievement(
+                        db, user_id, "FIRST_GOAL", AchievementType.DAILY_GOAL
+                    )
+                )
 
         # Daily Goal Achievement
         elif daily_summary.goal_achieved:
             if not self._is_achievement_unlocked(db, user_id, "DAILY_GOAL"):
-                achievements.append(await self._unlock_achievement(
-                    db, user_id, "DAILY_GOAL", AchievementType.DAILY_GOAL
-                ))
+                achievements.append(
+                    await self._unlock_achievement(
+                        db, user_id, "DAILY_GOAL", AchievementType.DAILY_GOAL
+                    )
+                )
 
         # Overachiever (150% of goal)
         if daily_summary.total_volume_ml >= daily_summary.daily_goal_ml * 1.5:
             if not self._is_achievement_unlocked(db, user_id, "OVERACHIEVER"):
-                achievements.append(await self._unlock_achievement(
-                    db, user_id, "OVERACHIEVER", AchievementType.DAILY_GOAL
-                ))
+                achievements.append(
+                    await self._unlock_achievement(
+                        db, user_id, "OVERACHIEVER", AchievementType.DAILY_GOAL
+                    )
+                )
 
         # Hydration Hero (200% of goal)
         if daily_summary.total_volume_ml >= daily_summary.daily_goal_ml * 2.0:
             if not self._is_achievement_unlocked(db, user_id, "HYDRATION_HERO"):
-                achievements.append(await self._unlock_achievement(
-                    db, user_id, "HYDRATION_HERO", AchievementType.DAILY_GOAL
-                ))
+                achievements.append(
+                    await self._unlock_achievement(
+                        db, user_id, "HYDRATION_HERO", AchievementType.DAILY_GOAL
+                    )
+                )
 
         return achievements
 
     async def _check_streak_achievements(
-        self,
-        db: Session,
-        user_id: str,
-        daily_summary: DailySummary
+        self, db: Session, user_id: str, daily_summary: DailySummary
     ) -> List[Dict[str, any]]:
         """Check for streak-based achievements"""
         achievements = []
@@ -246,23 +245,22 @@ class AchievementService:
             14: "STREAK_14",
             30: "MONTH_MASTER",
             60: "STREAK_60",
-            100: "CENTURION"
+            100: "CENTURION",
         }
 
         for streak_days, achievement_key in streak_milestones.items():
             if current_streak >= streak_days:
                 if not self._is_achievement_unlocked(db, user_id, achievement_key):
-                    achievements.append(await self._unlock_achievement(
-                        db, user_id, achievement_key, AchievementType.STREAK
-                    ))
+                    achievements.append(
+                        await self._unlock_achievement(
+                            db, user_id, achievement_key, AchievementType.STREAK
+                        )
+                    )
 
         return achievements
 
     async def _check_milestone_achievements(
-        self,
-        db: Session,
-        user_id: str,
-        user: User
+        self, db: Session, user_id: str, user: User
     ) -> List[Dict[str, any]]:
         """Check for milestone achievements based on total volume"""
         achievements = []
@@ -273,7 +271,7 @@ class AchievementService:
             50: "MILESTONE_50L",
             100: "MILESTONE_100L",
             500: "MILESTONE_500L",
-            1000: "MILLENNIUM_HYDRATOR"
+            1000: "MILLENNIUM_HYDRATOR",
         }
 
         total_volume_l = user.total_volume_ml / 1000
@@ -281,16 +279,16 @@ class AchievementService:
         for milestone_l, achievement_key in volume_milestones.items():
             if total_volume_l >= milestone_l:
                 if not self._is_achievement_unlocked(db, user_id, achievement_key):
-                    achievements.append(await self._unlock_achievement(
-                        db, user_id, achievement_key, AchievementType.TOTAL_VOLUME
-                    ))
+                    achievements.append(
+                        await self._unlock_achievement(
+                            db, user_id, achievement_key, AchievementType.TOTAL_VOLUME
+                        )
+                    )
 
         return achievements
 
     async def _check_consistency_achievements(
-        self,
-        db: Session,
-        user_id: str
+        self, db: Session, user_id: str
     ) -> List[Dict[str, any]]:
         """Check for consistency-based achievements"""
         achievements = []
@@ -307,9 +305,11 @@ class AchievementService:
 
         if goals_achieved >= 7:
             if not self._is_achievement_unlocked(db, user_id, "WEEKLY_CONSISTENT"):
-                achievements.append(await self._unlock_achievement(
-                    db, user_id, "WEEKLY_CONSISTENT", AchievementType.FREQUENCY
-                ))
+                achievements.append(
+                    await self._unlock_achievement(
+                        db, user_id, "WEEKLY_CONSISTENT", AchievementType.FREQUENCY
+                    )
+                )
 
         # Check monthly consistency (28 days)
         month_start = end_date - timedelta(days=27)  # Last 28 days
@@ -321,18 +321,16 @@ class AchievementService:
 
         if month_goals >= 28:
             if not self._is_achievement_unlocked(db, user_id, "MONTHLY_MASTER"):
-                achievements.append(await self._unlock_achievement(
-                    db, user_id, "MONTHLY_MASTER", AchievementType.FREQUENCY
-                ))
+                achievements.append(
+                    await self._unlock_achievement(
+                        db, user_id, "MONTHLY_MASTER", AchievementType.FREQUENCY
+                    )
+                )
 
         return achievements
 
     async def _check_level_achievements(
-        self,
-        db: Session,
-        user_id: str,
-        old_level: int,
-        new_level: int
+        self, db: Session, user_id: str, old_level: int, new_level: int
     ) -> List[Dict[str, any]]:
         """Check for level-based achievements"""
         achievements = []
@@ -342,15 +340,17 @@ class AchievementService:
             10: "LEVEL_10",
             20: "LEVEL_20",
             30: "LEVEL_30",
-            50: "MAX_LEVEL"
+            50: "MAX_LEVEL",
         }
 
         for milestone_level, achievement_key in level_milestones.items():
             if new_level >= milestone_level and old_level < milestone_level:
                 if not self._is_achievement_unlocked(db, user_id, achievement_key):
-                    achievements.append(await self._unlock_achievement(
-                        db, user_id, achievement_key, AchievementType.TOTAL_VOLUME
-                    ))
+                    achievements.append(
+                        await self._unlock_achievement(
+                            db, user_id, achievement_key, AchievementType.TOTAL_VOLUME
+                        )
+                    )
 
         return achievements
 
@@ -374,7 +374,9 @@ class AchievementService:
 
         return streak
 
-    def _is_achievement_unlocked(self, db: Session, user_id: str, achievement_key: str) -> bool:
+    def _is_achievement_unlocked(
+        self, db: Session, user_id: str, achievement_key: str
+    ) -> bool:
         """Check if user has already unlocked this achievement"""
         achievement = achievement_crud.get_user_achievement(
             db, user_id=user_id, achievement_key=achievement_key
@@ -386,7 +388,7 @@ class AchievementService:
         db: Session,
         user_id: str,
         achievement_key: str,
-        achievement_type: AchievementType
+        achievement_type: AchievementType,
     ) -> Dict[str, any]:
         """Unlock an achievement for user"""
         # Get achievement definition
@@ -398,14 +400,14 @@ class AchievementService:
         )
 
         return {
-            'achievement_id': achievement.id,
-            'achievement_key': achievement_key,
-            'achievement_type': achievement_type,
-            'title': achievement_data['title'],
-            'description': achievement_data['description'],
-            'icon': achievement_data['icon'],
-            'xp_reward': self.xp_rewards.get(achievement_type, 0),
-            'unlocked_at': achievement.unlocked_at
+            "achievement_id": achievement.id,
+            "achievement_key": achievement_key,
+            "achievement_type": achievement_type,
+            "title": achievement_data["title"],
+            "description": achievement_data["description"],
+            "icon": achievement_data["icon"],
+            "xp_reward": self.xp_rewards.get(achievement_type, 0),
+            "unlocked_at": achievement.unlocked_at,
         }
 
     def _get_achievement_data(self, achievement_key: str) -> Dict[str, str]:
@@ -415,128 +417,127 @@ class AchievementService:
             "FIRST_GOAL": {
                 "title": "Khởi đầu tuyệt vời!",
                 "description": "Đạt mục tiêu hydration ngày đầu tiên",
-                "icon": "🌱"
+                "icon": "🌱",
             },
             "DAILY_GOAL": {
                 "title": "Mục tiêu hàng ngày",
                 "description": "Hoàn thành mục tiêu hydration trong ngày",
-                "icon": "🎯"
+                "icon": "🎯",
             },
             "OVERACHIEVER": {
                 "title": "Siêu vượt mức",
                 "description": "Đạt 150% mục tiêu trong ngày",
-                "icon": "⚡"
+                "icon": "⚡",
             },
             "HYDRATION_HERO": {
                 "title": "Anh hùng hydration",
                 "description": "Đạt 200% mục tiêu trong ngày",
-                "icon": "🦸‍♂️"
+                "icon": "🦸‍♂️",
             },
-
             # Streak achievements
             "STREAK_3": {
                 "title": "Streak 3 ngày",
                 "description": "Duy trì mục tiêu 3 ngày liên tiếp",
-                "icon": "🔥"
+                "icon": "🔥",
             },
             "WEEK_WARRIOR": {
                 "title": "Chiến binh tuần",
                 "description": "Duy trì mục tiêu 7 ngày liên tiếp",
-                "icon": "⚔️"
+                "icon": "⚔️",
             },
             "STREAK_14": {
                 "title": "Streak 14 ngày",
                 "description": "Duy trì mục tiêu 2 tuần liên tiếp",
-                "icon": "🌟"
+                "icon": "🌟",
             },
             "MONTH_MASTER": {
                 "title": "Bậc thầy tháng",
                 "description": "Duy trì mục tiêu 30 ngày liên tiếp",
-                "icon": "👑"
+                "icon": "👑",
             },
             "STREAK_60": {
                 "title": "Streak 60 ngày",
                 "description": "Duy trì mục tiêu 2 tháng liên tiếp",
-                "icon": "💎"
+                "icon": "💎",
             },
             "CENTURION": {
                 "title": "Centurion",
                 "description": "Duy trì mục tiêu 100 ngày liên tiếp",
-                "icon": "🏛️"
+                "icon": "🏛️",
             },
-
             # Milestone achievements
             "FIRST_10_LITERS": {
                 "title": "10 lít đầu tiên",
                 "description": "Tích lũy 10 lít nước",
-                "icon": "💧"
+                "icon": "💧",
             },
             "MILESTONE_50L": {
                 "title": "50 lít chinh phục",
                 "description": "Tích lũy 50 lít nước",
-                "icon": "🌊"
+                "icon": "🌊",
             },
             "MILESTONE_100L": {
                 "title": "100 lít thành công",
                 "description": "Tích lũy 100 lít nước",
-                "icon": "🌊"
+                "icon": "🌊",
             },
             "MILESTONE_500L": {
                 "title": "500 lít khủng",
                 "description": "Tích lũy 500 lít nước",
-                "icon": "🌊"
+                "icon": "🌊",
             },
             "MILLENNIUM_HYDRATOR": {
                 "title": "Hydrator Thiên niên kỷ",
                 "description": "Tích lũy 1000 lít nước",
-                "icon": "🏆"
+                "icon": "🏆",
             },
-
             # Level achievements
             "LEVEL_5": {
                 "title": "Cấp 5 đạt được",
                 "description": "Đạt level 5",
-                "icon": "🆙"
+                "icon": "🆙",
             },
             "LEVEL_10": {
                 "title": "Cấp 10 chinh phục",
                 "description": "Đạt level 10",
-                "icon": "⬆️"
+                "icon": "⬆️",
             },
             "LEVEL_20": {
                 "title": "Cấp 20 uy lực",
                 "description": "Đạt level 20",
-                "icon": "🚀"
+                "icon": "🚀",
             },
             "LEVEL_30": {
                 "title": "Cấp 30 siêu phàm",
                 "description": "Đạt level 30",
-                "icon": "✨"
+                "icon": "✨",
             },
             "MAX_LEVEL": {
                 "title": "Cấp tối đa",
                 "description": "Đạt level cao nhất",
-                "icon": "🏆"
+                "icon": "🏆",
             },
-
             # Consistency achievements
             "WEEKLY_CONSISTENT": {
                 "title": "Nhất quán tuần",
                 "description": "Đạt mục tiêu 7 ngày trong tuần",
-                "icon": "📅"
+                "icon": "📅",
             },
             "MONTHLY_MASTER": {
                 "title": "Bậc thầy tháng",
                 "description": "Đạt mục tiêu 28 ngày trong tháng",
-                "icon": "📊"
-            }
+                "icon": "📊",
+            },
         }
 
-        return achievement_definitions.get(achievement_key, {
-            "title": "Achievement không xác định",
-            "description": "Mô tả achievement",
-            "icon": "🏅"
-        })
+        return achievement_definitions.get(
+            achievement_key,
+            {
+                "title": "Achievement không xác định",
+                "description": "Mô tả achievement",
+                "icon": "🏅",
+            },
+        )
 
 
 # Global achievement service instance

@@ -10,7 +10,9 @@ from app.models.friend_request import FriendRequestStatus
 class FriendRequestBase(BaseModel):
     """Base friend request schema"""
 
-    message: Optional[str] = Field(None, description="Optional message with friend request")
+    message: Optional[str] = Field(
+        None, description="Optional message with friend request"
+    )
 
 
 class FriendRequestCreate(FriendRequestBase):
@@ -22,7 +24,9 @@ class FriendRequestCreate(FriendRequestBase):
 class FriendRequestUpdate(BaseModel):
     """Schema for updating friend request status"""
 
-    status: FriendRequestStatus = Field(..., description="New status for the friend request")
+    status: FriendRequestStatus = Field(
+        ..., description="New status for the friend request"
+    )
 
 
 class FriendRequestResponse(FriendRequestBase):
@@ -70,7 +74,9 @@ class FriendResponse(FriendBase):
     friend_total_xp: int = Field(..., description="Friend's total XP")
 
     # Social stats
-    friendship_duration_days: int = Field(..., description="Days since becoming friends")
+    friendship_duration_days: int = Field(
+        ..., description="Days since becoming friends"
+    )
     last_seen: Optional[datetime] = Field(None, description="Friend's last activity")
 
     class Config:
@@ -86,8 +92,12 @@ class UserSearchResult(BaseModel):
     avatar_id: str
     current_level: int
     total_xp: int
-    is_already_friend: bool = Field(..., description="Whether current user is already friends with this user")
-    has_pending_request: bool = Field(..., description="Whether there's a pending friend request")
+    is_already_friend: bool = Field(
+        ..., description="Whether current user is already friends with this user"
+    )
+    has_pending_request: bool = Field(
+        ..., description="Whether there's a pending friend request"
+    )
 
     class Config:
         from_attributes = True
@@ -125,7 +135,9 @@ class LeaderboardEntryResponse(LeaderboardEntryBase):
     current_level: int = Field(..., description="User's level")
 
     # Additional context
-    is_current_user: bool = Field(..., description="Whether this entry belongs to current user")
+    is_current_user: bool = Field(
+        ..., description="Whether this entry belongs to current user"
+    )
     is_friend: bool = Field(..., description="Whether this user is a friend")
 
     class Config:
@@ -140,8 +152,12 @@ class WeeklyLeaderboardResponse(BaseModel):
     total_participants: int
     current_user_rank: Optional[int] = None
     current_user_entry: Optional[LeaderboardEntryResponse] = None
-    top_entries: List[LeaderboardEntryResponse] = Field(..., description="Top 10 entries")
-    friends_entries: List[LeaderboardEntryResponse] = Field(..., description="Friends' entries")
+    top_entries: List[LeaderboardEntryResponse] = Field(
+        ..., description="Top 10 entries"
+    )
+    friends_entries: List[LeaderboardEntryResponse] = Field(
+        ..., description="Friends' entries"
+    )
 
     class Config:
         from_attributes = True
@@ -153,9 +169,13 @@ class SocialStatsResponse(BaseModel):
 
     total_friends: int = Field(..., description="Total number of friends")
     pending_requests: int = Field(..., description="Number of pending friend requests")
-    current_week_rank: Optional[int] = Field(None, description="Current week leaderboard rank")
+    current_week_rank: Optional[int] = Field(
+        None, description="Current week leaderboard rank"
+    )
     best_week_rank: Optional[int] = Field(None, description="Best ever week rank")
-    weeks_participated: int = Field(..., description="Number of weeks participated in leaderboard")
+    weeks_participated: int = Field(
+        ..., description="Number of weeks participated in leaderboard"
+    )
 
     # Friendship activity
     recent_friend_activity: List[dict] = Field(

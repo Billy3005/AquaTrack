@@ -1,6 +1,7 @@
 """
 User Insights model for storing AI-generated insights and recommendations
 """
+
 from datetime import datetime
 from enum import Enum
 
@@ -12,6 +13,7 @@ from app.core.database import Base
 
 class InsightType(str, Enum):
     """Types of insights that can be generated"""
+
     HABIT_PATTERN = "habit_pattern"
     VOLUME_IMPROVEMENT = "volume_improvement"
     TIMING_OPTIMIZATION = "timing_optimization"
@@ -26,6 +28,7 @@ class InsightType(str, Enum):
 
 class PriorityLevel(str, Enum):
     """Priority levels for insights"""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -47,16 +50,20 @@ class UserInsight(Base):
 
     # Analytics data
     confidence_score = Column(Float, nullable=False, default=0.0)  # 0.0 to 1.0
-    priority_level = Column(String, nullable=False, default=PriorityLevel.MEDIUM)  # PriorityLevel enum
+    priority_level = Column(
+        String, nullable=False, default=PriorityLevel.MEDIUM
+    )  # PriorityLevel enum
 
     # Metadata
     data_period_start = Column(DateTime, nullable=True)  # Analysis period start
-    data_period_end = Column(DateTime, nullable=True)    # Analysis period end
-    insights_data = Column(Text, nullable=True)          # JSON string of raw data used
+    data_period_end = Column(DateTime, nullable=True)  # Analysis period end
+    insights_data = Column(Text, nullable=True)  # JSON string of raw data used
 
     # Actions and outcomes
     recommended_action = Column(Text, nullable=True)
-    user_acknowledged = Column(String, nullable=False, default="pending")  # pending, accepted, dismissed
+    user_acknowledged = Column(
+        String, nullable=False, default="pending"
+    )  # pending, accepted, dismissed
     user_feedback = Column(Text, nullable=True)
 
     # Timestamps
@@ -107,14 +114,17 @@ class UserInsight(Base):
         action: str = None,
         data_start: datetime = None,
         data_end: datetime = None,
-        expires_hours: int = None
+        expires_hours: int = None,
     ) -> "UserInsight":
         """Create a new user insight"""
-        insight_id = f"insight_{user_id}_{insight_type}_{int(datetime.utcnow().timestamp())}"
+        insight_id = (
+            f"insight_{user_id}_{insight_type}_{int(datetime.utcnow().timestamp())}"
+        )
 
         expires_at = None
         if expires_hours:
             from datetime import timedelta
+
             expires_at = datetime.utcnow() + timedelta(hours=expires_hours)
 
         return cls(

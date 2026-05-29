@@ -2,12 +2,13 @@
 Enhanced Rate Limiting Middleware for AquaTrack Production
 Production-ready với monitoring, analytics và flexible configuration
 """
-import time
-import json
+
 import asyncio
-from datetime import datetime
+import json
+import time
 from collections import defaultdict, deque
-from typing import Dict, Optional, Tuple, List
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple
 
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
@@ -31,7 +32,7 @@ class RateLimiter:
             "unique_clients": set(),
             "endpoint_stats": defaultdict(lambda: {"requests": 0, "blocks": 0}),
             "hourly_stats": defaultdict(int),
-            "client_violations": defaultdict(int)
+            "client_violations": defaultdict(int),
         }
 
         # Configuration cho dynamic rate limiting
@@ -58,7 +59,7 @@ class RateLimiter:
         client_id: str,
         max_requests: int,
         window_seconds: int,
-        endpoint_path: str = "unknown"
+        endpoint_path: str = "unknown",
     ) -> Tuple[bool, Dict[str, str]]:
         """
         Enhanced rate limit checker với analytics và dynamic limits
@@ -89,7 +90,7 @@ class RateLimiter:
                 "X-RateLimit-Remaining": str(max_requests),
                 "X-RateLimit-Reset": str(int(current_time + window_seconds)),
                 "X-RateLimit-Window": str(window_seconds),
-                "X-RateLimit-Status": "whitelisted"
+                "X-RateLimit-Status": "whitelisted",
             }
             return True, headers
 
@@ -152,21 +153,22 @@ class RateLimiter:
         # Calculate stats
         total_clients = len(self._stats["unique_clients"])
         block_rate = (
-            self._stats["blocked_requests"] / max(1, self._stats["total_requests"]) * 100
+            self._stats["blocked_requests"]
+            / max(1, self._stats["total_requests"])
+            * 100
         )
 
         # Recent activity (last hour)
         hour_key = int(current_time // 3600)
         recent_activity = sum(
-            count for h, count in self._stats["hourly_stats"].items()
+            count
+            for h, count in self._stats["hourly_stats"].items()
             if h >= hour_key - 1
         )
 
         # Top violators
         top_violators = sorted(
-            self._stats["client_violations"].items(),
-            key=lambda x: x[1],
-            reverse=True
+            self._stats["client_violations"].items(), key=lambda x: x[1], reverse=True
         )[:10]
 
         return {
@@ -179,15 +181,15 @@ class RateLimiter:
                 "recent_activity_1h": recent_activity,
                 "maintenance_mode": self._maintenance_mode,
                 "whitelist_size": len(self._whitelist),
-                "dynamic_limits": len(self._dynamic_limits)
+                "dynamic_limits": len(self._dynamic_limits),
             },
             "endpoint_stats": dict(self._stats["endpoint_stats"]),
             "top_violators": top_violators,
             "hourly_breakdown": dict(self._stats["hourly_stats"]),
             "memory_usage": {
                 "tracked_clients": len(self._clients),
-                "total_entries": sum(len(q) for q in self._clients.values())
-            }
+                "total_entries": sum(len(q) for q in self._clients.values()),
+            },
         }
 
     def add_to_whitelist(self, client_id: str, reason: str = "manual"):
@@ -205,7 +207,7 @@ class RateLimiter:
         self._dynamic_limits[client_id] = {
             "limit": limit,
             "reason": reason,
-            "set_at": time.time()
+            "set_at": time.time(),
         }
         print(f"[RATE LIMIT] Dynamic limit {limit} set for {client_id}: {reason}")
 
@@ -233,8 +235,7 @@ class RateLimiter:
         client_requests = self._clients.get(client_id, deque())
 
         recent_requests = [
-            ts for ts in client_requests
-            if current_time - ts < 3600  # Last hour
+            ts for ts in client_requests if current_time - ts < 3600  # Last hour
         ]
 
         return {
@@ -245,7 +246,7 @@ class RateLimiter:
             "is_whitelisted": client_id in self._whitelist,
             "has_dynamic_limit": client_id in self._dynamic_limits,
             "dynamic_limit_info": self._dynamic_limits.get(client_id),
-            "last_request": max(client_requests) if client_requests else None
+            "last_request": max(client_requests) if client_requests else None,
         }
 
 
@@ -259,7 +260,7 @@ def get_client_identifier(request: Request) -> str:
     Priority: user_id > API key > IP address
     """
     # Try to get authenticated user ID
-    if hasattr(request.state, 'user_id') and request.state.user_id:
+    if hasattr(request.state, "user_id") and request.state.user_id:
         return f"user:{request.state.user_id}"
 
     # Try API key from headers
@@ -357,15 +358,17 @@ async def rate_limit_middleware(request: Request, call_next):
                     "limit_info": {
                         "max_requests": max_requests,
                         "window_seconds": window,
-                        "remaining": headers.get("X-RateLimit-Remaining", "0")
-                    }
+                        "remaining": headers.get("X-RateLimit-Remaining", "0"),
+                    },
                 },
-                headers=headers
+                headers=headers,
             )
 
             # Log violation for monitoring
-            print(f"[RATE LIMIT BLOCK] {client_id} blocked on {path} "
-                  f"({max_requests}/{window}s limit)")
+            print(
+                f"[RATE LIMIT BLOCK] {client_id} blocked on {path} "
+                f"({max_requests}/{window}s limit)"
+            )
 
             return error_response
 
@@ -435,9 +438,7 @@ def _get_rate_limit_for_path(path: str) -> Tuple[int, int]:
 
 
 def rate_limit(
-    max_requests: int,
-    window_seconds: int,
-    key_func: Optional[callable] = None
+    max_requests: int, window_seconds: int, key_func: Optional[callable] = None
 ):
     """
     Decorator for applying rate limits to specific endpoints
@@ -447,6 +448,7 @@ def rate_limit(
         async def my_endpoint():
             pass
     """
+
     def decorator(func):
         async def wrapper(request: Request, *args, **kwargs):
             # Get client identifier
@@ -469,89 +471,70 @@ def rate_limit(
                         "window": window_seconds,
                         "retry_after": headers["X-RateLimit-Reset"],
                     },
-                    headers=headers
+                    headers=headers,
                 )
 
             # Call the original function
             response = await func(request, *args, **kwargs)
 
             # Add headers if response supports it
-            if hasattr(response, 'headers'):
+            if hasattr(response, "headers"):
                 for header_name, header_value in headers.items():
                     response.headers[header_name] = header_value
 
             return response
 
         return wrapper
+
     return decorator
 
 
 # Specialized rate limiters for common use cases
 def auth_rate_limit(func):
     """Rate limit for authentication endpoints"""
-    return rate_limit(
-        RateLimitConfig.AUTH_LIMIT,
-        RateLimitConfig.AUTH_WINDOW
-    )(func)
+    return rate_limit(RateLimitConfig.AUTH_LIMIT, RateLimitConfig.AUTH_WINDOW)(func)
 
 
 def upload_rate_limit(func):
     """Rate limit for file upload endpoints"""
-    return rate_limit(
-        RateLimitConfig.UPLOAD_LIMIT,
-        RateLimitConfig.UPLOAD_WINDOW
-    )(func)
+    return rate_limit(RateLimitConfig.UPLOAD_LIMIT, RateLimitConfig.UPLOAD_WINDOW)(func)
 
 
 def search_rate_limit(func):
     """Rate limit for search endpoints"""
-    return rate_limit(
-        RateLimitConfig.SEARCH_LIMIT,
-        RateLimitConfig.SEARCH_WINDOW
-    )(func)
+    return rate_limit(RateLimitConfig.SEARCH_LIMIT, RateLimitConfig.SEARCH_WINDOW)(func)
 
 
 def ai_coach_rate_limit(func):
     """Rate limit for AI Coach endpoints"""
-    return rate_limit(
-        RateLimitConfig.AI_COACH_LIMIT,
-        RateLimitConfig.AI_COACH_WINDOW
-    )(func)
+    return rate_limit(RateLimitConfig.AI_COACH_LIMIT, RateLimitConfig.AI_COACH_WINDOW)(
+        func
+    )
 
 
 def vision_rate_limit(func):
     """Rate limit for Vision/Smart Scan endpoints"""
-    return rate_limit(
-        RateLimitConfig.VISION_LIMIT,
-        RateLimitConfig.VISION_WINDOW
-    )(func)
+    return rate_limit(RateLimitConfig.VISION_LIMIT, RateLimitConfig.VISION_WINDOW)(func)
 
 
 # Rate Limiting Management API Functions
 # Sử dụng trong admin endpoints
 
+
 async def get_rate_limit_analytics():
     """Get comprehensive rate limiting analytics cho admin dashboard"""
     try:
         analytics = rate_limiter.get_analytics()
-        return {
-            "status": "success",
-            "analytics": analytics,
-            "timestamp": time.time()
-        }
+        return {"status": "success", "analytics": analytics, "timestamp": time.time()}
     except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e),
-            "timestamp": time.time()
-        }
+        return {"status": "error", "error": str(e), "timestamp": time.time()}
 
 
 async def manage_client_rate_limit(
     client_id: str,
     action: str,
     limit: Optional[int] = None,
-    reason: str = "admin action"
+    reason: str = "admin action",
 ):
     """
     Manage rate limiting cho specific client
@@ -591,11 +574,7 @@ async def manage_client_rate_limit(
         return result
 
     except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e),
-            "timestamp": time.time()
-        }
+        return {"status": "error", "error": str(e), "timestamp": time.time()}
 
 
 async def toggle_maintenance_mode(enable: bool, reason: str = "admin action"):
@@ -612,11 +591,7 @@ async def toggle_maintenance_mode(enable: bool, reason: str = "admin action"):
             "status": "success",
             "message": message,
             "maintenance_mode": enable,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
     except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e),
-            "timestamp": time.time()
-        }
+        return {"status": "error", "error": str(e), "timestamp": time.time()}

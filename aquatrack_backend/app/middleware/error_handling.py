@@ -4,33 +4,35 @@ Graceful Error Handling và Recovery Mechanisms cho AquaTrack Production
 Global exception handling, circuit breakers, fallback strategies và recovery mechanisms
 """
 
-import time
 import asyncio
-import traceback
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, Callable, List, Union
-from collections import defaultdict, deque
-from enum import Enum
 import json
+import time
+import traceback
+from collections import defaultdict, deque
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Union
 
-from fastapi import Request, Response, HTTPException, status
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from starlette.exceptions import HTTPException as StarletteHTTPException
 import pydantic
+from fastapi import HTTPException, Request, Response, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from ..middleware.logging import structured_logger
 
 
 class CircuitBreakerState(Enum):
     """Circuit breaker states"""
-    CLOSED = "closed"      # Normal operation
-    OPEN = "open"          # Failing, reject requests
+
+    CLOSED = "closed"  # Normal operation
+    OPEN = "open"  # Failing, reject requests
     HALF_OPEN = "half_open"  # Testing if service recovered
 
 
 class ErrorSeverity(Enum):
     """Error severity levels"""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -47,7 +49,7 @@ class CircuitBreaker:
         name: str,
         failure_threshold: int = 5,
         recovery_timeout: int = 60,
-        expected_exception: type = Exception
+        expected_exception: type = Exception,
     ):
         self.name = name
         self.failure_threshold = failure_threshold
@@ -79,7 +81,7 @@ class CircuitBreaker:
                 self.state = CircuitBreakerState.HALF_OPEN
                 structured_logger.log_application_event(
                     "circuit_breaker_half_open",
-                    f"Circuit breaker '{self.name}' entering half-open state"
+                    f"Circuit breaker '{self.name}' entering half-open state",
                 )
             else:
                 self.rejected_calls += 1
@@ -133,7 +135,7 @@ class CircuitBreaker:
 
             structured_logger.log_application_event(
                 "circuit_breaker_closed",
-                f"Circuit breaker '{self.name}' reset to closed state"
+                f"Circuit breaker '{self.name}' reset to closed state",
             )
         else:
             self.success_count += 1
@@ -154,19 +156,23 @@ class CircuitBreaker:
                     level="warning",
                     context={
                         "failure_threshold": self.failure_threshold,
-                        "failure_count": self.failure_count
-                    }
+                        "failure_count": self.failure_count,
+                    },
                 )
 
-    def _record_call(self, result_type: str, duration: Optional[float], error_msg: Optional[str]):
+    def _record_call(
+        self, result_type: str, duration: Optional[float], error_msg: Optional[str]
+    ):
         """Record call for monitoring"""
-        self.call_history.append({
-            "timestamp": time.time(),
-            "result": result_type,
-            "duration": duration,
-            "error": error_msg,
-            "state": self.state.value
-        })
+        self.call_history.append(
+            {
+                "timestamp": time.time(),
+                "result": result_type,
+                "duration": duration,
+                "error": error_msg,
+                "state": self.state.value,
+            }
+        )
 
     def get_stats(self) -> Dict[str, Any]:
         """Get circuit breaker statistics"""
@@ -183,12 +189,13 @@ class CircuitBreaker:
             "failure_count": self.failure_count,
             "failure_threshold": self.failure_threshold,
             "last_failure_time": self.last_failure_time,
-            "recovery_timeout": self.recovery_timeout
+            "recovery_timeout": self.recovery_timeout,
         }
 
 
 class CircuitBreakerOpenError(Exception):
     """Exception raised when circuit breaker is open"""
+
     pass
 
 
@@ -207,7 +214,7 @@ class ErrorHandler:
             "errors_by_type": defaultdict(int),
             "errors_by_endpoint": defaultdict(int),
             "recent_errors": deque(maxlen=100),
-            "error_trends": defaultdict(lambda: deque(maxlen=50))
+            "error_trends": defaultdict(lambda: deque(maxlen=50)),
         }
 
         # Recovery strategies
@@ -215,9 +222,9 @@ class ErrorHandler:
 
         # Error thresholds for alerting
         self.alert_thresholds = {
-            "error_rate_5min": 10,     # 10 errors in 5 minutes
-            "consecutive_errors": 5,    # 5 consecutive errors
-            "critical_error_count": 3   # 3 critical errors
+            "error_rate_5min": 10,  # 10 errors in 5 minutes
+            "consecutive_errors": 5,  # 5 consecutive errors
+            "critical_error_count": 3,  # 3 critical errors
         }
 
         self.consecutive_error_count = 0
@@ -228,23 +235,29 @@ class ErrorHandler:
 
     def _register_builtin_strategies(self):
         """Register built-in recovery strategies"""
-        self.register_recovery_strategy("database_fallback", self._database_fallback_strategy)
-        self.register_recovery_strategy("ai_coach_fallback", self._ai_coach_fallback_strategy)
-        self.register_recovery_strategy("vision_fallback", self._vision_fallback_strategy)
+        self.register_recovery_strategy(
+            "database_fallback", self._database_fallback_strategy
+        )
+        self.register_recovery_strategy(
+            "ai_coach_fallback", self._ai_coach_fallback_strategy
+        )
+        self.register_recovery_strategy(
+            "vision_fallback", self._vision_fallback_strategy
+        )
 
     def register_circuit_breaker(
         self,
         name: str,
         failure_threshold: int = 5,
         recovery_timeout: int = 60,
-        expected_exception: type = Exception
+        expected_exception: type = Exception,
     ) -> CircuitBreaker:
         """Register circuit breaker for external service"""
         circuit_breaker = CircuitBreaker(
             name=name,
             failure_threshold=failure_threshold,
             recovery_timeout=recovery_timeout,
-            expected_exception=expected_exception
+            expected_exception=expected_exception,
         )
 
         self.circuit_breakers[name] = circuit_breaker
@@ -254,8 +267,8 @@ class ErrorHandler:
             f"Circuit breaker '{name}' registered",
             context={
                 "failure_threshold": failure_threshold,
-                "recovery_timeout": recovery_timeout
-            }
+                "recovery_timeout": recovery_timeout,
+            },
         )
 
         return circuit_breaker
@@ -264,15 +277,11 @@ class ErrorHandler:
         """Register recovery strategy"""
         self.recovery_strategies[name] = strategy_func
         structured_logger.log_application_event(
-            "recovery_strategy_registered",
-            f"Recovery strategy '{name}' registered"
+            "recovery_strategy_registered", f"Recovery strategy '{name}' registered"
         )
 
     async def handle_error(
-        self,
-        error: Exception,
-        request: Request,
-        context: Dict[str, Any] = None
+        self, error: Exception, request: Request, context: Dict[str, Any] = None
     ) -> JSONResponse:
         """
         Handle error với comprehensive error processing
@@ -313,8 +322,11 @@ class ErrorHandler:
 
         # Check if error is recoverable
         recoverable_types = {
-            "ConnectionError", "TimeoutError", "HTTPException",
-            "CircuitBreakerOpenError", "DatabaseError"
+            "ConnectionError",
+            "TimeoutError",
+            "HTTPException",
+            "CircuitBreakerOpenError",
+            "DatabaseError",
         }
         is_recoverable = error_type in recoverable_types
 
@@ -324,10 +336,12 @@ class ErrorHandler:
             "endpoint": endpoint,
             "is_recoverable": is_recoverable,
             "message": str(error),
-            "traceback": traceback.format_exc()
+            "traceback": traceback.format_exc(),
         }
 
-    def _record_error(self, error_info: Dict[str, Any], request: Request, timestamp: float):
+    def _record_error(
+        self, error_info: Dict[str, Any], request: Request, timestamp: float
+    ):
         """Record error for tracking và analysis"""
         # Update statistics
         self.error_stats["total_errors"] += 1
@@ -341,9 +355,9 @@ class ErrorHandler:
             "severity": error_info["severity"].value,
             "endpoint": error_info["endpoint"],
             "message": error_info["message"],
-            "user_id": getattr(request.state, 'user_id', None),
-            "request_id": getattr(request.state, 'request_id', None),
-            "client_ip": request.client.host if request.client else "unknown"
+            "user_id": getattr(request.state, "user_id", None),
+            "request_id": getattr(request.state, "request_id", None),
+            "client_ip": request.client.host if request.client else "unknown",
         }
 
         self.error_stats["recent_errors"].append(error_record)
@@ -364,7 +378,7 @@ class ErrorHandler:
             "error_handled",
             f"Error handled: {error_info['type']} on {error_info['endpoint']}",
             level="error",
-            context=error_record
+            context=error_record,
         )
 
     def _check_error_alerts(self, error_info: Dict[str, Any], timestamp: float):
@@ -372,13 +386,17 @@ class ErrorHandler:
         five_minutes_ago = timestamp - 300
 
         # Check 5-minute error rate
-        recent_errors = [e for e in self.error_stats["recent_errors"] if e["timestamp"] > five_minutes_ago]
+        recent_errors = [
+            e
+            for e in self.error_stats["recent_errors"]
+            if e["timestamp"] > five_minutes_ago
+        ]
         if len(recent_errors) >= self.alert_thresholds["error_rate_5min"]:
             structured_logger.log_application_event(
                 "high_error_rate_alert",
                 f"High error rate: {len(recent_errors)} errors in 5 minutes",
                 level="warning",
-                context={"recent_error_count": len(recent_errors)}
+                context={"recent_error_count": len(recent_errors)},
             )
 
         # Check consecutive errors
@@ -387,13 +405,14 @@ class ErrorHandler:
                 "consecutive_errors_alert",
                 f"Consecutive errors detected: {self.consecutive_error_count}",
                 level="warning",
-                context={"consecutive_count": self.consecutive_error_count}
+                context={"consecutive_count": self.consecutive_error_count},
             )
 
         # Check critical errors
         if error_info["severity"] == ErrorSeverity.CRITICAL:
             critical_errors = [
-                e for e in recent_errors
+                e
+                for e in recent_errors
                 if e["severity"] == ErrorSeverity.CRITICAL.value
             ]
             if len(critical_errors) >= self.alert_thresholds["critical_error_count"]:
@@ -401,14 +420,11 @@ class ErrorHandler:
                     "critical_error_alert",
                     f"Multiple critical errors: {len(critical_errors)} in 5 minutes",
                     level="error",
-                    context={"critical_error_count": len(critical_errors)}
+                    context={"critical_error_count": len(critical_errors)},
                 )
 
     async def _attempt_recovery(
-        self,
-        error: Exception,
-        error_info: Dict[str, Any],
-        request: Request
+        self, error: Exception, error_info: Dict[str, Any], request: Request
     ) -> Optional[JSONResponse]:
         """Attempt error recovery using available strategies"""
         if not error_info["is_recoverable"]:
@@ -430,7 +446,7 @@ class ErrorHandler:
                 structured_logger.log_application_event(
                     "recovery_attempt",
                     f"Attempting recovery strategy: {recovery_strategy}",
-                    context={"error_type": error_info["type"], "endpoint": endpoint}
+                    context={"error_type": error_info["type"], "endpoint": endpoint},
                 )
 
                 strategy_func = self.recovery_strategies[recovery_strategy]
@@ -440,7 +456,10 @@ class ErrorHandler:
                     structured_logger.log_application_event(
                         "recovery_successful",
                         f"Recovery strategy '{recovery_strategy}' succeeded",
-                        context={"error_type": error_info["type"], "endpoint": endpoint}
+                        context={
+                            "error_type": error_info["type"],
+                            "endpoint": endpoint,
+                        },
                     )
 
                     # Record successful recovery
@@ -456,8 +475,8 @@ class ErrorHandler:
                     level="error",
                     context={
                         "original_error": error_info["type"],
-                        "recovery_error": str(recovery_error)
-                    }
+                        "recovery_error": str(recovery_error),
+                    },
                 )
 
         return None
@@ -467,17 +486,17 @@ class ErrorHandler:
         error: Exception,
         error_info: Dict[str, Any],
         request: Request,
-        timestamp: float
+        timestamp: float,
     ) -> JSONResponse:
         """Generate appropriate error response"""
-        request_id = getattr(request.state, 'request_id', 'unknown')
+        request_id = getattr(request.state, "request_id", "unknown")
 
         # Base error response
         error_response = {
             "error": "An error occurred",
             "timestamp": datetime.fromtimestamp(timestamp).isoformat(),
             "request_id": request_id,
-            "path": request.url.path
+            "path": request.url.path,
         }
 
         # Handle specific error types
@@ -494,13 +513,17 @@ class ErrorHandler:
         elif isinstance(error, CircuitBreakerOpenError):
             status_code = status.HTTP_503_SERVICE_UNAVAILABLE
             error_response["error"] = "Service temporarily unavailable"
-            error_response["message"] = "The requested service is experiencing issues. Please try again later."
+            error_response["message"] = (
+                "The requested service is experiencing issues. Please try again later."
+            )
             error_response["retry_after"] = 60
 
         elif isinstance(error, (ConnectionError, TimeoutError)):
             status_code = status.HTTP_503_SERVICE_UNAVAILABLE
             error_response["error"] = "Service unavailable"
-            error_response["message"] = "Unable to process request due to service connectivity issues"
+            error_response["message"] = (
+                "Unable to process request due to service connectivity issues"
+            )
 
         else:
             # Generic server error
@@ -512,13 +535,10 @@ class ErrorHandler:
         if status_code >= 500:
             error_response["support"] = {
                 "contact": "Report this issue if it persists",
-                "reference": request_id
+                "reference": request_id,
             }
 
-        return JSONResponse(
-            status_code=status_code,
-            content=error_response
-        )
+        return JSONResponse(status_code=status_code, content=error_response)
 
     def get_error_statistics(self) -> Dict[str, Any]:
         """Get comprehensive error statistics"""
@@ -527,8 +547,16 @@ class ErrorHandler:
         one_hour_ago = current_time - 3600
 
         # Recent error analysis
-        recent_errors_5min = [e for e in self.error_stats["recent_errors"] if e["timestamp"] > five_minutes_ago]
-        recent_errors_1hr = [e for e in self.error_stats["recent_errors"] if e["timestamp"] > one_hour_ago]
+        recent_errors_5min = [
+            e
+            for e in self.error_stats["recent_errors"]
+            if e["timestamp"] > five_minutes_ago
+        ]
+        recent_errors_1hr = [
+            e
+            for e in self.error_stats["recent_errors"]
+            if e["timestamp"] > one_hour_ago
+        ]
 
         # Error rate calculations
         error_rate_5min = len(recent_errors_5min)
@@ -545,27 +573,26 @@ class ErrorHandler:
                 "error_rate_5min": error_rate_5min,
                 "error_rate_1hr": error_rate_1hr,
                 "consecutive_errors": self.consecutive_error_count,
-                "last_success_time": self.last_success_time
+                "last_success_time": self.last_success_time,
             },
             "error_breakdown": {
                 "by_type": dict(self.error_stats["errors_by_type"]),
-                "by_endpoint": dict(self.error_stats["errors_by_endpoint"])
+                "by_endpoint": dict(self.error_stats["errors_by_endpoint"]),
             },
             "recent_errors": list(self.error_stats["recent_errors"])[-10:],  # Last 10
             "circuit_breakers": circuit_breaker_stats,
             "alert_status": {
-                "high_error_rate": error_rate_5min >= self.alert_thresholds["error_rate_5min"],
-                "consecutive_errors": self.consecutive_error_count >= self.alert_thresholds["consecutive_errors"]
-            }
+                "high_error_rate": error_rate_5min
+                >= self.alert_thresholds["error_rate_5min"],
+                "consecutive_errors": self.consecutive_error_count
+                >= self.alert_thresholds["consecutive_errors"],
+            },
         }
 
     # Built-in recovery strategies
 
     async def _database_fallback_strategy(
-        self,
-        error: Exception,
-        request: Request,
-        error_info: Dict[str, Any]
+        self, error: Exception, request: Request, error_info: Dict[str, Any]
     ) -> Optional[JSONResponse]:
         """Fallback strategy for database-related endpoints"""
         endpoint = error_info["endpoint"]
@@ -576,7 +603,7 @@ class ErrorHandler:
             "message": "Using cached data due to database issues",
             "data": {},
             "timestamp": time.time(),
-            "source": "fallback"
+            "source": "fallback",
         }
 
         if "/stats" in endpoint:
@@ -584,19 +611,13 @@ class ErrorHandler:
                 "total_volume_ml": 0,
                 "goal_achievement_percentage": 0,
                 "streak_days": 0,
-                "note": "Live data temporarily unavailable"
+                "note": "Live data temporarily unavailable",
             }
 
-        return JSONResponse(
-            status_code=200,
-            content=fallback_data
-        )
+        return JSONResponse(status_code=200, content=fallback_data)
 
     async def _ai_coach_fallback_strategy(
-        self,
-        error: Exception,
-        request: Request,
-        error_info: Dict[str, Any]
+        self, error: Exception, request: Request, error_info: Dict[str, Any]
     ) -> Optional[JSONResponse]:
         """Fallback strategy for AI coach endpoints"""
         # Provide rule-based fallback response
@@ -607,19 +628,13 @@ class ErrorHandler:
             "suggestions": ["Uống một ly nước nhỏ", "Đặt nhắc nhở 30 phút"],
             "action_items": [],
             "source": "fallback_rules",
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
-        return JSONResponse(
-            status_code=200,
-            content=fallback_response
-        )
+        return JSONResponse(status_code=200, content=fallback_response)
 
     async def _vision_fallback_strategy(
-        self,
-        error: Exception,
-        request: Request,
-        error_info: Dict[str, Any]
+        self, error: Exception, request: Request, error_info: Dict[str, Any]
     ) -> Optional[JSONResponse]:
         """Fallback strategy for vision endpoints"""
         # Provide manual input option
@@ -629,14 +644,14 @@ class ErrorHandler:
             "fallback_options": [
                 {"volume_ml": 250, "label": "Standard cup"},
                 {"volume_ml": 500, "label": "Water bottle"},
-                {"volume_ml": 750, "label": "Large bottle"}
+                {"volume_ml": 750, "label": "Large bottle"},
             ],
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
         return JSONResponse(
             status_code=202,  # Accepted but needs manual input
-            content=fallback_response
+            content=fallback_response,
         )
 
 
@@ -646,29 +661,37 @@ error_handler = ErrorHandler()
 
 # Global exception handlers for FastAPI
 
+
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Global exception handler"""
     return await error_handler.handle_error(exc, request)
 
 
-async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+async def http_exception_handler(
+    request: Request, exc: StarletteHTTPException
+) -> JSONResponse:
     """HTTP exception handler"""
     return await error_handler.handle_error(exc, request)
 
 
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
     """Validation exception handler"""
     return await error_handler.handle_error(exc, request)
 
 
 # Utility functions
 
+
 def get_circuit_breaker(name: str) -> Optional[CircuitBreaker]:
     """Get circuit breaker by name"""
     return error_handler.circuit_breakers.get(name)
 
 
-async def execute_with_circuit_breaker(circuit_breaker_name: str, func: Callable, *args, **kwargs):
+async def execute_with_circuit_breaker(
+    circuit_breaker_name: str, func: Callable, *args, **kwargs
+):
     """Execute function với circuit breaker protection"""
     circuit_breaker = error_handler.circuit_breakers.get(circuit_breaker_name)
     if not circuit_breaker:
@@ -685,17 +708,9 @@ async def get_error_analytics():
     """Get error analytics cho admin dashboard"""
     try:
         stats = error_handler.get_error_statistics()
-        return {
-            "status": "success",
-            "analytics": stats,
-            "timestamp": time.time()
-        }
+        return {"status": "success", "analytics": stats, "timestamp": time.time()}
     except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e),
-            "timestamp": time.time()
-        }
+        return {"status": "error", "error": str(e), "timestamp": time.time()}
 
 
 # Register built-in circuit breakers
@@ -706,21 +721,21 @@ def initialize_circuit_breakers():
         "anthropic_api",
         failure_threshold=3,
         recovery_timeout=30,
-        expected_exception=Exception
+        expected_exception=Exception,
     )
 
     error_handler.register_circuit_breaker(
         "openai_api",
         failure_threshold=3,
         recovery_timeout=30,
-        expected_exception=Exception
+        expected_exception=Exception,
     )
 
     error_handler.register_circuit_breaker(
         "ollama_api",
         failure_threshold=5,
         recovery_timeout=60,
-        expected_exception=Exception
+        expected_exception=Exception,
     )
 
     # Database circuit breaker
@@ -728,10 +743,9 @@ def initialize_circuit_breakers():
         "database",
         failure_threshold=5,
         recovery_timeout=120,
-        expected_exception=(ConnectionError, TimeoutError)
+        expected_exception=(ConnectionError, TimeoutError),
     )
 
     structured_logger.log_application_event(
-        "circuit_breakers_initialized",
-        "All circuit breakers initialized successfully"
+        "circuit_breakers_initialized", "All circuit breakers initialized successfully"
     )
