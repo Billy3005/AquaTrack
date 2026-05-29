@@ -33,7 +33,7 @@ class CRUDIntakeLog(CRUDBase[IntakeLog, IntakeLogCreate, IntakeLogUpdate]):
         # Calculate XP based on volume (base: 1 XP per 100ml)
         base_xp = max(1, obj_in.volume_ml // 100)
 
-        # Create database object
+        # Create database object với explicit logged_at
         db_obj = IntakeLog(
             user_id=user_id,
             volume_ml=obj_in.volume_ml,
@@ -45,6 +45,7 @@ class CRUDIntakeLog(CRUDBase[IntakeLog, IntakeLogCreate, IntakeLogUpdate]):
             location=obj_in.location,
             mood_before=obj_in.mood_before,
             source=obj_in.source,
+            logged_at=datetime.now(),  # Force current timestamp for consistent date queries
         )
 
         db.add(db_obj)

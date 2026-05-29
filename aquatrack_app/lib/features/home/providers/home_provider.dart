@@ -102,8 +102,8 @@ class HomeNotifier extends _$HomeNotifier {
     // Trigger enhanced sync if available
     _triggerEnhancedSync();
 
-    // Refresh user stats to update coins and streak
-    _refreshUserStats();
+    // TODO: Delay refresh to avoid race condition with server sync
+    // _refreshUserStats();
   }
 
   /// Load today's summary (server first → local fallback)
