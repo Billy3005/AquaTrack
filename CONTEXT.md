@@ -1,6 +1,6 @@
 ---
 domain: AquaTrack Hydration App
-last_updated: 2026-05-26
+last_updated: 2026-05-30
 ---
 
 # AquaTrack Domain Glossary
@@ -32,6 +32,30 @@ last_updated: 2026-05-26
 **Insight Context** — Processed data structure combining StatsPattern, WeatherState, TimeContext, and UserProfile for AI insight generation. Normalized by Context Builder to abstract away API complexities.
 
 **AI Insights Layer** — Recommendation system that generates personalized hydration suggestions based on user patterns and environmental factors. Operates separately from Daily Goal calculation, providing supplementary advice without affecting goal completion status.
+
+## Quests & Rewards
+
+**Quest** (Nhiệm vụ) — A goal the user completes to earn rewards within a fixed time period. Canonical set of quests is defined in `quests_spec.md` (the spec, not the frontend sample data, is the source of truth).
+
+**Daily Quest** — A Quest whose Reset Period is one local calendar day (resets 00:00 in the user's timezone).
+
+**Weekly Quest** — A Quest whose Reset Period is one local calendar week (resets 00:00 Monday in the user's timezone).
+
+**Reset Period** — The window during which a Quest's progress accumulates. When a new period begins, the Quest becomes available again. A Quest's progress is always measured against the activity within its current period.
+
+**Done** — A Quest whose progress has reached its target. Distinct from Claimed.
+
+**Claim** (Nhận) — The user action of collecting a Done Quest's reward. A reward is granted exactly once per Quest per Reset Period. Progress that later drops below target does not revoke a Claim already made for that period.
+
+**Completion Bonus** — An extra reward unlocked when every base Quest in a period is Done. Becomes claimable on the Done condition (not on every base Quest being individually Claimed).
+
+**Lucky Chest** (Rương may mắn) — The Weekly Completion Bonus. Grants a random Coin amount (50–150). Item rewards are a planned future addition.
+
+**XP** — Experience points. Quest XP rewards feed the existing total_xp and level system; they are not a separate currency.
+
+**Coin** — A spendable in-app currency, separate from XP, earned from Quests and spent in the Shop.
+
+**Reminder** — A hydration nudge one user sends to a friend. Counts toward the "Hội Bạn Cùng Uống" Quest.
 
 ## UI Principles
 

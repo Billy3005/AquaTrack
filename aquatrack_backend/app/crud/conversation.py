@@ -7,13 +7,9 @@ from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.conversation import Conversation, ConversationSession
-from app.schemas.conversation import (
-    ConversationSessionCreate,
-    ConversationSessionUpdate,
-    MessageCreate,
-    MessageUpdate,
-    QuickReplySchema,
-)
+from app.schemas.conversation import (ConversationSessionCreate,
+                                      ConversationSessionUpdate, MessageCreate,
+                                      MessageUpdate, QuickReplySchema)
 
 
 class CRUDConversation(CRUDBase[Conversation, MessageCreate, MessageUpdate]):

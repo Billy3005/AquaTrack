@@ -1,6 +1,6 @@
 from typing import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -39,18 +39,25 @@ def init_db() -> None:
     This should be called when the application starts.
     """
     # Import all models here to ensure they're registered
-    from app.models import (
-        Achievement,
-        Conversation,
-        ConversationSession,
-        DailySummary,
-        Friend,
-        FriendRequest,
-        IntakeLog,
-        LeaderboardEntry,
-        ScanHistory,
-        User,
-        UserInsight,
-    )
+    from app.models import (Achievement, Conversation, ConversationSession,
+                            DailySummary, Friend, FriendRequest, IntakeLog,
+                            LeaderboardEntry, QuestClaim, ReminderLog,
+                            ScanHistory, User, UserInsight)
 
     Base.metadata.create_all(bind=engine)
+    _ensure_user_columns()
+
+
+def _ensure_user_columns() -> None:
+    """Lightweight migration: add columns introduced after a table's creation.
+
+    create_all() creates missing tables but never alters existing ones, so new
+    columns on long-lived tables (e.g. users.coins) must be added explicitly.
+    """
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+    existing = {col["name"] for col in inspector.get_columns("users")}
+    if "coins" not in existing:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN coins INTEGER DEFAULT 0"))

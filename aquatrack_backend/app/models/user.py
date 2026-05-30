@@ -1,6 +1,7 @@
 import uuid
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, Float, Integer, String, Text
+from sqlalchemy import (JSON, Boolean, Column, DateTime, Float, Integer,
+                        String, Text)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -63,6 +64,7 @@ class User(Base):
     # Level system
     current_level = Column(Integer, default=1)
     total_xp = Column(Integer, default=0)
+    coins = Column(Integer, default=0)  # Spendable currency from quests / shop
     current_streak = Column(Integer, default=0)
     longest_streak = Column(Integer, default=0)
 
@@ -109,6 +111,12 @@ class User(Base):
     )
     insights = relationship(
         "UserInsight", back_populates="user", cascade="all, delete-orphan"
+    )
+    quest_claims = relationship(
+        "QuestClaim", back_populates="user", cascade="all, delete-orphan"
+    )
+    reminder_logs = relationship(
+        "ReminderLog", back_populates="user", cascade="all, delete-orphan"
     )
 
     def __repr__(self):

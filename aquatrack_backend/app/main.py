@@ -9,12 +9,8 @@ from fastapi.responses import JSONResponse
 from app.api.v1 import api_router
 from app.core.config import settings
 from app.core.database import init_db
-from app.core.monitoring import (
-    HealthChecker,
-    metrics,
-    monitoring_middleware,
-    system_monitoring_task,
-)
+from app.core.monitoring import (HealthChecker, metrics, monitoring_middleware,
+                                 system_monitoring_task)
 from app.middleware.rate_limiting import rate_limit_middleware
 from app.services.email_service import cleanup_expired_tokens_task
 

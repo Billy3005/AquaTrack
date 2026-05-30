@@ -7,6 +7,7 @@ from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.leveling import calculate_level_from_xp, calculate_xp_for_level
 from app.core.security import get_current_user_id
 from app.crud.achievement import achievement_crud
 from app.crud.intake_log import intake_log_crud
@@ -60,13 +61,16 @@ async def get_current_level(
     """
     Get user's current level and XP information
     """
-    # Calculate total XP from intake logs
-    total_xp = (
+    # Total XP = intake-log XP + bonus XP credited directly to the user
+    # (quest rewards live in user.total_xp).
+    intake_xp = (
         db.query(func.sum(IntakeLog.xp_earned + IntakeLog.bonus_xp))
         .filter(IntakeLog.user_id == current_user_id)
         .scalar()
         or 0
     )
+    user = user_crud.get(db, id=current_user_id)
+    total_xp = intake_xp + (user.total_xp if user else 0)
 
     # Calculate level and progress
     level_info = _calculate_level_from_xp(total_xp)
@@ -407,13 +411,15 @@ async def get_level_stats(
     """
     Get detailed level and achievement statistics
     """
-    # Total XP and level
-    total_xp = (
+    # Total XP and level (intake XP + quest/bonus XP on the user record)
+    intake_xp = (
         db.query(func.sum(IntakeLog.xp_earned + IntakeLog.bonus_xp))
         .filter(IntakeLog.user_id == current_user_id)
         .scalar()
         or 0
     )
+    user = user_crud.get(db, id=current_user_id)
+    total_xp = intake_xp + (user.total_xp if user else 0)
 
     level_info = _calculate_level_from_xp(total_xp)
 
@@ -461,47 +467,14 @@ async def get_level_stats(
 
 
 # Helper functions
+# Single source of truth for the XP curve lives in app.core.leveling so quest
+# rewards and the Level screen never drift apart.
 def _calculate_level_from_xp(total_xp: int) -> dict:
-    """Calculate level, current XP, and progress from total XP"""
-    level = 1
-    xp_for_current_level = 0
-
-    # Level formula: XP needed = level * 100 + (level-1) * 50
-    while True:
-        xp_for_next_level = _calculate_xp_for_level(level + 1)
-        if total_xp < xp_for_next_level:
-            break
-        level += 1
-        xp_for_current_level = xp_for_next_level
-
-    # Calculate progress within current level
-    xp_for_next_level = _calculate_xp_for_level(level + 1)
-    current_xp = total_xp - xp_for_current_level
-    xp_to_next_level = xp_for_next_level - total_xp
-    progress_percentage = (
-        current_xp / (xp_for_next_level - xp_for_current_level)
-    ) * 100
-
-    return {
-        "level": level,
-        "current_xp": current_xp,
-        "xp_for_next_level": xp_for_next_level - xp_for_current_level,
-        "xp_to_next_level": xp_to_next_level,
-        "progress_percentage": round(progress_percentage, 1),
-    }
+    return calculate_level_from_xp(total_xp)
 
 
 def _calculate_xp_for_level(level: int) -> int:
-    """Calculate total XP needed to reach a specific level"""
-    if level <= 1:
-        return 0
-
-    total_xp = 0
-    for l in range(2, level + 1):
-        # Progressive XP requirement: level * 100 + (level-1) * 50
-        total_xp += l * 100 + (l - 1) * 50
-
-    return total_xp
+    return calculate_xp_for_level(level)
 
 
 async def _update_achievements_progress(
