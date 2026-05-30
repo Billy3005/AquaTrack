@@ -7,13 +7,9 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel, validator
 
-from app.services.water_formula_service import (
-    ActivityLevel,
-    Gender,
-    HealthCondition,
-    JobType,
-    VeggieIntake,
-)
+from app.services.water_formula_service import (ActivityLevel, Gender,
+                                                HealthCondition, JobType,
+                                                VeggieIntake)
 
 
 class WaterProfileBase(BaseModel):

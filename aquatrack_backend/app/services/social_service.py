@@ -247,8 +247,14 @@ class SocialService:
         # Log notification for debugging/analytics
         print(f"🔔 Notification queued for {friend_user.username}: {reminder_message}")
 
+        # Persist a queryable reminder record so the "Hội Bạn Cùng Uống" quest
+        # can count reminders per day (the push payload above is not queryable).
+        from app.models import ReminderLog
+
+        db.add(ReminderLog(user_id=sender_id, friend_id=friend_user.id))
+        db.commit()
+
         # TODO: Replace with proper push notification service (FCM, APNS)
-        # For now, update user's last notification time or store in separate table
 
         return {
             "success": True,

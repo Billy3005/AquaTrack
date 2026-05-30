@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
 
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../shared/widgets/coin_badge.dart';
+import 'models/quest.dart';
+import 'providers/quests_provider.dart';
 
 /// Missions Screen với Daily & Weekly missions
-class MissionsScreenRedesign extends StatefulWidget {
+class MissionsScreenRedesign extends ConsumerStatefulWidget {
   const MissionsScreenRedesign({super.key});
 
   @override
-  State<MissionsScreenRedesign> createState() => _MissionsScreenRedesignState();
+  ConsumerState<MissionsScreenRedesign> createState() =>
+      _MissionsScreenRedesignState();
 }
 
-class _MissionsScreenRedesignState extends State<MissionsScreenRedesign>
+class _MissionsScreenRedesignState extends ConsumerState<MissionsScreenRedesign>
     with SingleTickerProviderStateMixin {
   String _selectedTab = 'daily';
   late AnimationController _animationController;
-  late Animation<double> _slideAnimation;
 
   @override
   void initState() {
@@ -27,9 +30,9 @@ class _MissionsScreenRedesignState extends State<MissionsScreenRedesign>
       duration: const Duration(milliseconds: 280),
       vsync: this,
     );
-    _slideAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(questsProvider.notifier).load();
+    });
   }
 
   @override
@@ -48,21 +51,76 @@ class _MissionsScreenRedesignState extends State<MissionsScreenRedesign>
     }
   }
 
+  Future<void> _claim(String id) async {
+    final ok = await ref.read(questsProvider.notifier).claim(id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(ok ? '🎉 Đã nhận thưởng!' : 'Chưa thể nhận thưởng'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(questsProvider);
+    final data = state.data;
+
+    if (data == null) {
+      return Scaffold(
+        backgroundColor: AppColors.nightBase,
+        body: SafeArea(
+          child: Center(
+            child: state.isLoading
+                ? const CircularProgressIndicator(color: AppColors.glow)
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        state.error ?? 'Không tải được nhiệm vụ',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: () =>
+                            ref.read(questsProvider.notifier).load(),
+                        child: const Text('Thử lại'),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      );
+    }
+
+    final daily = data.daily.map(_toMission).toList();
+    final weekly = data.weekly.map(_toMission).toList();
+
     return Scaffold(
       backgroundColor: AppColors.nightBase,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
-            _buildTabSwitcher(),
+            _buildHeader(data.coins, data.currentStreak),
+            _buildTabSwitcher(daily, weekly),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
                 child: _selectedTab == 'daily'
-                    ? const _DailyView()
-                    : const _WeeklyView(),
+                    ? _DailyView(
+                        missions: daily,
+                        onClaim: _claim,
+                        resetAt: data.dailyResetAt,
+                      )
+                    : _WeeklyView(
+                        missions: weekly,
+                        onClaim: _claim,
+                        weekStrip: data.weekStrip,
+                      ),
               ),
             ),
           ],
@@ -71,7 +129,30 @@ class _MissionsScreenRedesignState extends State<MissionsScreenRedesign>
     );
   }
 
-  Widget _buildHeader() {
+  int _isoWeek(DateTime d) {
+    final thursday = d.subtract(Duration(days: d.weekday - 4));
+    final jan4 = DateTime(thursday.year, 1, 4);
+    return 1 + ((thursday.difference(jan4).inDays) ~/ 7);
+  }
+
+  Widget _buildHeader(int coins, int streak) {
+    final now = DateTime.now();
+    final weekdays = [
+      'THỨ HAI',
+      'THỨ BA',
+      'THỨ TƯ',
+      'THỨ NĂM',
+      'THỨ SÁU',
+      'THỨ BẢY',
+      'CHỦ NHẬT'
+    ];
+    final dayLabel =
+        '${weekdays[now.weekday - 1]} · ${now.day.toString().padLeft(2, '0')}.${now.month.toString().padLeft(2, '0')}';
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final sunday = monday.add(const Duration(days: 6));
+    final weekLabel =
+        'TUẦN ${_isoWeek(now)} · ${monday.day}—${sunday.day}.${sunday.month.toString().padLeft(2, '0')}';
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
       child: Row(
@@ -83,9 +164,7 @@ class _MissionsScreenRedesignState extends State<MissionsScreenRedesign>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _selectedTab == 'daily'
-                      ? 'THỨ HAI · 11.05'
-                      : 'TUẦN 19 · 11—17.05',
+                  _selectedTab == 'daily' ? dayLabel : weekLabel,
                   style: AppTextStyles.caption.copyWith(
                     color: const Color(0xFF7DD3FC),
                     fontWeight: FontWeight.w600,
@@ -106,9 +185,9 @@ class _MissionsScreenRedesignState extends State<MissionsScreenRedesign>
           ),
           Row(
             children: [
-              const CoinBadge(amount: 1240),
+              CoinBadge(amount: coins),
               const SizedBox(width: 6),
-              _buildStreakBadge(),
+              _buildStreakBadge(streak),
             ],
           ),
         ],
@@ -116,7 +195,7 @@ class _MissionsScreenRedesignState extends State<MissionsScreenRedesign>
     );
   }
 
-  Widget _buildStreakBadge() {
+  Widget _buildStreakBadge(int streak) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
@@ -137,7 +216,7 @@ class _MissionsScreenRedesignState extends State<MissionsScreenRedesign>
           Icon(Icons.local_fire_department, size: 16, color: AppColors.amber),
           const SizedBox(width: 4),
           Text(
-            '12',
+            '$streak',
             style: AppTextStyles.caption.copyWith(
               color: AppColors.amber,
               fontWeight: FontWeight.w700,
@@ -149,10 +228,7 @@ class _MissionsScreenRedesignState extends State<MissionsScreenRedesign>
     );
   }
 
-  Widget _buildTabSwitcher() {
-    final dailyData = _getDailyMissions();
-    final weeklyData = _getWeeklyMissions();
-
+  Widget _buildTabSwitcher(List<Mission> dailyData, List<Mission> weeklyData) {
     final dailyDone = dailyData.where((m) => m.done).length;
     final weeklyDone = weeklyData.where((m) => m.progress >= m.target).length;
 
@@ -263,17 +339,25 @@ class _MissionsScreenRedesignState extends State<MissionsScreenRedesign>
 
 /// Daily View Component
 class _DailyView extends StatelessWidget {
-  const _DailyView();
+  final List<Mission> missions;
+  final Future<void> Function(String questId) onClaim;
+  final DateTime resetAt;
+
+  const _DailyView({
+    required this.missions,
+    required this.onClaim,
+    required this.resetAt,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final missions = _getDailyMissions();
     final dailyDone = missions.where((m) => m.done).length;
     final claimableXP = missions
         .where((m) => m.done && !m.claimed)
         .fold(0, (sum, m) => sum + m.reward);
 
-    final progress = ((dailyDone / missions.length) * 100).round();
+    final progress =
+        missions.isEmpty ? 0 : ((dailyDone / missions.length) * 100).round();
 
     return Column(
       children: [
@@ -285,7 +369,7 @@ class _DailyView extends StatelessWidget {
         ...missions.map(
           (mission) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: _MissionCard(mission: mission),
+            child: _MissionCard(mission: mission, onClaim: onClaim),
           ),
         ),
 
@@ -425,6 +509,12 @@ class _DailyView extends StatelessWidget {
   }
 
   Widget _buildRefreshNotice() {
+    final diff = resetAt.difference(DateTime.now());
+    final h = diff.inHours;
+    final m = diff.inMinutes % 60;
+    final label =
+        diff.isNegative ? 'Đang làm mới...' : 'Làm mới sau ${h}h ${m}p';
+
     return Container(
       margin: const EdgeInsets.only(top: 14),
       child: Row(
@@ -433,7 +523,7 @@ class _DailyView extends StatelessWidget {
           Icon(Icons.access_time, size: 12, color: AppColors.textMuted),
           const SizedBox(width: 6),
           Text(
-            'Làm mới sau 11h 24p',
+            label,
             style: AppTextStyles.caption.copyWith(
               color: AppColors.textMuted,
               fontSize: 11,
@@ -447,20 +537,29 @@ class _DailyView extends StatelessWidget {
 
 /// Weekly View Component
 class _WeeklyView extends StatelessWidget {
-  const _WeeklyView();
+  final List<Mission> missions;
+  final Future<void> Function(String questId) onClaim;
+  final List<WeekDayStatus> weekStrip;
+
+  const _WeeklyView({
+    required this.missions,
+    required this.onClaim,
+    required this.weekStrip,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final missions = _getWeeklyMissions();
     final weeklyDone = missions.where((m) => m.progress >= m.target).length;
     final totalReward = missions.fold(0, (sum, m) => sum + m.reward);
-    final weekProgress = ((missions.fold(
-                  0.0,
-                  (sum, m) => sum + math.min(1.0, m.progress / m.target),
-                ) /
-                missions.length) *
-            100)
-        .round();
+    final weekProgress = missions.isEmpty
+        ? 0
+        : ((missions.fold(
+                      0.0,
+                      (sum, m) => sum + math.min(1.0, m.progress / m.target),
+                    ) /
+                    missions.length) *
+                100)
+            .round();
 
     return Column(
       children: [
@@ -474,14 +573,18 @@ class _WeeklyView extends StatelessWidget {
         const SizedBox(height: 14),
 
         // 7-Day Progress Strip
-        _buildWeekStrip(),
+        _buildWeekStrip(weekStrip),
         const SizedBox(height: 14),
 
         // Weekly Mission Cards
         ...missions.map(
           (mission) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: _MissionCard(mission: mission, isWeekly: true),
+            child: _MissionCard(
+              mission: mission,
+              isWeekly: true,
+              onClaim: onClaim,
+            ),
           ),
         ),
       ],
@@ -632,17 +735,7 @@ class _WeeklyView extends StatelessWidget {
     );
   }
 
-  Widget _buildWeekStrip() {
-    final days = [
-      {'day': 'T2', 'status': 'done', 'progress': 100},
-      {'day': 'T3', 'status': 'done', 'progress': 100},
-      {'day': 'T4', 'status': 'partial', 'progress': 78},
-      {'day': 'T5', 'status': 'done', 'progress': 100},
-      {'day': 'T6', 'status': 'today', 'progress': 58},
-      {'day': 'T7', 'status': 'future'},
-      {'day': 'CN', 'status': 'future'},
-    ];
-
+  Widget _buildWeekStrip(List<WeekDayStatus> days) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.nightSurface,
@@ -666,9 +759,8 @@ class _WeeklyView extends StatelessWidget {
             ),
           ),
           Row(
-            children: days.map((day) {
-              return Expanded(child: _WeekDayItem(day: day));
-            }).toList(),
+            children:
+                days.map((d) => Expanded(child: _WeekDayItem(day: d))).toList(),
           ),
         ],
       ),
@@ -678,14 +770,14 @@ class _WeeklyView extends StatelessWidget {
 
 /// Week Day Item for 7-day strip
 class _WeekDayItem extends StatelessWidget {
-  final Map<String, dynamic> day;
+  final WeekDayStatus day;
 
   const _WeekDayItem({required this.day});
 
   @override
   Widget build(BuildContext context) {
-    final status = day['status'] as String;
-    final progress = day['progress'] as int?;
+    final status = day.status;
+    final progress = day.progressPct;
 
     Color backgroundColor;
     Color? borderColor;
@@ -744,7 +836,7 @@ class _WeekDayItem extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                day['day'] as String,
+                day.dayLabel,
                 style: AppTextStyles.caption.copyWith(
                   color: textColor,
                   fontWeight: FontWeight.w700,
@@ -781,8 +873,13 @@ class _WeekDayItem extends StatelessWidget {
 class _MissionCard extends StatelessWidget {
   final Mission mission;
   final bool isWeekly;
+  final Future<void> Function(String questId) onClaim;
 
-  const _MissionCard({required this.mission, this.isWeekly = false});
+  const _MissionCard({
+    required this.mission,
+    required this.onClaim,
+    this.isWeekly = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1016,7 +1113,7 @@ class _MissionCard extends StatelessWidget {
                               GestureDetector(
                                 onTap: () {
                                   HapticFeedback.lightImpact();
-                                  // Handle claim action
+                                  onClaim(mission.id);
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
@@ -1543,136 +1640,44 @@ class Mission {
   });
 }
 
-/// Sample Data
-List<Mission> _getDailyMissions() {
-  return [
-    const Mission(
-      id: 'd1',
-      icon: '🌅',
-      glowColor: '#FBBF24',
-      name: 'Khởi đầu tươi mới',
-      description: 'Uống 250ml trong 30 phút sau khi thức dậy',
-      progress: 250,
-      target: 250,
-      unit: 'ml',
-      reward: 15,
-      done: true,
-      claimed: true,
-    ),
-    const Mission(
-      id: 'd2',
-      icon: '☀️',
-      glowColor: '#38BDF8',
-      name: 'Nửa ngày — nửa bình',
-      description: 'Đạt 50% mục tiêu trước 12:00',
-      progress: 1250,
-      target: 1250,
-      unit: 'ml',
-      reward: 25,
-      done: true,
-      claimed: false,
-    ),
-    const Mission(
-      id: 'd3',
-      icon: '💧',
-      glowColor: '#0EA5E9',
-      name: 'Đều đặn cả ngày',
-      description: 'Log nước ít nhất 5 lần',
-      progress: 3,
-      target: 5,
-      unit: 'lần',
-      reward: 20,
-    ),
-    const Mission(
-      id: 'd4',
-      icon: '🏃',
-      glowColor: '#A78BFA',
-      name: 'Bù nước sau vận động',
-      description: 'Uống 500ml trong 1h sau khi tập',
-      progress: 0,
-      target: 500,
-      unit: 'ml',
-      reward: 30,
-      isContextual: true,
-    ),
-    const Mission(
-      id: 'd5',
-      icon: '🎯',
-      glowColor: '#F472B6',
-      name: 'Cán đích hôm nay',
-      description: 'Đạt 100% mục tiêu 2,500ml',
-      progress: 1450,
-      target: 2500,
-      unit: 'ml',
-      reward: 50,
-    ),
-  ];
-}
+/// Visual identity (icon + glow) per quest id, kept on the client so the
+/// existing card design is preserved while data comes from the backend.
+const Map<String, ({String icon, String glow})> _questVisuals = {
+  // Daily
+  'breakthrough_hydration': (icon: '🎯', glow: '#F472B6'),
+  'smart_scan': (icon: '📷', glow: '#38BDF8'),
+  'friend_reminder': (icon: '🤝', glow: '#C084FC'),
+  'ai_companion': (icon: '🤖', glow: '#A78BFA'),
+  'daily_bonus': (icon: '🎁', glow: '#FBBF24'),
+  // Weekly
+  'persistence_week': (icon: '🔥', glow: '#F97316'),
+  'hydration_warrior': (icon: '💪', glow: '#38BDF8'),
+  'water_scientist': (icon: '🧪', glow: '#A3E635'),
+  'weekly_bonus': (icon: '🎁', glow: '#FBBF24'),
+};
 
-List<Mission> _getWeeklyMissions() {
-  return [
-    const Mission(
-      id: 'w1',
-      icon: '🔥',
-      glowColor: '#F97316',
-      name: 'Tuần lễ kiên trì',
-      description: 'Streak 7 ngày liên tiếp',
-      progress: 5,
-      target: 7,
-      unit: 'ngày',
-      reward: 150,
-      rewardType: 'unlock',
-      unlockReward: 'Avatar Frame · Ocean',
-      bonusXP: 150,
-      bonusCoin: 250,
-    ),
-    const Mission(
-      id: 'w2',
-      icon: '🌊',
-      glowColor: '#38BDF8',
-      name: 'Đại dương 14 lít',
-      description: 'Tổng 14,000ml trong tuần',
-      progress: 9850,
-      target: 14000,
-      unit: 'ml',
-      reward: 200,
-    ),
-    const Mission(
-      id: 'w3',
-      icon: '⭐',
-      glowColor: '#FBBF24',
-      name: 'Hoàn thành 5/7',
-      description: 'Đạt mục tiêu ngày trong 5 ngày',
-      progress: 4,
-      target: 5,
-      unit: 'ngày',
-      reward: 120,
-      rewardType: 'unlock',
-      unlockReward: 'Theme Forest Rain',
-      bonusXP: 120,
-      bonusCoin: 180,
-    ),
-    const Mission(
-      id: 'w4',
-      icon: '🍵',
-      glowColor: '#A3E635',
-      name: 'Đa dạng hoá',
-      description: 'Thử log 4 loại đồ uống khác nhau',
-      progress: 3,
-      target: 4,
-      unit: 'loại',
-      reward: 80,
-    ),
-    const Mission(
-      id: 'w5',
-      icon: '🤝',
-      glowColor: '#C084FC',
-      name: 'Cùng nhau hydrate',
-      description: 'Mời 1 bạn tham gia AquaTrack',
-      progress: 0,
-      target: 1,
-      unit: 'bạn',
-      reward: 120,
-    ),
-  ];
+/// Map a backend [Quest] onto the existing [Mission] UI model.
+Mission _toMission(Quest q) {
+  final visual = _questVisuals[q.id] ?? (icon: '💧', glow: '#0EA5E9');
+
+  // The lucky chest shows an "unlock" style chip; everything else shows coins.
+  final isUnlock = q.isChest;
+
+  return Mission(
+    id: q.id,
+    icon: visual.icon,
+    glowColor: visual.glow,
+    name: q.name,
+    description: q.description,
+    progress: q.progress,
+    target: q.target == 0 ? 1 : q.target,
+    unit: q.unit,
+    reward: q.rewardCoin,
+    rewardType: isUnlock ? 'unlock' : 'coin',
+    unlockReward: isUnlock ? 'Rương may mắn' : null,
+    done: q.done,
+    claimed: q.claimed,
+    bonusXP: q.rewardXp,
+    bonusCoin: q.rewardCoin,
+  );
 }
