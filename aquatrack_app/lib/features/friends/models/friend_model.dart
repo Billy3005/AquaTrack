@@ -11,7 +11,7 @@ class Friend with _$Friend {
   const factory Friend({
     required String id,
     required String username,
-    required String displayName,
+    @JsonKey(name: 'display_name') required String displayName,
     @JsonKey(name: 'avatar_url') String? avatarUrl,
     @JsonKey(name: 'hydration_level') required double hydrationLevel,
     @JsonKey(name: 'daily_progress') required double dailyProgress,
@@ -113,9 +113,9 @@ enum FriendRequestStatus {
 @freezed
 class WeeklyLeaderboardEntry with _$WeeklyLeaderboardEntry {
   const factory WeeklyLeaderboardEntry({
-    required String userId,
+    @JsonKey(name: 'user_id') required String userId,
     required String username,
-    required String displayName,
+    @JsonKey(name: 'display_name') required String displayName,
     @JsonKey(name: 'avatar_url') String? avatarUrl,
     @JsonKey(name: 'weekly_score') required double weeklyScore,
     @JsonKey(name: 'hydration_percentage') required double hydrationPercentage,

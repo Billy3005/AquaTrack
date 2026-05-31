@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.crud.friend import friend_crud, friend_request_crud
 from app.crud.leaderboard import leaderboard_crud
 from app.crud.user import user_crud
-from app.models.friend_request import FriendRequestStatus
+from app.models.friend_request import FriendRequest, FriendRequestStatus
 
 
 class SocialService:
@@ -32,6 +32,27 @@ class SocialService:
 
         if receiver.id == sender_id:
             raise ValueError("Cannot send friend request to yourself")
+
+        # Mutual-invite collision: if the receiver already has a pending request
+        # to *us*, accept it instead of erroring — both clearly want to be friends.
+        reverse = (
+            db.query(FriendRequest)
+            .filter(
+                FriendRequest.sender_id == receiver.id,
+                FriendRequest.receiver_id == sender_id,
+                FriendRequest.status == FriendRequestStatus.PENDING,
+            )
+            .first()
+        )
+        if reverse is not None:
+            friend_request_crud.accept_request(
+                db, request_id=reverse.id, user_id=sender_id
+            )
+            return {
+                "success": True,
+                "message": f"Bạn và {receiver.username} đã trở thành bạn bè!",
+                "auto_accepted": True,
+            }
 
         # Use CRUD to create request
         try:
@@ -246,6 +267,16 @@ class SocialService:
 
         # Log notification for debugging/analytics
         print(f"🔔 Notification queued for {friend_user.username}: {reminder_message}")
+
+        # Enforce a daily cap so reminders cannot be used to spam a friend or
+        # farm the "Hội Bạn Cùng Uống" quest.
+        from app.services import friends_view_service as fvs
+
+        if fvs.reminders_sent_today(db, sender_id) >= fvs.REMINDER_DAILY_LIMIT:
+            return {
+                "success": False,
+                "message": "Bạn đã gửi quá nhiều lời nhắc hôm nay. Thử lại vào ngày mai!",
+            }
 
         # Persist a queryable reminder record so the "Hội Bạn Cùng Uống" quest
         # can count reminders per day (the push payload above is not queryable).

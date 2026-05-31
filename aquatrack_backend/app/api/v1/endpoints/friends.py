@@ -1,4 +1,5 @@
-from typing import List, Optional
+from datetime import datetime
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -7,14 +8,25 @@ from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud.friend import friend_crud, friend_request_crud
 from app.crud.leaderboard import leaderboard_crud
+from app.crud.user import user_crud
+from app.schemas.friends_view import (FriendRequestsResponse, FriendsResponse,
+                                      SocialStatsOut, WeeklyLeaderboardOut)
 from app.schemas.social import (FriendReminderRequest, FriendReminderResponse,
-                                FriendRequestCreate, FriendRequestResponse,
-                                FriendRequestUpdate, FriendResponse,
-                                LeaderboardEntryResponse, SocialStatsResponse,
-                                UserSearchResult, WeeklyLeaderboardResponse)
+                                FriendRequestResponse, FriendResponse,
+                                UserSearchResult)
+from app.services import friends_view_service as fvs
 from app.services.social_service import social_service
 
 router = APIRouter()
+
+
+def _require_user(db: Session, user_id: str):
+    user = user_crud.get(db, id=user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    return user
 
 
 # Friend Request endpoints
@@ -88,19 +100,14 @@ async def respond_to_friend_request(
     return result
 
 
-@router.get("/requests/", response_model=List[FriendRequestResponse])
+@router.get("/requests/", response_model=FriendRequestsResponse)
 async def get_received_requests(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    """Get friend requests received by current user"""
-    requests = friend_request_crud.get_user_requests(
-        db, user_id=current_user_id, request_type="received", skip=skip, limit=limit
-    )
-
-    return requests
+    """Pending received requests with nested from_user (Flutter contract)."""
+    user = _require_user(db, current_user_id)
+    return fvs.build_requests_payload(db, user)
 
 
 @router.get("/requests/sent", response_model=List[FriendRequestResponse])
@@ -173,19 +180,14 @@ async def cancel_friend_request(
 
 
 # Friends management endpoints
-@router.get("/", response_model=List[FriendResponse])
+@router.get("/", response_model=FriendsResponse)
 async def get_friends(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=100),
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    """Get current user's friends list"""
-    friends = friend_crud.get_user_friends(
-        db, user_id=current_user_id, skip=skip, limit=limit
-    )
-
-    return friends
+    """Friends list with derived hydration standing (Flutter contract)."""
+    user = _require_user(db, current_user_id)
+    return fvs.build_friends_payload(db, user)
 
 
 @router.delete("/{friend_id}/", response_model=dict)
@@ -270,7 +272,7 @@ async def send_hydration_reminder(
 
 
 # User search endpoint - Must come BEFORE /{friend_id}/ route
-@router.get("/search", response_model=List[UserSearchResult])
+@router.get("/search/", response_model=List[UserSearchResult])
 async def search_users(
     q: str = Query(..., min_length=2, description="Search query (username)"),
     limit: int = Query(20, ge=1, le=50),
@@ -283,6 +285,18 @@ async def search_users(
     )
 
     return users
+
+
+# Static single-segment routes must come BEFORE /{friend_id}/ so they are not
+# captured as a friend_id (e.g. "/stats/" must not match "/{friend_id}/").
+@router.get("/stats/", response_model=SocialStatsOut)
+async def get_social_stats(
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Derived social stats with status/online counts (Flutter contract)."""
+    user = _require_user(db, current_user_id)
+    return fvs.build_social_stats(db, user)
 
 
 @router.get("/{friend_id}/", response_model=FriendResponse)
@@ -338,23 +352,19 @@ async def update_my_status(
         "success": True,
         "message": f"Status updated to {status_value}",
         "status": status_value,
-        "updated_at": "datetime.utcnow().isoformat()",
+        "updated_at": datetime.utcnow().isoformat(),
     }
 
 
 # Leaderboard endpoints
-@router.get("/leaderboard/weekly", response_model=WeeklyLeaderboardResponse)
+@router.get("/leaderboard/weekly/", response_model=WeeklyLeaderboardOut)
 async def get_weekly_leaderboard(
-    limit: int = Query(10, ge=1, le=50, description="Number of top entries to return"),
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    """Get current week's hydration leaderboard"""
-    leaderboard = leaderboard_crud.get_weekly_leaderboard(
-        db, current_user_id=current_user_id, limit=limit
-    )
-
-    return leaderboard
+    """Derived weekly leaderboard — user + friends, ISO week (Flutter contract)."""
+    user = _require_user(db, current_user_id)
+    return fvs.build_leaderboard_payload(db, user)
 
 
 @router.get("/leaderboard/history", response_model=List[dict])
@@ -369,18 +379,6 @@ async def get_leaderboard_history(
     )
 
     return history
-
-
-# Social stats endpoint
-@router.get("/stats", response_model=SocialStatsResponse)
-async def get_social_stats(
-    current_user_id: str = Depends(get_current_user_id),
-    db: Session = Depends(get_db),
-):
-    """Get user's social statistics and activity"""
-    stats = await social_service.get_social_stats(db, user_id=current_user_id)
-
-    return stats
 
 
 # Block/unblock endpoints
@@ -413,7 +411,7 @@ async def block_user(
         return {
             "success": True,
             "message": f"Blocked user {username}",
-            "blocked_at": "datetime.utcnow().isoformat()",
+            "blocked_at": datetime.utcnow().isoformat(),
         }
     else:
         raise HTTPException(
@@ -445,7 +443,7 @@ async def unblock_user(
         return {
             "success": True,
             "message": f"Unblocked user {username}",
-            "unblocked_at": "datetime.utcnow().isoformat()",
+            "unblocked_at": datetime.utcnow().isoformat(),
         }
     else:
         raise HTTPException(
