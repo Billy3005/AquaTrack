@@ -80,5 +80,24 @@ def verify_token(token: str) -> Optional[str]:
 def get_current_user_id(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> str:
-    """Dependency to get current authenticated user ID"""
-    return verify_token(credentials.credentials)
+    """Dependency to get current authenticated user ID.
+
+    Also refreshes the caller's presence timestamp so friends can show them as
+    "online". A short-lived session is opened here (not the request's ``get_db``
+    dependency) so presence never interferes with the request's own transaction
+    and stays trivially overridable in tests. The update is throttled inside the
+    query, and failures here must never break authentication.
+    """
+    user_id = verify_token(credentials.credentials)
+    try:
+        from app.core.database import SessionLocal
+        from app.crud.user import user_crud
+
+        presence_db = SessionLocal()
+        try:
+            user_crud.touch_activity(presence_db, user_id=user_id)
+        finally:
+            presence_db.close()
+    except Exception:
+        pass
+    return user_id

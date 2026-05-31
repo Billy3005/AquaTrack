@@ -85,13 +85,17 @@ class FriendResponse(FriendBase):
 
 # User search schemas
 class UserSearchResult(BaseModel):
-    """Schema for user search results"""
+    """Schema for user search results — field names match Friend.fromJson in Flutter."""
 
     id: str
     username: str
-    avatar_id: str
-    current_level: int
-    total_xp: int
+    display_name: str
+    avatar_url: Optional[str] = None
+    hydration_level: float = 0.0
+    daily_progress: float = 0.0
+    current_streak: int = 0
+    is_online: bool = False
+    status: str = "normal"
     is_already_friend: bool = Field(
         ..., description="Whether current user is already friends with this user"
     )

@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/coin_badge.dart';
-import 'providers/friends_provider.dart';
+import '../profile/providers/profile_provider.dart';
 import 'models/friend_model.dart';
+import 'providers/friends_provider.dart';
+import 'widgets/friend_search.dart';
 
 /// Friends Screen - Social hydration with leaderboard and social actions
 class FriendsScreenRedesign extends ConsumerStatefulWidget {
@@ -94,6 +96,18 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
   void dispose() {
     _toastController.dispose();
     super.dispose();
+  }
+
+  void _openSearch() {
+    // rootNavigator: true → full-screen over the bottom nav so the user can't
+    // switch tabs underneath (avoids the search page overlaying another tab).
+    Navigator.of(context, rootNavigator: true)
+        .push(
+      MaterialPageRoute(builder: (_) => const FriendSearch()),
+    )
+        .then((_) {
+      if (mounted) ref.invalidate(friendsNotifierProvider);
+    });
   }
 
   void _showToast(String message) {
@@ -244,9 +258,13 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Coin badge row
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.end,
-                    children: [CoinBadge(amount: 1240)],
+                    children: [
+                      CoinBadge(
+                        amount: ref.watch(profileNotifierProvider).coins,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
 
@@ -280,9 +298,15 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
                       ),
                       Row(
                         children: [
-                          _buildHeaderButton(Icons.search, false),
+                          GestureDetector(
+                            onTap: _openSearch,
+                            child: _buildHeaderButton(Icons.search, false),
+                          ),
                           const SizedBox(width: 8),
-                          _buildHeaderButton(Icons.add, true),
+                          GestureDetector(
+                            onTap: _openSearch,
+                            child: _buildHeaderButton(Icons.add, true),
+                          ),
                         ],
                       ),
                     ],
@@ -388,8 +412,8 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
   }
 
   Widget _buildFriendsTab(FriendsState friendsState) {
-    // Sort friends by status priority (thirsty > stressed > normal > offline)
-    final sortedFriends = List<Friend>.from(friendsState.friends)
+    // Sort filtered friends by status priority (thirsty > stressed > normal > offline)
+    final sortedFriends = List<Friend>.from(friendsState.filteredFriends)
       ..sort((a, b) {
         final priorityA = a.status == FriendStatus.thirsty
             ? 0
@@ -615,36 +639,52 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
   }
 
   Widget _buildFilterChips(FriendsState friendsState) {
+    final currentFilter = friendsState.currentFilter;
     final chips = [
-      FilterChip(
-        id: 'all',
-        label: 'Tất cả',
-        count: friendsState.friends.length,
-        active: true,
+      (
+        filter: FriendStatusFilter.all,
+        chip: FilterChip(
+          id: 'all',
+          label: 'Tất cả',
+          count: friendsState.friends.length,
+          active: currentFilter == FriendStatusFilter.all,
+        ),
       ),
-      FilterChip(
-        id: 'low',
-        label: 'Đang khát',
-        count: friendsState.friends
-            .where(
-              (f) =>
-                  f.status == FriendStatus.thirsty ||
-                  f.status == FriendStatus.stressed,
-            )
-            .length,
-        color: const Color(0xFFF97316),
+      (
+        filter: FriendStatusFilter.thirsty,
+        chip: FilterChip(
+          id: 'low',
+          label: 'Đang khát',
+          count: friendsState.friends
+              .where(
+                (f) =>
+                    f.status == FriendStatus.thirsty ||
+                    f.status == FriendStatus.stressed,
+              )
+              .length,
+          color: const Color(0xFFF97316),
+          active: currentFilter == FriendStatusFilter.thirsty,
+        ),
       ),
-      FilterChip(
-        id: 'on',
-        label: 'Online',
-        count: friendsState.friends.where((f) => f.isOnline).length,
-        color: const Color(0xFF10B981),
+      (
+        filter: FriendStatusFilter.online,
+        chip: FilterChip(
+          id: 'on',
+          label: 'Online',
+          count: friendsState.friends.where((f) => f.isOnline).length,
+          color: const Color(0xFF10B981),
+          active: currentFilter == FriendStatusFilter.online,
+        ),
       ),
-      FilterChip(
-        id: 'streak',
-        label: 'Đang streak',
-        count: friendsState.friends.where((f) => f.currentStreak > 5).length,
-        color: const Color(0xFFA78BFA),
+      (
+        filter: FriendStatusFilter.stressed,
+        chip: FilterChip(
+          id: 'streak',
+          label: 'Đang streak',
+          count: friendsState.friends.where((f) => f.currentStreak > 5).length,
+          color: const Color(0xFFA78BFA),
+          active: currentFilter == FriendStatusFilter.stressed,
+        ),
       ),
     ];
 
@@ -653,9 +693,14 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
       child: Row(
         children: chips
             .map(
-              (chip) => Padding(
+              (entry) => Padding(
                 padding: const EdgeInsets.only(right: 6),
-                child: _buildFilterChip(chip),
+                child: GestureDetector(
+                  onTap: () => ref
+                      .read(friendsNotifierProvider.notifier)
+                      .setFilter(entry.filter),
+                  child: _buildFilterChip(entry.chip),
+                ),
               ),
             )
             .toList(),
@@ -753,7 +798,6 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
   Widget _buildFriendCard(Friend friend) {
     final moodColor = _getFriendMoodColor(friend.status);
     final moodLabel = _getFriendMoodLabel(friend.status);
-    final isThirsty = _isThirstyOrStressed(friend.status);
 
     return Container(
       decoration: BoxDecoration(

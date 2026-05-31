@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import Optional
 
 from sqlalchemy import func
@@ -59,6 +60,28 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     def update_last_login(self, db: Session, *, user_id: str) -> None:
         """Update user's last login timestamp"""
         db.query(User).filter(User.id == user_id).update({"last_login": func.now()})
+        db.commit()
+
+    def touch_activity(
+        self,
+        db: Session,
+        *,
+        user_id: str,
+        now: Optional[datetime] = None,
+        threshold_seconds: int = 60,
+    ) -> None:
+        """Mark the user active *now* for presence ("online").
+
+        Updates ``last_login`` only when it is null or older than
+        ``threshold_seconds``, so calling this on every request does not churn
+        the DB. The staleness guard lives in the WHERE clause — no prior read.
+        """
+        now = now or datetime.utcnow()
+        cutoff = now - timedelta(seconds=threshold_seconds)
+        db.query(User).filter(
+            User.id == user_id,
+            (User.last_login.is_(None)) | (User.last_login < cutoff),
+        ).update({"last_login": now}, synchronize_session=False)
         db.commit()
 
     def update_stats(

@@ -113,7 +113,10 @@ enum FriendStatusFilter {
 /// Friends notifier với social features
 @riverpod
 class FriendsNotifier extends _$FriendsNotifier {
-  late final SocialService _socialService;
+  // NOT `late final` — Riverpod reuses the notifier instance and re-invokes
+  // build() on refresh/invalidate, which would re-assign the field and throw
+  // "Field '_socialService' has already been initialized."
+  late SocialService _socialService;
 
   @override
   Future<FriendsState> build() async {

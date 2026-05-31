@@ -174,14 +174,15 @@ class SocialService {
   /// Search users by username
   Future<List<Friend>> searchUsers(String query) async {
     try {
-      final response = await _apiService.get<Map<String, dynamic>>(
+      final response = await _apiService.get<List<dynamic>>(
         '/friends/search/',
         queryParams: {'q': query},
       );
 
       if (response.isSuccess && response.data != null) {
-        final List<dynamic> usersData = response.data!['users'] ?? [];
-        return usersData.map((json) => Friend.fromJson(json)).toList();
+        return response.data!
+            .map((json) => Friend.fromJson(json as Map<String, dynamic>))
+            .toList();
       }
 
       throw SocialFailure.server(

@@ -213,9 +213,13 @@ class CRUDFriend(CRUDBase[Friend, dict, dict]):
                 {
                     "id": user.id,
                     "username": user.username,
-                    "avatar_id": user.avatar_id,
-                    "current_level": user.current_level,
-                    "total_xp": user.total_xp,
+                    "display_name": user.full_name or user.username,
+                    "avatar_url": None,
+                    "hydration_level": 0.0,
+                    "daily_progress": 0.0,
+                    "current_streak": user.current_streak or 0,
+                    "is_online": False,
+                    "status": "normal",
                     "is_already_friend": is_friend,
                     "has_pending_request": has_pending_request,
                 }
