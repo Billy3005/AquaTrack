@@ -33,5 +33,11 @@ mlruns/
 .DS_Store
 Thumbs.db
 
+# Large binaries / installers
+*.exe
+*.dmg
+*.pkg
+ollama_response.txt
+test_ollama_*.py
 
 .task
