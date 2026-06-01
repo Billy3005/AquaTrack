@@ -1,28 +1,31 @@
 """Derived-on-read social payloads, shaped for the Flutter friends UI.
 
 See docs/adr/0003-friends-derived-on-read.md. Each friend's hydration standing
-(daily progress, status, online) and the weekly leaderboard are computed from
-existing source tables (daily_summaries, users) on every read — nothing extra is
-stored. Response shapes match exactly what `social_service.dart` parses.
+(daily progress, status, online) is derived from ``intake_logs`` on read, and
+the weekly leaderboard from ``daily_summaries`` — nothing extra is stored. The
+friends list keys status off the *recency of the last log* (not a stored %),
+because ``DailySummary`` is only written once the daily goal is reached and so
+leaves partial days looking empty. Response shapes match exactly what
+`social_service.dart` parses.
 
-Day boundaries use the **UTC** calendar date to match how `DailySummary.date`
-is written by the intake endpoint; see the ADR for that trade-off. Friends list
-and leaderboard each issue a single batched summary query (no N+1).
+Day boundaries use the **UTC** calendar date; see the ADR for that trade-off.
+Friends list and leaderboard each issue a single batched query (no N+1).
 """
 
 from datetime import date, datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from sqlalchemy.orm import aliased, joinedload
 
-from app.models import DailySummary, User
+from app.models import DailySummary, IntakeLog, User
 from app.models.friend import Friend
 from app.models.friend_request import FriendRequest, FriendRequestStatus
 
 ONLINE_WINDOW = timedelta(minutes=15)
-STATUS_NORMAL_MIN = 0.8  # >= -> đủ nước
-STATUS_STRESSED_MIN = 0.4  # >= -> hơi thấp; below -> đang khát
+# A friend who has logged today but whose last drink is older than this is
+# considered "đang khát" (a sub-state of offline). See _status().
+THIRSTY_AFTER = timedelta(hours=2)
 
 # Max hydration reminders one user may send per (UTC) day. Caps spam and stops
 # the "Hội Bạn Cùng Uống" quest from being farmed.
@@ -48,6 +51,21 @@ def _to_naive_utc(dt: Optional[datetime]) -> Optional[datetime]:
     return dt.astimezone(timezone.utc).replace(tzinfo=None)
 
 
+def _iso_utc(dt: Optional[datetime]) -> Optional[str]:
+    """Serialize a (possibly naive) UTC datetime as a tz-aware ISO string.
+
+    DB timestamps are stored as naive UTC; emitting them without a zone makes
+    Flutter's ``DateTime.parse`` read them as *local* time, so on a UTC+7 device
+    a fresh login shows as "7 giờ trước". Tagging UTC fixes the relative-time
+    display on the friend cards.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc).isoformat()
+
+
 def _utc_today(now: datetime) -> date:
     return now.astimezone(timezone.utc).date()
 
@@ -57,6 +75,30 @@ def _utc_day_bounds(now: datetime):
     matching how reminder rows store ``created_at``."""
     now_utc = now.astimezone(timezone.utc).replace(tzinfo=None)
     start = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
+    return start, start + timedelta(days=1)
+
+
+def _to_naive_local(dt: Optional[datetime]) -> Optional[datetime]:
+    """Drop to naive *server-local* time, matching how ``IntakeLog.logged_at``
+    is written (the intake CRUD uses ``datetime.now()``)."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt
+    return dt.astimezone().replace(tzinfo=None)
+
+
+def _now_local_naive(now: Optional[datetime]) -> datetime:
+    """Server-local naive 'now'. Intake timestamps are stored in local time, so
+    the "today" window and the last-drink recency check must use the same frame
+    (using UTC here made everyone read as 7h off on a UTC+7 box — thirsty never
+    triggered and early-morning logs fell outside "today")."""
+    return _now_utc(now).astimezone().replace(tzinfo=None)
+
+
+def _local_day_bounds(now_local: datetime):
+    """[start, end) of the local calendar day, matching logged_at's frame."""
+    start = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
     return start, start + timedelta(days=1)
 
 
@@ -80,14 +122,24 @@ def reminders_sent_today(db, user_id: str, now: Optional[datetime] = None) -> in
 # --- per-friend derivation ----------------------------------------------
 
 
-def _status(daily_progress: float, has_activity: bool) -> str:
-    if not has_activity:
-        return "offline"
-    if daily_progress >= STATUS_NORMAL_MIN:
-        return "normal"
-    if daily_progress >= STATUS_STRESSED_MIN:
-        return "stressed"
-    return "thirsty"
+def _status(
+    has_log_today: bool, last_log_at: Optional[datetime], now_local: datetime
+) -> str:
+    """Hydration-recency status (presence is reported separately via is_online).
+
+    - ``dry``     : no water logged at all today ("khô").
+    - ``thirsty`` : logged today, but the last drink was > THIRSTY_AFTER ago.
+    - ``normal``  : logged today and drank within THIRSTY_AFTER ("đủ nước").
+
+    ``now_local`` and ``last_log_at`` are both server-local naive (logged_at's
+    frame); see _now_local_naive.
+    """
+    if not has_log_today or last_log_at is None:
+        return "dry"
+    last = _to_naive_local(last_log_at)
+    if last is None:
+        return "dry"
+    return "thirsty" if (now_local - last) > THIRSTY_AFTER else "normal"
 
 
 def _is_online(u: User, now: datetime) -> bool:
@@ -103,22 +155,27 @@ def _last_active_iso(u: User) -> Optional[str]:
     candidates = [c for c in (u.last_login, u.updated_at) if c is not None]
     if not candidates:
         return None
-    return max(candidates).isoformat()
+    return _iso_utc(max(candidates))
 
 
-def _friend_dict(u: User, summary: Optional[DailySummary], now: datetime) -> dict:
-    """Build the Flutter `Friend` shape for one user from a pre-fetched summary.
+# Per-user today's intake, batched: user_id -> (effective_ml, last_logged_at, count)
+TodayIntake = Dict[str, tuple]
 
-    The caller supplies today's summary (batched) so this does no I/O — keeping
-    the friends list and leaderboard free of N+1 queries.
+
+def _friend_dict(u: User, intake: Optional[tuple], now: datetime) -> dict:
+    """Build the Flutter `Friend` shape for one user from pre-fetched intake.
+
+    ``intake`` is ``(sum_effective_ml, last_logged_at, log_count)`` for today,
+    supplied batched by the caller so this does no I/O (no N+1). Status and the
+    progress bar are derived straight from ``intake_logs`` — not ``DailySummary``,
+    which is only written when the daily goal is reached and so leaves partial
+    days looking empty.
     """
-    effective = (summary.total_effective_ml or 0) if summary else 0
-    has_activity = effective > 0
-    if summary and summary.progress_percentage:
-        daily_progress = min(summary.progress_percentage / 100.0, 1.0)
-    else:
-        daily_progress = 0.0
-    daily_progress = round(daily_progress, 2)
+    sum_ml, last_log_at, log_count = intake if intake else (0, None, 0)
+    goal = u.daily_goal_ml or 2000
+    daily_progress = round(min(sum_ml / goal, 1.0), 2) if goal else 0.0
+    has_log_today = log_count > 0
+    now_local = _now_local_naive(now)
 
     return {
         "id": u.id,
@@ -129,7 +186,7 @@ def _friend_dict(u: User, summary: Optional[DailySummary], now: datetime) -> dic
         "daily_progress": daily_progress,
         "current_streak": u.current_streak or 0,
         "is_online": _is_online(u, now),
-        "status": _status(daily_progress, has_activity),
+        "status": _status(has_log_today, last_log_at, now_local),
         "last_active": _last_active_iso(u),
         "weekly_rank": None,
         "weekly_score": None,
@@ -155,16 +212,34 @@ def _friend_users(db, user_id: str) -> List[User]:
     )
 
 
-def _summaries_for_day(db, user_ids: List[str], day: date) -> Dict[str, DailySummary]:
-    """One query: the given day's DailySummary for every user, keyed by user_id."""
+def _intake_today(db, user_ids: List[str], now: datetime) -> TodayIntake:
+    """One query: each user's today (UTC day) intake aggregate.
+
+    Returns ``user_id -> (sum_effective_ml, last_logged_at, log_count)``. Drives
+    both the progress bar (sum / goal) and the hydration status (recency of the
+    last log) without touching ``DailySummary``.
+    """
     if not user_ids:
         return {}
+    # logged_at is stored in server-local time, so bound the "today" window in
+    # the same frame (not UTC) — otherwise the window is shifted by the tz offset.
+    start, end = _local_day_bounds(_now_local_naive(now))
     rows = (
-        db.query(DailySummary)
-        .filter(DailySummary.user_id.in_(user_ids), DailySummary.date == day)
+        db.query(
+            IntakeLog.user_id,
+            func.coalesce(func.sum(IntakeLog.effective_volume_ml), 0),
+            func.max(IntakeLog.logged_at),
+            func.count(IntakeLog.id),
+        )
+        .filter(
+            IntakeLog.user_id.in_(user_ids),
+            IntakeLog.logged_at >= start,
+            IntakeLog.logged_at < end,
+        )
+        .group_by(IntakeLog.user_id)
         .all()
     )
-    return {r.user_id: r for r in rows}
+    return {r[0]: (int(r[1] or 0), r[2], int(r[3] or 0)) for r in rows}
 
 
 def _summaries_for_week(
@@ -193,10 +268,9 @@ def _summaries_for_week(
 
 def build_friends_payload(db, user: User, now: Optional[datetime] = None) -> dict:
     now = _now_utc(now)
-    today = _utc_today(now)
     friends = _friend_users(db, user.id)
-    summaries = _summaries_for_day(db, [f.id for f in friends], today)
-    return {"friends": [_friend_dict(f, summaries.get(f.id), now) for f in friends]}
+    intake = _intake_today(db, [f.id for f in friends], now)
+    return {"friends": [_friend_dict(f, intake.get(f.id), now) for f in friends]}
 
 
 # --- friend requests ----------------------------------------------------
@@ -204,7 +278,6 @@ def build_friends_payload(db, user: User, now: Optional[datetime] = None) -> dic
 
 def build_requests_payload(db, user: User, now: Optional[datetime] = None) -> dict:
     now = _now_utc(now)
-    today = _utc_today(now)
     requests = (
         db.query(FriendRequest)
         .filter(
@@ -216,14 +289,12 @@ def build_requests_payload(db, user: User, now: Optional[datetime] = None) -> di
         .all()
     )
     sender_ids = [r.sender_id for r in requests if r.sender_id]
-    summaries = _summaries_for_day(db, sender_ids, today)
+    intake = _intake_today(db, sender_ids, now)
 
     out = []
     for r in requests:
         from_user = (
-            _friend_dict(r.sender, summaries.get(r.sender_id), now)
-            if r.sender
-            else None
+            _friend_dict(r.sender, intake.get(r.sender_id), now) if r.sender else None
         )
         out.append(
             {
@@ -317,7 +388,9 @@ def build_social_stats(db, user: User, now: Optional[datetime] = None) -> dict:
         "total_friends": len(friends),
         "online_friends": sum(1 for f in friends if f["is_online"]),
         "thirsty_friends": sum(1 for f in friends if f["status"] == "thirsty"),
-        "stressed_friends": sum(1 for f in friends if f["status"] == "stressed"),
+        # "stressed" is retired; report "khô" (no log today) in its slot so the
+        # existing SocialStats field stays populated for clients that read it.
+        "stressed_friends": sum(1 for f in friends if f["status"] == "dry"),
         "pending_requests": pending,
         "my_rank": me["rank"] if me else None,
         "my_weekly_score": me["weekly_score"] if me else None,

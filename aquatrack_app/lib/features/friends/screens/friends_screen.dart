@@ -281,6 +281,11 @@ class FriendsScreen extends ConsumerWidget {
         subtitle = 'Hãy quay lại sau để xem ai đang hoạt động';
         icon = Icons.circle;
         break;
+      case FriendStatusFilter.dry:
+        title = 'Không có bạn nào bị khô';
+        subtitle = 'Mọi người đều đã uống nước hôm nay! 💧';
+        icon = Icons.opacity;
+        break;
       case FriendStatusFilter.stressed:
         title = 'Không có bạn nào đang stress';
         subtitle = 'Mọi người đều rất chill! 😌';
