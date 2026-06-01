@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from sqlalchemy.orm import Session
@@ -281,6 +281,19 @@ class SocialService:
                 "success": False,
                 "message": "Bạn đã gửi quá nhiều lời nhắc hôm nay. Thử lại vào ngày mai!",
             }
+
+        # Per-pair cooldown: can't remind the *same* friend back-to-back, so the
+        # "BẠN TÔI ƠI" ranking reflects a real relationship, not spam.
+        last = fvs.last_reminder_at(db, sender_id, friend_user.id)
+        if last is not None:
+            last_aware = last if last.tzinfo else last.replace(tzinfo=timezone.utc)
+            elapsed = datetime.now(timezone.utc) - last_aware
+            if elapsed < fvs.REMINDER_COOLDOWN:
+                mins = int((fvs.REMINDER_COOLDOWN - elapsed).total_seconds() // 60) + 1
+                return {
+                    "success": False,
+                    "message": f"Đợi {mins} phút nữa mới nhắc {friend_user.username} được nhé!",
+                }
 
         # Persist a queryable reminder record so the "Hội Bạn Cùng Uống" quest
         # can count reminders per day (the push payload above is not queryable).

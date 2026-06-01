@@ -19,6 +19,7 @@ class FriendsState {
   final List<Friend> friends;
   final List<FriendRequest> pendingRequests;
   final List<WeeklyLeaderboardEntry> weeklyLeaderboard;
+  final List<InteractionEntry> interactionLeaderboard;
   final SocialStats socialStats;
   final bool isLoading;
   final String? error;
@@ -32,6 +33,7 @@ class FriendsState {
     this.friends = const [],
     this.pendingRequests = const [],
     this.weeklyLeaderboard = const [],
+    this.interactionLeaderboard = const [],
     this.socialStats = const SocialStats(
       totalFriends: 0,
       onlineFriends: 0,
@@ -55,6 +57,7 @@ class FriendsState {
     List<Friend>? friends,
     List<FriendRequest>? pendingRequests,
     List<WeeklyLeaderboardEntry>? weeklyLeaderboard,
+    List<InteractionEntry>? interactionLeaderboard,
     SocialStats? socialStats,
     bool? isLoading,
     String? error,
@@ -66,6 +69,8 @@ class FriendsState {
       friends: friends ?? this.friends,
       pendingRequests: pendingRequests ?? this.pendingRequests,
       weeklyLeaderboard: weeklyLeaderboard ?? this.weeklyLeaderboard,
+      interactionLeaderboard:
+          interactionLeaderboard ?? this.interactionLeaderboard,
       socialStats: socialStats ?? this.socialStats,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
@@ -137,12 +142,14 @@ class FriendsNotifier extends _$FriendsNotifier {
         _socialService.getPendingRequests(),
         _socialService.getWeeklyLeaderboard(),
         _socialService.getSocialStats(),
+        _socialService.getInteractionLeaderboard(),
       ]);
 
       final friends = results[0] as List<Friend>;
       final requests = results[1] as List<FriendRequest>;
       final leaderboard = results[2] as List<WeeklyLeaderboardEntry>;
       final stats = results[3] as SocialStats;
+      final interactions = results[4] as List<InteractionEntry>;
 
       // Cache to local storage
       await _cacheFriendsData(friends, requests, leaderboard, stats);
@@ -151,6 +158,7 @@ class FriendsNotifier extends _$FriendsNotifier {
         friends: friends,
         pendingRequests: requests,
         weeklyLeaderboard: leaderboard,
+        interactionLeaderboard: interactions,
         socialStats: stats,
         updatedAt: DateTime.now(), // Fresh data timestamp
       );

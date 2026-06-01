@@ -133,6 +133,23 @@ class WeeklyLeaderboardEntry with _$WeeklyLeaderboardEntry {
       _$WeeklyLeaderboardEntryFromJson(json);
 }
 
+/// Interaction ranking entry ("BẠN TÔI ƠI") — a friend ranked by how much they
+/// interact with the current user (incoming reminders + coin gifts), all-time.
+@freezed
+class InteractionEntry with _$InteractionEntry {
+  const factory InteractionEntry({
+    @JsonKey(name: 'user_id') required String userId,
+    required String username,
+    @JsonKey(name: 'display_name') required String displayName,
+    @JsonKey(name: 'avatar_url') String? avatarUrl,
+    @JsonKey(name: 'interaction_count') required int interactionCount,
+    required int rank,
+  }) = _InteractionEntry;
+
+  factory InteractionEntry.fromJson(Map<String, dynamic> json) =>
+      _$InteractionEntryFromJson(json);
+}
+
 /// Social stats summary
 @freezed
 class SocialStats with _$SocialStats {

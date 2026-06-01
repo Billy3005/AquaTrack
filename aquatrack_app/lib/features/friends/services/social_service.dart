@@ -82,6 +82,32 @@ class SocialService {
     }
   }
 
+  /// Get the interaction ranking ("BẠN TÔI ƠI") — friends ranked by how much
+  /// they interact with the current user (incoming reminders + gifts).
+  Future<List<InteractionEntry>> getInteractionLeaderboard() async {
+    try {
+      final response = await _apiService.get<Map<String, dynamic>>(
+        '/friends/leaderboard/interactions/',
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final List<dynamic> data = response.data!['interactions'] ?? [];
+        return data
+            .map((json) =>
+                InteractionEntry.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
+
+      throw Exception(
+        'Failed to load interaction ranking: ${response.statusCode}',
+      );
+    } on ApiException catch (e) {
+      throw Exception('API error loading interaction ranking: ${e.message}');
+    } catch (e) {
+      throw Exception('Error loading interaction ranking: $e');
+    }
+  }
+
   /// Get social statistics
   Future<SocialStats> getSocialStats() async {
     try {
@@ -156,7 +182,8 @@ class SocialService {
     }
   }
 
-  /// Send hydration reminder to friend
+  /// Send hydration reminder to friend. Throws [SocialFailure] on failure so
+  /// the caller can surface the backend message (e.g. the 30-min cooldown).
   Future<bool> sendHydrationReminder(String friendId) async {
     try {
       final response = await _apiService.post<Map<String, dynamic>>(
@@ -166,9 +193,14 @@ class SocialService {
 
       return response.isSuccess;
     } on ApiException catch (e) {
-      throw Exception('API error sending reminder: ${e.message}');
+      throw SocialFailure.fromApiException(e);
+    } on SocketException {
+      throw const SocialFailure.network(message: 'Network connection failed');
     } catch (e) {
-      throw Exception('Error sending hydration reminder: $e');
+      throw SocialFailure.unknown(
+        message: 'Unexpected error sending reminder',
+        originalException: e is Exception ? e : Exception(e.toString()),
+      );
     }
   }
 
