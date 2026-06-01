@@ -64,7 +64,9 @@ class User(Base):
     # Level system
     current_level = Column(Integer, default=1)
     total_xp = Column(Integer, default=0)
-    coins = Column(Integer, default=0)  # Spendable currency from quests / shop
+    # Spendable currency from quests / gifts / shop. New users start at 100
+    # (matches the one-time grant in database.STARTING_COINS).
+    coins = Column(Integer, default=100)
     current_streak = Column(Integer, default=0)
     longest_streak = Column(Integer, default=0)
 

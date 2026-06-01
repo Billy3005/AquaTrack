@@ -109,6 +109,7 @@ class UserResponse(BaseModel):
     # Level system
     current_level: int
     total_xp: int
+    coins: int = 0
     current_streak: int
     longest_streak: int
 

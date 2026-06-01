@@ -322,18 +322,26 @@ class HiveStorageService {
     return DateTime.fromMillisecondsSinceEpoch(timestampMs as int);
   }
 
-  /// Mark notifications as seen at [timestamp] (clears the unread badge).
-  Future<void> cacheNotificationsSeenAt(DateTime timestamp) async {
+  /// Per-user key so switching accounts on one device keeps separate "seen"
+  /// timestamps (otherwise one user's read state clears another's badge).
+  String _seenAtKey(String? userId) =>
+      'notifications_seen_at_${userId ?? 'anon'}';
+
+  /// Mark notifications as seen at [timestamp] for [userId] (clears the badge).
+  Future<void> cacheNotificationsSeenAt(
+    DateTime timestamp,
+    String? userId,
+  ) async {
     await _ensureBoxesOpen();
     await _appSettingsBox.put(
-      'notifications_seen_at',
+      _seenAtKey(userId),
       timestamp.millisecondsSinceEpoch,
     );
   }
 
-  /// Load the last time the user opened the notifications inbox.
-  DateTime? loadNotificationsSeenAt() {
-    final timestampMs = _appSettingsBox.get('notifications_seen_at');
+  /// Load the last time [userId] opened the notifications inbox.
+  DateTime? loadNotificationsSeenAt(String? userId) {
+    final timestampMs = _appSettingsBox.get(_seenAtKey(userId));
     if (timestampMs == null) return null;
 
     return DateTime.fromMillisecondsSinceEpoch(timestampMs as int);

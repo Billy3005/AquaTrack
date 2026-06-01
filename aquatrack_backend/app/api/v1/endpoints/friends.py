@@ -13,11 +13,13 @@ from app.schemas.challenges import (ChallengeCreate, ChallengeRespond,
                                     ChallengesResponse, NotificationsResponse)
 from app.schemas.friends_view import (FriendRequestsResponse, FriendsResponse,
                                       SocialStatsOut, WeeklyLeaderboardOut)
+from app.schemas.gifts import CoinGiftCreate, CoinGiftResponse
 from app.schemas.social import (FriendReminderRequest, FriendReminderResponse,
                                 FriendRequestResponse, FriendResponse,
                                 UserSearchResult)
 from app.services import challenges_service as ch
 from app.services import friends_view_service as fvs
+from app.services import gifts_service as gifts
 from app.services.social_service import social_service
 
 router = APIRouter()
@@ -357,6 +359,27 @@ async def create_challenge(
         opponent_id=friend_id,
         duration_days=body.duration_days,
         message=body.message,
+    )
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
+        )
+    return result
+
+
+@router.post("/{friend_id}/gift/", response_model=CoinGiftResponse, status_code=201)
+async def gift_coins(
+    friend_id: str,
+    body: CoinGiftCreate,
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Gift spendable coins to a friend (tặng xu)."""
+    result = gifts.send_coin_gift(
+        db,
+        sender_id=current_user_id,
+        receiver_id=friend_id,
+        amount=body.amount,
     )
     if not result["success"]:
         raise HTTPException(

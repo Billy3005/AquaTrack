@@ -49,7 +49,40 @@ class _NotificationsPanel extends ConsumerStatefulWidget {
 }
 
 class _NotificationsPanelState extends ConsumerState<_NotificationsPanel> {
+  // Lazy reveal: show the first 10, then 5 more each time the user scrolls to
+  // the bottom (or taps the footer) — keeps the list short without re-fetching.
+  static const _initialCount = 10;
+  static const _pageSize = 5;
+
   bool _busy = false;
+  int _visibleCount = _initialCount;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 48) _revealMore();
+  }
+
+  void _revealMore() {
+    final items = ref.read(notificationsProvider).valueOrNull;
+    if (items == null || _visibleCount >= items.length) return;
+    setState(
+      () => _visibleCount = (_visibleCount + _pageSize).clamp(0, items.length),
+    );
+  }
 
   Future<void> _refresh() async {
     ref.invalidate(notificationsProvider);
@@ -112,13 +145,7 @@ class _NotificationsPanelState extends ConsumerState<_NotificationsPanel> {
                 error: (_, __) => _message('Không tải được thông báo'),
                 data: (items) => items.isEmpty
                     ? _message('Chưa có thông báo nào')
-                    : ListView.separated(
-                        shrinkWrap: true,
-                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-                        itemCount: items.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
-                        itemBuilder: (_, i) => _buildCard(items[i]),
-                      ),
+                    : _buildList(items),
               ),
             ),
           ],
@@ -194,10 +221,54 @@ class _NotificationsPanelState extends ConsumerState<_NotificationsPanel> {
     );
   }
 
+  Widget _buildList(List<AppNotification> items) {
+    final visible = items.length < _visibleCount ? items.length : _visibleCount;
+    final hasMore = visible < items.length;
+    return ListView.separated(
+      controller: _scrollController,
+      shrinkWrap: true,
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+      itemCount: visible + (hasMore ? 1 : 0),
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, i) {
+        if (i >= visible) return _buildLoadMore(items.length - visible);
+        return _buildCard(items[i]);
+      },
+    );
+  }
+
+  Widget _buildLoadMore(int remaining) {
+    return GestureDetector(
+      onTap: _revealMore,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        alignment: Alignment.center,
+        child: Text(
+          'Xem thêm $remaining thông báo',
+          style: AppTextStyles.labelSmall.copyWith(
+            color: AppColors.glow,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCard(AppNotification n) {
-    final isChallenge = n.type == FriendNotificationType.challenge;
-    final accent = isChallenge ? AppColors.purpleLight : AppColors.glow;
-    final icon = isChallenge ? Icons.emoji_events : Icons.water_drop;
+    final Color accent;
+    final IconData icon;
+    switch (n.type) {
+      case FriendNotificationType.challenge:
+        accent = AppColors.purpleLight;
+        icon = Icons.emoji_events;
+      case FriendNotificationType.gift:
+        accent = const Color(0xFFFBBF24);
+        icon = Icons.monetization_on;
+      case FriendNotificationType.reminder:
+        accent = AppColors.glow;
+        icon = Icons.water_drop;
+    }
 
     return Container(
       padding: const EdgeInsets.all(12),

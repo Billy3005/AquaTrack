@@ -2,7 +2,7 @@
 /// Hand-written (no codegen) to keep the feature self-contained.
 
 /// Type of social notification shown in the bell inbox.
-enum FriendNotificationType { reminder, challenge }
+enum FriendNotificationType { reminder, challenge, gift }
 
 /// A single notification item from the backend (/friends/notifications/).
 class AppNotification {
@@ -17,6 +17,9 @@ class AppNotification {
   final String? challengeId;
   final String? challengeStatus; // pending | active | completed | declined
 
+  /// Set when [type] is [FriendNotificationType.gift] — coins received.
+  final int? amount;
+
   const AppNotification({
     required this.id,
     required this.type,
@@ -26,6 +29,7 @@ class AppNotification {
     this.isRead = false,
     this.challengeId,
     this.challengeStatus,
+    this.amount,
   });
 
   /// True when this is a pending invite the user can accept/decline.
@@ -36,9 +40,7 @@ class AppNotification {
     final typeStr = json['type'] as String? ?? 'reminder';
     return AppNotification(
       id: json['id'] as String,
-      type: typeStr == 'challenge'
-          ? FriendNotificationType.challenge
-          : FriendNotificationType.reminder,
+      type: _typeFromString(typeStr),
       senderName: json['sender_name'] as String? ?? 'Một người bạn',
       message: json['message'] as String? ?? '',
       createdAt: json['created_at'] != null
@@ -47,7 +49,19 @@ class AppNotification {
       isRead: json['is_read'] as bool? ?? false,
       challengeId: json['challenge_id'] as String?,
       challengeStatus: json['challenge_status'] as String?,
+      amount: json['amount'] as int?,
     );
+  }
+
+  static FriendNotificationType _typeFromString(String type) {
+    switch (type) {
+      case 'challenge':
+        return FriendNotificationType.challenge;
+      case 'gift':
+        return FriendNotificationType.gift;
+      default:
+        return FriendNotificationType.reminder;
+    }
   }
 }
 

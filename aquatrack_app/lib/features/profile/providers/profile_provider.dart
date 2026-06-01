@@ -383,8 +383,8 @@ class ProfileNotifier extends _$ProfileNotifier {
             healthConditions: user.healthConditions,
             coffeeCupsPerDay: user.coffeeCupsPerDay,
             alcoholUnitsPerDay: user.alcoholUnitsPerDay,
-            // Use XP as coins for simplicity
-            coins: totalXP,
+            // Real spendable coin balance from backend
+            coins: user.coins,
           );
 
           // Sync to local storage for offline fallback
@@ -441,8 +441,8 @@ class ProfileNotifier extends _$ProfileNotifier {
                   : null,
               coffeeCupsPerDay: userData['coffee_cups_per_day'] as int?,
               alcoholUnitsPerDay: userData['alcohol_units_per_day'] as int?,
-              // Coins
-              coins: userData['total_xp'] as int? ?? 0,
+              // Real spendable coin balance from backend
+              coins: userData['coins'] as int? ?? 0,
             );
 
             await _saveProfile();

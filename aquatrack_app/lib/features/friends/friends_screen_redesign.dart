@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/coin_badge.dart';
 import '../profile/providers/profile_provider.dart';
 import 'models/friend_model.dart';
+import 'models/social_failure.dart';
 import 'providers/friends_provider.dart';
 import 'providers/notifications_provider.dart';
 import 'widgets/friend_search.dart';
@@ -113,6 +114,9 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
   }
 
   void _openNotifications() {
+    // Re-fetch so the inbox always reflects the current account (avoids showing
+    // a previous user's cached notifications) and any newly-arrived items.
+    ref.invalidate(notificationsProvider);
     // Opening the inbox clears the unread badge right away.
     markNotificationsSeen(ref);
     // Compact dropdown anchored under the bell — no full-screen navigation.
@@ -194,29 +198,33 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
     }
   }
 
-  void _challengeFriend(String friendId) async {
+  void _giftFriend(String friendId) async {
     final currentState = ref.read(friendsNotifierProvider).valueOrNull;
     if (currentState == null) return;
     final friend = currentState.friends.firstWhere((f) => f.id == friendId);
     final firstName = friend.displayName.split(' ').last;
 
+    // Small centered box with the coin presets (5/10/20/50).
+    final amount = await showDialog<int>(
+      context: context,
+      builder: (_) => _GiftCoinsDialog(friendName: friend.displayName),
+    );
+    if (amount == null || !mounted) return;
+
     HapticFeedback.lightImpact();
     try {
-      final ok = await ref.read(socialServiceProvider).createChallenge(
-            friendId,
-            durationDays: 7,
-          );
+      await ref.read(socialServiceProvider).giftCoins(friendId, amount);
       if (!mounted) return;
-      _showToast(
-        ok
-            ? 'Đã gửi lời mời cuộc đua cho $firstName 🏆'
-            : 'Không thể gửi lời mời. Thử lại sau!',
-      );
+      _showToast('Đã tặng $amount xu cho $firstName 🎁');
+      // Refresh the real coin balance in the header + the friend's inbox.
+      ref.read(profileNotifierProvider.notifier).refreshProfile();
+      ref.invalidate(notificationsProvider);
     } catch (e) {
       if (!mounted) return;
-      // Backend returns a friendly message (e.g. race already exists).
-      final msg = e.toString().replaceFirst('Exception: ', '');
-      _showToast(msg.length > 60 ? 'Không thể gửi lời mời' : msg);
+      // Backend returns a friendly message (e.g. not enough coins / daily cap).
+      final msg =
+          e is SocialFailure ? e.message : 'Không thể tặng xu. Thử lại sau!';
+      _showToast(msg);
     }
   }
 
@@ -433,40 +441,63 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
           _buildTab(
             'requests',
             'Lời mời · ${friendsState.pendingRequests.length}',
+            showDot: friendsState.pendingRequests.isNotEmpty,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTab(String id, String label) {
+  Widget _buildTab(String id, String label, {bool showDot = false}) {
     final isActive = _currentTab == id;
     return GestureDetector(
       onTap: () {
         setState(() => _currentTab = id);
         HapticFeedback.lightImpact();
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActive
-              ? const Color(0xFF38BDF8).withValues(alpha: 0.18)
-              : Colors.transparent,
-          border: Border.all(
-            color: isActive
-                ? const Color(0xFF38BDF8).withValues(alpha: 0.35)
-                : Colors.transparent,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: isActive
+                  ? const Color(0xFF38BDF8).withValues(alpha: 0.18)
+                  : Colors.transparent,
+              border: Border.all(
+                color: isActive
+                    ? const Color(0xFF38BDF8).withValues(alpha: 0.35)
+                    : Colors.transparent,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color:
+                    isActive ? AppColors.textBright : AppColors.textSecondary,
+              ),
+            ),
           ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: isActive ? AppColors.textBright : AppColors.textSecondary,
-          ),
-        ),
+          // Pending friend-request indicator so new invites stand out.
+          if (showDot)
+            Positioned(
+              top: -1,
+              right: -1,
+              child: Container(
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444),
+                  borderRadius: BorderRadius.circular(999),
+                  border:
+                      Border.all(color: const Color(0xFF0B1120), width: 1.5),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -507,8 +538,6 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
             child: _buildFriendCard(friend),
           ),
         ),
-        const SizedBox(height: 16),
-        _buildGroupChallengeBanner(),
         const SizedBox(height: 8),
       ],
     );
@@ -1058,7 +1087,7 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
                   children: [
                     Expanded(child: _buildNudgeButton(friend)),
                     const SizedBox(width: 6),
-                    _buildChallengeButton(friend),
+                    _buildGiftButton(friend),
                     const SizedBox(width: 6),
                     _buildMenuButton(),
                   ],
@@ -1221,29 +1250,29 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
     );
   }
 
-  Widget _buildChallengeButton(Friend friend) {
+  Widget _buildGiftButton(Friend friend) {
     return GestureDetector(
-      onTap: () => _challengeFriend(friend.id),
+      onTap: () => _giftFriend(friend.id),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFA855F7).withValues(alpha: 0.10),
+          color: const Color(0xFFFBBF24).withValues(alpha: 0.10),
           border: Border.all(
-            color: const Color(0xFFA855F7).withValues(alpha: 0.3),
+            color: const Color(0xFFFBBF24).withValues(alpha: 0.3),
           ),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Row(
+        child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('⚔️', style: TextStyle(fontSize: 11)),
-            const SizedBox(width: 5),
+            Text('🎁', style: TextStyle(fontSize: 11)),
+            SizedBox(width: 5),
             Text(
-              'Đua',
+              'Tặng xu',
               style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFFDDD6FE),
+                color: Color(0xFFFDE68A),
               ),
             ),
           ],
@@ -1262,99 +1291,6 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
         borderRadius: BorderRadius.circular(10),
       ),
       child: Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 14),
-    );
-  }
-
-  Widget _buildGroupChallengeBanner() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1E1B4B), Color(0xFF0F172A)],
-        ),
-        borderRadius: BorderRadius.all(Radius.circular(14)),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: const Color(0xFFA855F7).withValues(alpha: 0.3),
-          ),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFA78BFA), Color(0xFF6366F1)],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF6366F1).withValues(alpha: 0.4),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.emoji_events,
-                color: Colors.white,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Thách đấu nhóm',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Tạo cuộc đua 7 ngày · thưởng XP gấp đôi',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFFC4B5FD),
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFA855F7).withValues(alpha: 0.18),
-                border: Border.all(
-                  color: const Color(0xFFA855F7).withValues(alpha: 0.4),
-                ),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: const Text(
-                'Tạo',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFFDDD6FE),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1759,6 +1695,137 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Compact centered dialog to gift coins to a friend (5 / 10 / 20 / 50).
+/// Pops with the chosen amount, or null if dismissed.
+class _GiftCoinsDialog extends StatelessWidget {
+  final String friendName;
+  const _GiftCoinsDialog({required this.friendName});
+
+  static const _amounts = [5, 10, 20, 50];
+
+  @override
+  Widget build(BuildContext context) {
+    final shortName = friendName.split(' ').last;
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 44),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 22, 20, 16),
+        decoration: BoxDecoration(
+          color: AppColors.nightSurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFFBBF24).withValues(alpha: 0.3),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.45),
+              blurRadius: 28,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFBBF24).withValues(alpha: 0.4),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.monetization_on,
+                  color: Colors.white, size: 28),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Tặng xu cho $shortName',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Chọn số xu muốn tặng',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(child: _amountButton(context, _amounts[0])),
+                const SizedBox(width: 10),
+                Expanded(child: _amountButton(context, _amounts[1])),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: _amountButton(context, _amounts[2])),
+                const SizedBox(width: 10),
+                Expanded(child: _amountButton(context, _amounts[3])),
+              ],
+            ),
+            const SizedBox(height: 6),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Để sau',
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _amountButton(BuildContext context, int amount) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).pop(amount),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFBBF24).withValues(alpha: 0.10),
+          border: Border.all(
+            color: const Color(0xFFFBBF24).withValues(alpha: 0.35),
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('🪙', style: TextStyle(fontSize: 16)),
+            const SizedBox(width: 6),
+            Text(
+              '$amount',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFFDE68A),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

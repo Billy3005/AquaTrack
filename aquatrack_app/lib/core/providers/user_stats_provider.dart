@@ -46,18 +46,13 @@ Future<UserStatsData> _loadUserStats(UserRepository userRepository) async {
       totalVolumeMl: stats.totalVolumeMl,
       totalVolumeLiters: stats.totalVolumeLiters,
 
-      // Calculated values
-      coins: _calculateCoins(user.totalXp),
+      // Real spendable coin balance from backend
+      coins: user.coins,
       levelName: _getLevelName(user.level),
     );
   } catch (e) {
     throw Exception('Failed to load user stats: $e');
   }
-}
-
-/// Calculate coins from total XP (1 coin = 10 XP)
-int _calculateCoins(int totalXp) {
-  return (totalXp / 10).floor();
 }
 
 /// Get level name based on current level
