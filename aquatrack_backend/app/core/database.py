@@ -39,7 +39,7 @@ def init_db() -> None:
     This should be called when the application starts.
     """
     # Import all models here to ensure they're registered
-    from app.models import (Achievement, Challenge, Conversation,
+    from app.models import (Achievement, Challenge, CoinGift, Conversation,
                             ConversationSession, DailySummary, Friend,
                             FriendRequest, IntakeLog, LeaderboardEntry,
                             QuestClaim, ReminderLog, ScanHistory, User,
@@ -49,16 +49,41 @@ def init_db() -> None:
     _ensure_user_columns()
 
 
+# Spendable coins granted to every user exactly once (see _ensure_user_columns).
+STARTING_COINS = 100
+
+
 def _ensure_user_columns() -> None:
     """Lightweight migration: add columns introduced after a table's creation.
 
     create_all() creates missing tables but never alters existing ones, so new
     columns on long-lived tables (e.g. users.coins) must be added explicitly.
+    Also grants each user a one-time starting coin balance, guarded by the
+    ``coins_seeded`` marker so a restart never re-grants coins to someone who
+    has since spent (gifted) them down to zero.
     """
     inspector = inspect(engine)
     if "users" not in inspector.get_table_names():
         return
     existing = {col["name"] for col in inspector.get_columns("users")}
-    if "coins" not in existing:
-        with engine.begin() as conn:
-            conn.execute(text("ALTER TABLE users ADD COLUMN coins INTEGER DEFAULT 0"))
+    with engine.begin() as conn:
+        if "coins" not in existing:
+            conn.execute(
+                text(
+                    "ALTER TABLE users ADD COLUMN coins INTEGER "
+                    f"DEFAULT {STARTING_COINS}"
+                )
+            )
+        if "coins_seeded" not in existing:
+            # First rollout of coins: add the marker, grant the starting balance
+            # to anyone with none yet, then mark every existing user as seeded.
+            conn.execute(
+                text("ALTER TABLE users ADD COLUMN coins_seeded INTEGER DEFAULT 0")
+            )
+            conn.execute(
+                text(
+                    "UPDATE users SET coins = :start WHERE coins IS NULL OR coins = 0"
+                ),
+                {"start": STARTING_COINS},
+            )
+            conn.execute(text("UPDATE users SET coins_seeded = 1"))

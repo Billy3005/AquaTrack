@@ -327,6 +327,35 @@ class SocialService {
     }
   }
 
+  /// Gift coins to a friend (tặng xu). Returns the sender's new coin balance.
+  /// Throws with a friendly message on failure (e.g. not enough coins).
+  Future<int> giftCoins(String friendId, int amount) async {
+    try {
+      final response = await _apiService.post<Map<String, dynamic>>(
+        '/friends/$friendId/gift/',
+        data: {'amount': amount},
+      );
+
+      if (response.isSuccess && response.data != null) {
+        return response.data!['new_balance'] as int? ?? 0;
+      }
+
+      throw SocialFailure.server(
+        message: 'Không thể tặng xu',
+        statusCode: response.statusCode,
+      );
+    } on ApiException catch (e) {
+      throw SocialFailure.fromApiException(e);
+    } on SocketException {
+      throw const SocialFailure.network(message: 'Network connection failed');
+    } catch (e) {
+      throw SocialFailure.unknown(
+        message: 'Unexpected error gifting coins',
+        originalException: e is Exception ? e : Exception(e.toString()),
+      );
+    }
+  }
+
   /// Accept or decline a pending race invite
   Future<bool> respondToChallenge(
     String challengeId, {

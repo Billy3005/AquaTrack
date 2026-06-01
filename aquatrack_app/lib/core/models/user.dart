@@ -7,6 +7,7 @@ class User {
   final String? avatarId;
   final int level;
   final int totalXp;
+  final int coins; // Spendable currency (real backend balance)
   final int dailyGoalMl;
   final bool notificationsEnabled;
   final String themePreference;
@@ -46,6 +47,7 @@ class User {
     this.avatarId,
     required this.level,
     required this.totalXp,
+    this.coins = 0,
     required this.dailyGoalMl,
     required this.notificationsEnabled,
     required this.themePreference,
@@ -86,6 +88,7 @@ class User {
       avatarId: json['avatar_id'] as String?,
       level: json['level'] as int? ?? json['current_level'] as int? ?? 1,
       totalXp: json['total_xp'] as int? ?? 0,
+      coins: json['coins'] as int? ?? 0,
       dailyGoalMl: json['daily_goal_ml'] as int? ?? 2000,
       notificationsEnabled: json['notifications_enabled'] as bool? ?? true,
       themePreference: json['theme_preference'] as String? ?? 'auto',
@@ -133,6 +136,7 @@ class User {
       'level': level,
       'current_level': level,
       'total_xp': totalXp,
+      'coins': coins,
       'daily_goal_ml': dailyGoalMl,
       'notifications_enabled': notificationsEnabled,
       'theme_preference': themePreference,
@@ -175,6 +179,7 @@ class User {
     String? avatarId,
     int? level,
     int? totalXp,
+    int? coins,
     int? dailyGoalMl,
     bool? notificationsEnabled,
     String? themePreference,
@@ -212,6 +217,7 @@ class User {
       avatarId: avatarId ?? this.avatarId,
       level: level ?? this.level,
       totalXp: totalXp ?? this.totalXp,
+      coins: coins ?? this.coins,
       dailyGoalMl: dailyGoalMl ?? this.dailyGoalMl,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       themePreference: themePreference ?? this.themePreference,

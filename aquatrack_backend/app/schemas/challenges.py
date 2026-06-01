@@ -45,13 +45,14 @@ class ChallengesResponse(BaseModel):
 
 class NotificationItem(BaseModel):
     id: str
-    type: str  # "reminder" | "challenge"
+    type: str  # "reminder" | "challenge" | "gift"
     sender_name: str
     message: str
     created_at: Optional[str] = None
     is_read: bool = False
     challenge_id: Optional[str] = None
     challenge_status: Optional[str] = None
+    amount: Optional[int] = None  # coins, for "gift" notifications
 
 
 class NotificationsResponse(BaseModel):

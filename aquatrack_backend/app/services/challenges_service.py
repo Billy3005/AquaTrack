@@ -8,14 +8,14 @@ reminders received (``reminder_logs``) and challenge invites/results — into on
 feed shaped for the Flutter ``NotificationsScreen``.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import (Challenge, ChallengeStatus, DailySummary, ReminderLog,
-                        User)
+from app.models import (Challenge, ChallengeStatus, CoinGift, DailySummary,
+                        ReminderLog, User)
 from app.models.friend import Friend
 
 # How far back the notifications inbox looks for reminders / finished races.
@@ -27,6 +27,19 @@ NOTIFICATION_WINDOW = timedelta(days=7)
 
 def _now() -> datetime:
     return datetime.utcnow()
+
+
+def _iso_utc(dt: Optional[datetime]) -> Optional[str]:
+    """Serialize a naive-UTC datetime as a tz-aware ISO string.
+
+    DB timestamps are stored as naive UTC (``datetime.utcnow``). Emitting them
+    without a zone makes Flutter's ``DateTime.parse`` read them as *local* time,
+    so on a UTC+7 device everything shows as "7 giờ trước". Tagging them UTC
+    fixes the relative-time display on the client.
+    """
+    if dt is None:
+        return None
+    return dt.replace(tzinfo=timezone.utc).isoformat()
 
 
 def _are_friends(db: Session, user_id: str, other_id: str) -> bool:
@@ -236,7 +249,7 @@ def build_notifications(db: Session, *, user_id: str) -> dict:
                 "type": "reminder",
                 "sender_name": name,
                 "message": "nhắc bạn uống nước rồi đó! 💧",
-                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "created_at": _iso_utc(r.created_at),
                 "is_read": False,
                 "challenge_id": None,
                 "challenge_status": None,
@@ -267,7 +280,7 @@ def build_notifications(db: Session, *, user_id: str) -> dict:
                     "type": "challenge",
                     "sender_name": _display_name(c.challenger),
                     "message": "mời bạn vào một cuộc đua uống nước 🏆",
-                    "created_at": c.created_at.isoformat() if c.created_at else None,
+                    "created_at": _iso_utc(c.created_at),
                     "is_read": False,
                     "challenge_id": c.id,
                     "challenge_status": c.status.value,
@@ -281,16 +294,41 @@ def build_notifications(db: Session, *, user_id: str) -> dict:
                     "type": "challenge",
                     "sender_name": _display_name(other),
                     "message": "cuộc đua uống nước đã kết thúc — xem kết quả! 🏁",
-                    "created_at": (
-                        c.ends_at.isoformat()
-                        if c.ends_at
-                        else (c.created_at.isoformat() if c.created_at else None)
-                    ),
+                    "created_at": _iso_utc(c.ends_at or c.created_at),
                     "is_read": False,
                     "challenge_id": c.id,
                     "challenge_status": c.status.value,
                 }
             )
+
+    # 3) Coin gifts received from friends.
+    gifts = (
+        db.query(CoinGift)
+        .filter(CoinGift.receiver_id == user_id, CoinGift.created_at >= since)
+        .order_by(CoinGift.created_at.desc())
+        .all()
+    )
+    gift_sender_ids = {g.sender_id for g in gifts}
+    gift_senders = (
+        {u.id: u for u in db.query(User).filter(User.id.in_(gift_sender_ids)).all()}
+        if gift_sender_ids
+        else {}
+    )
+    for g in gifts:
+        name = _display_name(gift_senders.get(g.sender_id))
+        items.append(
+            {
+                "id": f"gift:{g.id}",
+                "type": "gift",
+                "sender_name": name,
+                "message": f"đã tặng bạn {g.amount} xu! 🎁",
+                "created_at": _iso_utc(g.created_at),
+                "is_read": False,
+                "challenge_id": None,
+                "challenge_status": None,
+                "amount": g.amount,
+            }
+        )
 
     items.sort(key=lambda x: x["created_at"] or "", reverse=True)
     return {"notifications": items}
