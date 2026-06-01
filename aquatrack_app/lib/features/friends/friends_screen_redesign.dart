@@ -6,7 +6,9 @@ import '../../shared/widgets/coin_badge.dart';
 import '../profile/providers/profile_provider.dart';
 import 'models/friend_model.dart';
 import 'providers/friends_provider.dart';
+import 'providers/notifications_provider.dart';
 import 'widgets/friend_search.dart';
+import 'widgets/notifications_dropdown.dart';
 
 /// Friends Screen - Social hydration with leaderboard and social actions
 class FriendsScreenRedesign extends ConsumerStatefulWidget {
@@ -110,6 +112,48 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
     });
   }
 
+  void _openNotifications() {
+    // Opening the inbox clears the unread badge right away.
+    markNotificationsSeen(ref);
+    // Compact dropdown anchored under the bell — no full-screen navigation.
+    showNotificationsDropdown(context);
+  }
+
+  /// Bell button with a red unread badge for notifications not yet seen.
+  Widget _buildBellButton() {
+    final count = ref.watch(unreadNotificationsCountProvider);
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        _buildHeaderButton(Icons.notifications_outlined, true),
+        if (count > 0)
+          Positioned(
+            top: -2,
+            right: -2,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: const Color(0xFF0B1120), width: 1.5),
+              ),
+              child: Text(
+                count > 9 ? '9+' : '$count',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 9,
+                  height: 1.1,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   void _showToast(String message) {
     setState(() => _toastMessage = message);
     _toastController.forward();
@@ -150,13 +194,29 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
     }
   }
 
-  void _challengeFriend(String friendId) {
+  void _challengeFriend(String friendId) async {
     final currentState = ref.read(friendsNotifierProvider).valueOrNull;
-    if (currentState != null) {
-      final friend = currentState.friends.firstWhere((f) => f.id == friendId);
-      final firstName = friend.displayName.split(' ').last;
-      _showToast('Đã gửi thách đấu cho $firstName ⚔️');
-      HapticFeedback.lightImpact();
+    if (currentState == null) return;
+    final friend = currentState.friends.firstWhere((f) => f.id == friendId);
+    final firstName = friend.displayName.split(' ').last;
+
+    HapticFeedback.lightImpact();
+    try {
+      final ok = await ref.read(socialServiceProvider).createChallenge(
+            friendId,
+            durationDays: 7,
+          );
+      if (!mounted) return;
+      _showToast(
+        ok
+            ? 'Đã gửi lời mời cuộc đua cho $firstName 🏆'
+            : 'Không thể gửi lời mời. Thử lại sau!',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      // Backend returns a friendly message (e.g. race already exists).
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      _showToast(msg.length > 60 ? 'Không thể gửi lời mời' : msg);
     }
   }
 
@@ -304,8 +364,8 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
                           ),
                           const SizedBox(width: 8),
                           GestureDetector(
-                            onTap: _openSearch,
-                            child: _buildHeaderButton(Icons.add, true),
+                            onTap: _openNotifications,
+                            child: _buildBellButton(),
                           ),
                         ],
                       ),

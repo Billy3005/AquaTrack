@@ -322,6 +322,23 @@ class HiveStorageService {
     return DateTime.fromMillisecondsSinceEpoch(timestampMs as int);
   }
 
+  /// Mark notifications as seen at [timestamp] (clears the unread badge).
+  Future<void> cacheNotificationsSeenAt(DateTime timestamp) async {
+    await _ensureBoxesOpen();
+    await _appSettingsBox.put(
+      'notifications_seen_at',
+      timestamp.millisecondsSinceEpoch,
+    );
+  }
+
+  /// Load the last time the user opened the notifications inbox.
+  DateTime? loadNotificationsSeenAt() {
+    final timestampMs = _appSettingsBox.get('notifications_seen_at');
+    if (timestampMs == null) return null;
+
+    return DateTime.fromMillisecondsSinceEpoch(timestampMs as int);
+  }
+
   /// Check if friends cache is expired (older than 5 minutes)
   bool isFriendsCacheExpired() {
     final cacheTime = _appSettingsBox.get('friends_cache_time');

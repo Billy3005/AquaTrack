@@ -2,6 +2,7 @@ import 'dart:io';
 
 import '../../../core/services/api_service.dart';
 import '../models/friend_model.dart';
+import '../models/notification_models.dart';
 import '../models/social_failure.dart';
 
 /// Social service for friend management and social features
@@ -233,6 +234,115 @@ class SocialService {
       throw Exception('API error updating status: ${e.message}');
     } catch (e) {
       throw Exception('Error updating status: $e');
+    }
+  }
+
+  /// Get notifications inbox (reminders received + challenge invites/results)
+  Future<List<AppNotification>> getNotifications() async {
+    try {
+      final response = await _apiService.get<Map<String, dynamic>>(
+        '/friends/notifications/',
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final List<dynamic> data = response.data!['notifications'] ?? [];
+        return data
+            .map((json) =>
+                AppNotification.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
+
+      throw SocialFailure.server(
+        message: 'Failed to load notifications',
+        statusCode: response.statusCode,
+      );
+    } on ApiException catch (e) {
+      throw SocialFailure.fromApiException(e);
+    } on SocketException {
+      throw const SocialFailure.network(message: 'Network connection failed');
+    } catch (e) {
+      throw SocialFailure.unknown(
+        message: 'Unexpected error loading notifications',
+        originalException: e is Exception ? e : Exception(e.toString()),
+      );
+    }
+  }
+
+  /// Get the user's hydration races (challenges) with live scores
+  Future<List<HydrationChallenge>> getChallenges() async {
+    try {
+      final response = await _apiService.get<Map<String, dynamic>>(
+        '/friends/challenges/',
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final List<dynamic> data = response.data!['challenges'] ?? [];
+        return data
+            .map((json) =>
+                HydrationChallenge.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
+
+      throw SocialFailure.server(
+        message: 'Failed to load challenges',
+        statusCode: response.statusCode,
+      );
+    } on ApiException catch (e) {
+      throw SocialFailure.fromApiException(e);
+    } on SocketException {
+      throw const SocialFailure.network(message: 'Network connection failed');
+    } catch (e) {
+      throw SocialFailure.unknown(
+        message: 'Unexpected error loading challenges',
+        originalException: e is Exception ? e : Exception(e.toString()),
+      );
+    }
+  }
+
+  /// Invite a friend to a hydration race
+  Future<bool> createChallenge(
+    String friendId, {
+    int durationDays = 7,
+    String? message,
+  }) async {
+    try {
+      final response = await _apiService.post<Map<String, dynamic>>(
+        '/friends/$friendId/challenge/',
+        data: {
+          'duration_days': durationDays,
+          if (message != null) 'message': message,
+        },
+      );
+
+      return response.isSuccess;
+    } on ApiException catch (e) {
+      throw SocialFailure.fromApiException(e);
+    } on SocketException {
+      throw const SocialFailure.network(message: 'Network connection failed');
+    } catch (e) {
+      throw SocialFailure.unknown(
+        message: 'Unexpected error creating challenge',
+        originalException: e is Exception ? e : Exception(e.toString()),
+      );
+    }
+  }
+
+  /// Accept or decline a pending race invite
+  Future<bool> respondToChallenge(
+    String challengeId, {
+    required bool accept,
+  }) async {
+    try {
+      final response = await _apiService.put<Map<String, dynamic>>(
+        '/friends/challenge/$challengeId/',
+        data: {'action': accept ? 'accept' : 'decline'},
+      );
+
+      return response.isSuccess;
+    } on ApiException catch (e) {
+      throw Exception('API error responding to challenge: ${e.message}');
+    } catch (e) {
+      throw Exception('Error responding to challenge: $e');
     }
   }
 }

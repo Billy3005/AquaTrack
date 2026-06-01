@@ -1,5 +1,6 @@
 # Export all models for easy imports
 from .achievement import Achievement
+from .challenge import Challenge, ChallengeStatus
 from .conversation import Conversation, ConversationSession
 from .daily_summary import DailySummary
 from .friend import Friend
@@ -22,6 +23,8 @@ __all__ = [
     "Friend",
     "FriendRequest",
     "FriendRequestStatus",
+    "Challenge",
+    "ChallengeStatus",
     "LeaderboardEntry",
     "UserInsight",
     "InsightType",
