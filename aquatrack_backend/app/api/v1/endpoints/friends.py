@@ -9,11 +9,14 @@ from app.core.security import get_current_user_id
 from app.crud.friend import friend_crud, friend_request_crud
 from app.crud.leaderboard import leaderboard_crud
 from app.crud.user import user_crud
+from app.schemas.challenges import (ChallengeCreate, ChallengeRespond,
+                                    ChallengesResponse, NotificationsResponse)
 from app.schemas.friends_view import (FriendRequestsResponse, FriendsResponse,
                                       SocialStatsOut, WeeklyLeaderboardOut)
 from app.schemas.social import (FriendReminderRequest, FriendReminderResponse,
                                 FriendRequestResponse, FriendResponse,
                                 UserSearchResult)
+from app.services import challenges_service as ch
 from app.services import friends_view_service as fvs
 from app.services.social_service import social_service
 
@@ -297,6 +300,69 @@ async def get_social_stats(
     """Derived social stats with status/online counts (Flutter contract)."""
     user = _require_user(db, current_user_id)
     return fvs.build_social_stats(db, user)
+
+
+# --- Notifications & Challenges (cuộc đua) -------------------------------
+# Static single-segment routes — must precede "/{friend_id}/" (see note above).
+@router.get("/notifications/", response_model=NotificationsResponse)
+async def get_notifications(
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Inbox of reminders received + challenge invites/results for the user."""
+    _require_user(db, current_user_id)
+    return ch.build_notifications(db, user_id=current_user_id)
+
+
+@router.get("/challenges/", response_model=ChallengesResponse)
+async def get_challenges(
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """All of the user's races with live, derived scores."""
+    _require_user(db, current_user_id)
+    return ch.list_challenges(db, user_id=current_user_id)
+
+
+@router.put("/challenge/{challenge_id}/", response_model=dict)
+async def respond_to_challenge(
+    challenge_id: str,
+    body: ChallengeRespond,
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Accept or decline a pending race invite."""
+    accept = body.action == "accept"
+    result = ch.respond_to_challenge(
+        db, challenge_id=challenge_id, user_id=current_user_id, accept=accept
+    )
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
+        )
+    return result
+
+
+@router.post("/{friend_id}/challenge/", response_model=dict, status_code=201)
+async def create_challenge(
+    friend_id: str,
+    body: ChallengeCreate,
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Invite a friend to a hydration race."""
+    result = ch.create_challenge(
+        db,
+        challenger_id=current_user_id,
+        opponent_id=friend_id,
+        duration_days=body.duration_days,
+        message=body.message,
+    )
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
+        )
+    return result
 
 
 @router.get("/{friend_id}/", response_model=FriendResponse)

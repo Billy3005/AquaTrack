@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional
 
 from sqlalchemy.orm import Session
@@ -87,7 +87,9 @@ class SocialService:
 
             return {
                 "success": True,
-                "message": f"You are now friends with {sender.username if sender else 'this user'}!",
+                "message": (
+                    f"You are now friends with {sender.username if sender else 'this user'}!"
+                ),
                 "accepted_at": friend_request.responded_at.isoformat(),
             }
 
@@ -250,18 +252,20 @@ class SocialService:
         )
         reminder_message = message or default_message
 
-        # Store notification in user's push_token field as JSON log (simple implementation)
-        # In production, this would use a proper notification service like FCM
-        notification_data = {
+        # TODO: Replace with proper push notification service (FCM/APNS)
+        # For now just log the intent; ReminderLog below is the queryable record.
+        _sender_username = (
+            user_crud.get(db, id=sender_id).username
+            if user_crud.get(db, id=sender_id)
+            else "Friend"
+        )
+        # (notification_data intentionally not stored — see TODO above)
+        _ = {
             "type": "friend_reminder",
             "title": "Hydration Reminder",
             "body": reminder_message,
             "sender_id": sender_id,
-            "sender_username": (
-                user_crud.get(db, id=sender_id).username
-                if user_crud.get(db, id=sender_id)
-                else "Friend"
-            ),
+            "sender_username": _sender_username,
             "timestamp": datetime.utcnow().isoformat(),
         }
 
