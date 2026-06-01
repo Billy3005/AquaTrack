@@ -10,8 +10,9 @@ from datetime import date, datetime, timedelta, timezone
 import pytest
 
 from app.crud.friend import friend_crud
-from app.models import DailySummary, IntakeLog, User
+from app.models import CoinGift, DailySummary, IntakeLog, User
 from app.models.friend_request import FriendRequest, FriendRequestStatus
+from app.models.quest import ReminderLog
 from app.services import friends_view_service as fvs
 
 # A fixed "now": 2026-05-31 03:00 UTC -> 10:00 Asia/Ho_Chi_Minh (Sunday).
@@ -78,6 +79,18 @@ def add_intake(db, uid, logged_at, effective=250):
 
 def befriend(db, a, b):
     friend_crud.create_friendship(db, user_id=a, friend_user_id=b)
+
+
+def add_reminder(db, sender_id, target_id):
+    """Record that ``sender_id`` reminded ``target_id`` (one interaction)."""
+    db.add(ReminderLog(user_id=sender_id, friend_id=target_id))
+    db.commit()
+
+
+def add_gift(db, sender_id, receiver_id, amount=10):
+    """Record that ``sender_id`` gifted ``receiver_id`` coins (one interaction)."""
+    db.add(CoinGift(sender_id=sender_id, receiver_id=receiver_id, amount=amount))
+    db.commit()
 
 
 # --- friends payload ----------------------------------------------------
@@ -177,6 +190,56 @@ def test_leaderboard_ranks_user_and_friends_by_percentage(db, user):
     assert board[0]["rank"] == 1
     assert board[1]["rank"] == 2
     assert board[0]["hydration_percentage"] >= board[1]["hydration_percentage"]
+
+
+# --- interaction ranking ("BẠN TÔI ƠI") --------------------------------
+
+
+def test_interaction_leaderboard_ranks_by_incoming(db, user):
+    f1 = make_user(db, "u2", "user2", full_name="Bạn Một")
+    f2 = make_user(db, "u3", "user3", full_name="Bạn Hai")
+    f3 = make_user(db, "u4", "user4", full_name="Bạn Ba")
+    for f in (f1, f2, f3):
+        befriend(db, user.id, f.id)
+
+    # Incoming to me: f1 = 2 reminders + 1 gift = 3, f2 = 1 reminder, f3 = 0.
+    add_reminder(db, f1.id, user.id)
+    add_reminder(db, f1.id, user.id)
+    add_gift(db, f1.id, user.id)
+    add_reminder(db, f2.id, user.id)
+    # Outgoing (me -> f3) must NOT count toward f3's incoming score.
+    add_reminder(db, user.id, f3.id)
+
+    payload = fvs.build_interaction_leaderboard(db, user)
+
+    assert payload["total_friends"] == 3
+    assert payload["unlocked"] is True
+    entries = payload["interactions"]
+    assert [e["user_id"] for e in entries] == ["u2", "u3", "u4"]
+    assert [e["interaction_count"] for e in entries] == [3, 1, 0]
+    assert [e["rank"] for e in entries] == [1, 2, 3]
+
+
+def test_interaction_leaderboard_locked_under_three_friends(db, user):
+    f1 = make_user(db, "u2", "user2")
+    f2 = make_user(db, "u3", "user3")
+    befriend(db, user.id, f1.id)
+    befriend(db, user.id, f2.id)
+
+    payload = fvs.build_interaction_leaderboard(db, user)
+
+    assert payload["total_friends"] == 2
+    assert payload["unlocked"] is False
+    assert len(payload["interactions"]) == 2
+
+
+def test_last_reminder_at_tracks_pair(db, user):
+    f = make_user(db, "u2", "user2")
+    befriend(db, user.id, f.id)
+
+    assert fvs.last_reminder_at(db, user.id, f.id) is None
+    add_reminder(db, user.id, f.id)
+    assert fvs.last_reminder_at(db, user.id, f.id) is not None
 
 
 # --- social stats -------------------------------------------------------

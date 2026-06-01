@@ -12,6 +12,7 @@ from app.crud.user import user_crud
 from app.schemas.challenges import (ChallengeCreate, ChallengeRespond,
                                     ChallengesResponse, NotificationsResponse)
 from app.schemas.friends_view import (FriendRequestsResponse, FriendsResponse,
+                                      InteractionLeaderboardOut,
                                       SocialStatsOut, WeeklyLeaderboardOut)
 from app.schemas.gifts import CoinGiftCreate, CoinGiftResponse
 from app.schemas.social import (FriendReminderRequest, FriendReminderResponse,
@@ -454,6 +455,16 @@ async def get_weekly_leaderboard(
     """Derived weekly leaderboard — user + friends, ISO week (Flutter contract)."""
     user = _require_user(db, current_user_id)
     return fvs.build_leaderboard_payload(db, user)
+
+
+@router.get("/leaderboard/interactions/", response_model=InteractionLeaderboardOut)
+async def get_interaction_leaderboard(
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Friends ranked by how much they interact with the user ("BẠN TÔI ƠI")."""
+    user = _require_user(db, current_user_id)
+    return fvs.build_interaction_leaderboard(db, user)
 
 
 @router.get("/leaderboard/history", response_model=List[dict])

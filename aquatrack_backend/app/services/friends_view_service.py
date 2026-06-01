@@ -31,6 +31,13 @@ THIRSTY_AFTER = timedelta(hours=2)
 # the "Hội Bạn Cùng Uống" quest from being farmed.
 REMINDER_DAILY_LIMIT = 20
 
+# A user may remind the *same* friend again only after this gap, so the "BẠN TÔI
+# ƠI" interaction ranking reflects a real relationship, not back-to-back spam.
+REMINDER_COOLDOWN = timedelta(minutes=30)
+
+# Friends needed before the interaction ranking unlocks (client also gates).
+INTERACTION_MIN_FRIENDS = 3
+
 
 # --- time helpers -------------------------------------------------------
 
@@ -117,6 +124,26 @@ def reminders_sent_today(db, user_id: str, now: Optional[datetime] = None) -> in
         )
         .count()
     )
+
+
+def last_reminder_at(db, user_id: str, friend_id: str) -> Optional[datetime]:
+    """When ``user_id`` last reminded ``friend_id`` (most recent), or None.
+
+    Used to enforce REMINDER_COOLDOWN per friend pair (see
+    social_service.send_hydration_reminder).
+    """
+    from app.models import ReminderLog
+
+    row = (
+        db.query(ReminderLog.created_at)
+        .filter(
+            ReminderLog.user_id == user_id,
+            ReminderLog.friend_id == friend_id,
+        )
+        .order_by(ReminderLog.created_at.desc())
+        .first()
+    )
+    return row[0] if row else None
 
 
 # --- per-friend derivation ----------------------------------------------
@@ -364,6 +391,79 @@ def build_leaderboard_payload(db, user: User, now: Optional[datetime] = None) ->
     for i, e in enumerate(entries, start=1):
         e["rank"] = i
     return {"leaderboard": entries}
+
+
+# --- interaction ranking ("BẠN TÔI ƠI") --------------------------------
+
+
+def _interaction_counts(db, me_id: str, friend_ids: List[str]) -> Dict[str, int]:
+    """Per-friend count of interactions *they* directed at me (incoming),
+    all-time: reminders they sent me + coin gifts they sent me. Two batched
+    grouped queries (no N+1). Each reminder and each gift counts as 1."""
+    counts = {fid: 0 for fid in friend_ids}
+    if not friend_ids:
+        return counts
+
+    from app.models import CoinGift, ReminderLog
+
+    reminders = (
+        db.query(ReminderLog.user_id, func.count(ReminderLog.id))
+        .filter(
+            ReminderLog.friend_id == me_id,
+            ReminderLog.user_id.in_(friend_ids),
+        )
+        .group_by(ReminderLog.user_id)
+        .all()
+    )
+    for uid, c in reminders:
+        counts[uid] = counts.get(uid, 0) + int(c or 0)
+
+    gifts = (
+        db.query(CoinGift.sender_id, func.count(CoinGift.id))
+        .filter(
+            CoinGift.receiver_id == me_id,
+            CoinGift.sender_id.in_(friend_ids),
+        )
+        .group_by(CoinGift.sender_id)
+        .all()
+    )
+    for sid, c in gifts:
+        counts[sid] = counts.get(sid, 0) + int(c or 0)
+
+    return counts
+
+
+def build_interaction_leaderboard(db, user: User) -> dict:
+    """Rank the user's friends by how much *they* interact with the user
+    (incoming reminders + coin gifts), all-time — "những người bạn hay tương
+    tác với mình". Friends with zero interactions are still ranked (shown as 0).
+
+    The podium is only meaningful with several friends, so ``unlocked`` /
+    ``total_friends`` let the client gate it behind INTERACTION_MIN_FRIENDS.
+    """
+    friends = _friend_users(db, user.id)
+    counts = _interaction_counts(db, user.id, [f.id for f in friends])
+
+    entries = [
+        {
+            "user_id": f.id,
+            "username": f.username,
+            "display_name": f.full_name or f.username,
+            "avatar_url": f"/avatars/{f.avatar_id}" if f.avatar_id else None,
+            "interaction_count": counts.get(f.id, 0),
+        }
+        for f in friends
+    ]
+    # Most interactive first; stable display-name tie-break keeps order steady.
+    entries.sort(key=lambda e: (-e["interaction_count"], e["display_name"]))
+    for i, e in enumerate(entries, start=1):
+        e["rank"] = i
+
+    return {
+        "interactions": entries,
+        "total_friends": len(friends),
+        "unlocked": len(friends) >= INTERACTION_MIN_FRIENDS,
+    }
 
 
 # --- social stats -------------------------------------------------------

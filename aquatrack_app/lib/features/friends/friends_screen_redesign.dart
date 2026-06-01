@@ -179,29 +179,34 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
   }
 
   void _nudgeFriend(String friendId) async {
+    final currentState = ref.read(friendsNotifierProvider).valueOrNull;
+    final firstName = currentState?.friends
+            .firstWhere((f) => f.id == friendId)
+            .displayName
+            .split(' ')
+            .last ??
+        '';
+
     setState(() {
       _remindedFriends.add(friendId);
     });
 
-    // Send reminder through provider
-    final success = await ref
-        .read(friendsNotifierProvider.notifier)
-        .sendHydrationReminder(friendId);
-
-    if (success) {
-      final currentState = ref.read(friendsNotifierProvider).valueOrNull;
-      if (currentState != null) {
-        final friend = currentState.friends.firstWhere((f) => f.id == friendId);
-        final firstName = friend.displayName.split(' ').last;
-        _showToast('Đã nhắc $firstName uống nước 💧');
-        HapticFeedback.lightImpact();
-      }
-    } else {
-      // Remove from reminded set if failed
+    // Call the service directly so we can surface the backend message (e.g. the
+    // 30-min per-friend cooldown) instead of a generic failure.
+    try {
+      await ref.read(socialServiceProvider).sendHydrationReminder(friendId);
+      if (!mounted) return;
+      _showToast('Đã nhắc $firstName uống nước 💧');
+      HapticFeedback.lightImpact();
+    } catch (e) {
+      if (!mounted) return;
       setState(() {
         _remindedFriends.remove(friendId);
       });
-      _showToast('Không thể gửi nhắc nhở. Thử lại sau!');
+      final msg = e is SocialFailure
+          ? e.message
+          : 'Không thể gửi nhắc nhở. Thử lại sau!';
+      _showToast(msg);
     }
   }
 
@@ -531,7 +536,7 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildWeeklyPodium(friendsState),
+        _buildInteractionPodium(friendsState),
         const SizedBox(height: 16),
         _buildFilterChips(friendsState),
         const SizedBox(height: 12),
@@ -548,8 +553,35 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
     );
   }
 
-  Widget _buildWeeklyPodium(FriendsState friendsState) {
-    final topThree = friendsState.weeklyLeaderboard.take(3).toList();
+  /// "BẠN TÔI ƠI" — friends ranked by how much they interact with me
+  /// (incoming reminders + gifts), all-time. Gated behind 3+ friends; below
+  /// that we nudge the user to add more.
+  Widget _buildInteractionPodium(FriendsState friendsState) {
+    if (friendsState.friends.length < 3) {
+      return _buildLockedInteractionCard(3 - friendsState.friends.length);
+    }
+
+    // Prefer the server ranking; if it hasn't loaded (e.g. offline cache),
+    // fall back to a zero-count ranking from the friends list so the podium
+    // still renders instead of vanishing.
+    final ranking = friendsState.interactionLeaderboard.length >= 3
+        ? friendsState.interactionLeaderboard
+        : friendsState.friends
+            .asMap()
+            .entries
+            .map(
+              (e) => InteractionEntry(
+                userId: e.value.id,
+                username: e.value.username,
+                displayName: e.value.displayName,
+                avatarUrl: e.value.avatarUrl,
+                interactionCount: 0,
+                rank: e.key + 1,
+              ),
+            )
+            .toList();
+    final topThree = ranking.take(3).toList();
+
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -574,13 +606,13 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
               Row(
                 children: [
                   const Icon(
-                    Icons.emoji_events,
-                    color: Color(0xFFFBBF24),
+                    Icons.favorite,
+                    color: Color(0xFFFB7185),
                     size: 14,
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'TUẦN NÀY',
+                    'BẠN TÔI ƠI',
                     style: TextStyle(
                       fontSize: 11,
                       color: const Color(0xFFFCD34D),
@@ -591,7 +623,7 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
                 ],
               ),
               Text(
-                'Còn 2 ngày',
+                'Hay tương tác nhất',
                 style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
               ),
             ],
@@ -603,13 +635,13 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 // 2nd place
-                _buildPodiumPosition(2, topThree[1], 62, '🥈'),
+                _buildInteractionPosition(2, topThree[1], 62, '🥈'),
                 const SizedBox(width: 10),
                 // 1st place
-                _buildPodiumPosition(1, topThree[0], 84, '🥇'),
+                _buildInteractionPosition(1, topThree[0], 84, '🥇'),
                 const SizedBox(width: 10),
                 // 3rd place
-                _buildPodiumPosition(3, topThree[2], 48, '🥉'),
+                _buildInteractionPosition(3, topThree[2], 48, '🥉'),
               ],
             ),
         ],
@@ -617,9 +649,104 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
     );
   }
 
-  Widget _buildPodiumPosition(
+  /// Shown when the user has fewer than 3 friends: explains the gate and offers
+  /// a shortcut to find more friends.
+  Widget _buildLockedInteractionCard(int needed) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.fromRGBO(56, 189, 248, 0.08),
+            Color.fromRGBO(168, 85, 247, 0.06),
+          ],
+        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
+      child: Column(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: const Icon(
+              Icons.groups_outlined,
+              color: Color(0xFF7DD3FC),
+              size: 26,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Mở bảng "Bạn tôi ơi"',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Cần ít nhất 3 bạn để xếp hạng người hay tương tác với bạn. '
+            'Còn thiếu $needed bạn nữa thôi!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.4,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 14),
+          GestureDetector(
+            onTap: _openSearch,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF38BDF8), Color(0xFF0EA5E9)],
+                ),
+                borderRadius: BorderRadius.circular(999),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0EA5E9).withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.person_add, color: Colors.white, size: 16),
+                  SizedBox(width: 6),
+                  Text(
+                    'Tìm thêm bạn',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInteractionPosition(
     int rank,
-    WeeklyLeaderboardEntry entry,
+    InteractionEntry entry,
     double height,
     String medal,
   ) {
@@ -718,7 +845,7 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              '${entry.hydrationPercentage.toInt()}%',
+              '${entry.interactionCount} lượt',
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,

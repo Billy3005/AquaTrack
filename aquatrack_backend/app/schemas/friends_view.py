@@ -63,6 +63,21 @@ class WeeklyLeaderboardOut(BaseModel):
     leaderboard: List[LeaderboardEntryOut]
 
 
+class InteractionEntryOut(BaseModel):
+    user_id: str
+    username: str
+    display_name: str
+    avatar_url: Optional[str] = None
+    interaction_count: int
+    rank: int
+
+
+class InteractionLeaderboardOut(BaseModel):
+    interactions: List[InteractionEntryOut]
+    total_friends: int
+    unlocked: bool
+
+
 class SocialStatsOut(BaseModel):
     total_friends: int
     online_friends: int
