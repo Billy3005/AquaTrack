@@ -1098,7 +1098,7 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
                     const SizedBox(width: 6),
                     _buildGiftButton(friend),
                     const SizedBox(width: 6),
-                    _buildMenuButton(),
+                    _buildMenuButton(friend),
                   ],
                 ),
               ],
@@ -1294,16 +1294,143 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
     );
   }
 
-  Widget _buildMenuButton() {
-    return Container(
-      width: 36,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        borderRadius: BorderRadius.circular(10),
+  Widget _buildMenuButton(Friend friend) {
+    // Builder gives us the button's own context so we can anchor the dropdown
+    // to its on-screen position.
+    return Builder(
+      builder: (buttonContext) => GestureDetector(
+        onTap: () => _showFriendMenu(buttonContext, friend),
+        child: Container(
+          width: 36,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.04),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child:
+              Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 14),
+        ),
       ),
-      child: Icon(Icons.more_horiz, color: AppColors.textSecondary, size: 14),
+    );
+  }
+
+  /// Dropdown anchored to the 3-dot button. showMenu auto-flips upward (dropup)
+  /// when the button is near the bottom of the screen. Starts with "Hủy kết
+  /// bạn"; more options (chặn, xem hồ sơ…) can be added to the items list later.
+  void _showFriendMenu(BuildContext buttonContext, Friend friend) async {
+    HapticFeedback.lightImpact();
+    final button = buttonContext.findRenderObject() as RenderBox;
+    final overlay = Navigator.of(buttonContext)
+        .overlay!
+        .context
+        .findRenderObject() as RenderBox;
+    final position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(
+          button.size.bottomRight(Offset.zero),
+          ancestor: overlay,
+        ),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    final selected = await showMenu<String>(
+      context: buttonContext,
+      position: position,
+      color: AppColors.nightSurface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      items: [
+        const PopupMenuItem<String>(
+          value: 'unfriend',
+          child: Row(
+            children: [
+              Icon(
+                Icons.person_remove_outlined,
+                color: Color(0xFFF87171),
+                size: 20,
+              ),
+              SizedBox(width: 10),
+              Text(
+                'Hủy kết bạn',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFF87171),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (selected == 'unfriend' && mounted) {
+      _confirmUnfriend(friend);
+    }
+  }
+
+  /// Confirm before removing, then call the provider and toast the result.
+  void _confirmUnfriend(Friend friend) async {
+    final shortName = friend.displayName.split(' ').last;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.nightSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+        title: const Text(
+          'Hủy kết bạn?',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+        content: Text(
+          'Bạn sẽ không còn là bạn bè với $shortName nữa.',
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              'Để sau',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text(
+              'Hủy kết bạn',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFF87171),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    HapticFeedback.mediumImpact();
+    final success = await ref
+        .read(friendsNotifierProvider.notifier)
+        .removeFriend(friend.id);
+    if (!mounted) return;
+    _showToast(
+      success
+          ? 'Đã hủy kết bạn với $shortName'
+          : 'Không thể hủy kết bạn. Thử lại sau!',
     );
   }
 
