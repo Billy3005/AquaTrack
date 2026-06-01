@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta, timezone
 import pytest
 
 from app.crud.friend import friend_crud
-from app.models import DailySummary, User
+from app.models import DailySummary, IntakeLog, User
 from app.models.friend_request import FriendRequest, FriendRequestStatus
 from app.services import friends_view_service as fvs
 
@@ -59,6 +59,23 @@ def add_summary(db, uid, d, effective, goal=2000):
     return s
 
 
+def add_intake(db, uid, logged_at, effective=250):
+    """Insert one intake log. Production writes ``logged_at`` with
+    ``datetime.now()`` (server-local naive), so store the (tz-aware) ``logged_at``
+    converted to server-local naive — matching how the service reads it back."""
+    log = IntakeLog(
+        user_id=uid,
+        volume_ml=effective,
+        liquid_type="water",
+        hydration_factor=1.0,
+        effective_volume_ml=effective,
+        logged_at=logged_at.astimezone().replace(tzinfo=None),
+    )
+    db.add(log)
+    db.commit()
+    return log
+
+
 def befriend(db, a, b):
     friend_crud.create_friendship(db, user_id=a, friend_user_id=b)
 
@@ -69,7 +86,8 @@ def befriend(db, a, b):
 def test_friends_payload_envelope_and_derived_fields(db, user):
     f = make_user(db, "u2", "user2", full_name="Bạn Hai", streak=5)
     befriend(db, user.id, f.id)
-    add_summary(db, f.id, TODAY_LOCAL, effective=1800)  # 90% -> normal
+    # 1800/2000 = 90% progress, logged just now -> normal (đủ nước).
+    add_intake(db, f.id, NOW, effective=1800)
 
     payload = fvs.build_friends_payload(db, user, now=NOW)
 
@@ -85,30 +103,33 @@ def test_friends_payload_envelope_and_derived_fields(db, user):
 
 
 @pytest.mark.parametrize(
-    "effective,expected",
-    [(1800, "normal"), (1200, "stressed"), (600, "thirsty")],
+    "minutes_ago,expected",
+    [(5, "normal"), (119, "normal"), (121, "thirsty"), (170, "thirsty")],
 )
-def test_friend_status_from_today_progress(db, user, effective, expected):
+def test_friend_status_from_last_log_recency(db, user, minutes_ago, expected):
+    """Status keys off when the friend last drank: within 2h -> normal,
+    older than 2h (but still logged today) -> thirsty."""
     f = make_user(db, "u2", "user2")
     befriend(db, user.id, f.id)
-    add_summary(db, f.id, TODAY_LOCAL, effective=effective)
+    add_intake(db, f.id, NOW - timedelta(minutes=minutes_ago), effective=250)
 
     entry = fvs.build_friends_payload(db, user, now=NOW)["friends"][0]
     assert entry["status"] == expected
 
 
-def test_friend_status_offline_without_activity_today(db, user):
+def test_friend_status_dry_without_log_today(db, user):
     f = make_user(db, "u2", "user2")
-    befriend(db, user.id, f.id)  # no summary today
+    befriend(db, user.id, f.id)  # no intake today
 
     entry = fvs.build_friends_payload(db, user, now=NOW)["friends"][0]
-    assert entry["status"] == "offline"
+    assert entry["status"] == "dry"
+    assert entry["daily_progress"] == 0.0
 
 
 def test_is_online_false_when_last_login_stale(db, user):
     f = make_user(db, "u2", "user2", last_login=NOW - timedelta(minutes=30))
     befriend(db, user.id, f.id)
-    add_summary(db, f.id, TODAY_LOCAL, effective=1800)
+    add_intake(db, f.id, NOW, effective=1800)
 
     entry = fvs.build_friends_payload(db, user, now=NOW)["friends"][0]
     assert entry["is_online"] is False
@@ -164,7 +185,8 @@ def test_leaderboard_ranks_user_and_friends_by_percentage(db, user):
 def test_social_stats_counts_statuses_and_requests(db, user):
     thirsty = make_user(db, "u2", "user2")
     befriend(db, user.id, thirsty.id)
-    add_summary(db, thirsty.id, TODAY_LOCAL, effective=400)  # 20% -> thirsty
+    # Logged today but last drink 3h ago -> thirsty.
+    add_intake(db, thirsty.id, NOW - timedelta(hours=3), effective=400)
 
     sender = make_user(db, "u3", "user3")
     db.add(

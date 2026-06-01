@@ -83,6 +83,8 @@ class FriendsState {
         return friends.where((f) => f.status == FriendStatus.thirsty).toList();
       case FriendStatusFilter.online:
         return friends.where((f) => f.isOnline).toList();
+      case FriendStatusFilter.dry:
+        return friends.where((f) => f.status == FriendStatus.dry).toList();
       case FriendStatusFilter.stressed:
         return friends.where((f) => f.status == FriendStatus.stressed).toList();
     }
@@ -94,6 +96,7 @@ enum FriendStatusFilter {
   all,
   thirsty,
   online,
+  dry,
   stressed;
 
   String get displayName {
@@ -104,6 +107,8 @@ enum FriendStatusFilter {
         return 'Đang khát';
       case FriendStatusFilter.online:
         return 'Online';
+      case FriendStatusFilter.dry:
+        return 'Khô';
       case FriendStatusFilter.stressed:
         return 'Đang stress';
     }

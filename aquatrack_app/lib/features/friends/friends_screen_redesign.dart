@@ -31,11 +31,13 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
   Color _getFriendMoodColor(FriendStatus status) {
     switch (status) {
       case FriendStatus.thirsty:
-        return const Color(0xFFF97316);
+        return const Color(0xFFF97316); // cam — đang khát
+      case FriendStatus.dry:
+        return const Color(0xFF94A3B8); // xám — khô (chưa uống hôm nay)
       case FriendStatus.stressed:
         return const Color(0xFFFBBF24);
       case FriendStatus.normal:
-        return const Color(0xFF10B981);
+        return const Color(0xFF10B981); // xanh — đủ nước
       case FriendStatus.offline:
         return const Color(0xFF666666);
     }
@@ -45,6 +47,8 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
     switch (status) {
       case FriendStatus.thirsty:
         return 'Đang khát';
+      case FriendStatus.dry:
+        return 'Khô';
       case FriendStatus.stressed:
         return 'Hơi thấp';
       case FriendStatus.normal:
@@ -72,17 +76,20 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
     return colors[hash.abs() % colors.length];
   }
 
+  // Last time the friend opened the app (last_login/updated_at), shown like a
+  // messaging app's "last seen". Only rendered when the friend is offline.
   String _getLastActiveText(DateTime? lastActive) {
-    if (lastActive == null) return 'Chưa rõ';
-    final now = DateTime.now();
-    final diff = now.difference(lastActive);
+    if (lastActive == null) return 'Offline';
+    final diff = DateTime.now().difference(lastActive);
 
-    if (diff.inMinutes < 60) {
-      return '${diff.inMinutes} phút trước';
+    if (diff.inMinutes < 1) {
+      return 'Vừa truy cập';
+    } else if (diff.inMinutes < 60) {
+      return 'Hoạt động ${diff.inMinutes} phút trước';
     } else if (diff.inHours < 24) {
-      return '${diff.inHours} giờ trước';
+      return 'Hoạt động ${diff.inHours} giờ trước';
     } else {
-      return '${diff.inDays} ngày trước';
+      return 'Hoạt động ${diff.inDays} ngày trước';
     }
   }
 
@@ -503,25 +510,23 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
   }
 
   Widget _buildFriendsTab(FriendsState friendsState) {
-    // Sort filtered friends by status priority (thirsty > stressed > normal > offline)
+    // Sort by who needs a nudge first: thirsty > dry > normal > others.
+    int priority(FriendStatus s) {
+      switch (s) {
+        case FriendStatus.thirsty:
+          return 0;
+        case FriendStatus.dry:
+          return 1;
+        case FriendStatus.normal:
+          return 2;
+        case FriendStatus.stressed:
+        case FriendStatus.offline:
+          return 3;
+      }
+    }
+
     final sortedFriends = List<Friend>.from(friendsState.filteredFriends)
-      ..sort((a, b) {
-        final priorityA = a.status == FriendStatus.thirsty
-            ? 0
-            : a.status == FriendStatus.stressed
-                ? 1
-                : a.status == FriendStatus.normal
-                    ? 2
-                    : 3;
-        final priorityB = b.status == FriendStatus.thirsty
-            ? 0
-            : b.status == FriendStatus.stressed
-                ? 1
-                : b.status == FriendStatus.normal
-                    ? 2
-                    : 3;
-        return priorityA.compareTo(priorityB);
-      });
+      ..sort((a, b) => priority(a.status).compareTo(priority(b.status)));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -745,11 +750,7 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
           id: 'low',
           label: 'Đang khát',
           count: friendsState.friends
-              .where(
-                (f) =>
-                    f.status == FriendStatus.thirsty ||
-                    f.status == FriendStatus.stressed,
-              )
+              .where((f) => f.status == FriendStatus.thirsty)
               .length,
           color: const Color(0xFFF97316),
           active: currentFilter == FriendStatusFilter.thirsty,
@@ -766,13 +767,15 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
         ),
       ),
       (
-        filter: FriendStatusFilter.stressed,
+        filter: FriendStatusFilter.dry,
         chip: FilterChip(
-          id: 'streak',
-          label: 'Đang streak',
-          count: friendsState.friends.where((f) => f.currentStreak > 5).length,
-          color: const Color(0xFFA78BFA),
-          active: currentFilter == FriendStatusFilter.stressed,
+          id: 'dry',
+          label: 'Khô',
+          count: friendsState.friends
+              .where((f) => f.status == FriendStatus.dry)
+              .length,
+          color: const Color(0xFF94A3B8),
+          active: currentFilter == FriendStatusFilter.dry,
         ),
       ),
     ];
@@ -975,33 +978,39 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
                           ),
                           const SizedBox(height: 2),
 
-                          // Mood and last drink
+                          // Status line: when online show just "Online" (no
+                          // time, like a messaging app); when offline show the
+                          // hydration mood + last-seen ("Hoạt động X trước").
                           Row(
                             children: [
                               Text(
-                                moodLabel,
+                                friend.isOnline ? 'Online' : moodLabel,
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: moodColor,
+                                  color: friend.isOnline
+                                      ? const Color(0xFF10B981)
+                                      : moodColor,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              Text(
-                                ' · ',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary.withValues(
-                                    alpha: 0.4,
+                              if (!friend.isOnline) ...[
+                                Text(
+                                  ' · ',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary.withValues(
+                                      alpha: 0.4,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Text(
-                                _getLastActiveText(friend.lastActive),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary,
+                                Text(
+                                  _getLastActiveText(friend.lastActive),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -1105,6 +1114,10 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
       case FriendStatus.thirsty:
         return const LinearGradient(
           colors: [Color(0xFFF97316), Color(0xFFFB923C)],
+        );
+      case FriendStatus.dry:
+        return const LinearGradient(
+          colors: [Color(0xFF64748B), Color(0xFF94A3B8)],
         );
       case FriendStatus.stressed:
         return const LinearGradient(

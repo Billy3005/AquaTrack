@@ -49,7 +49,8 @@ class FriendRequest with _$FriendRequest {
 enum FriendStatus {
   normal('normal'),
   thirsty('thirsty'),
-  stressed('stressed'),
+  dry('dry'),
+  stressed('stressed'), // retired; kept for backward compatibility
   offline('offline');
 
   const FriendStatus(this.value);
@@ -59,9 +60,11 @@ enum FriendStatus {
   String get displayName {
     switch (this) {
       case FriendStatus.normal:
-        return 'Bình thường';
+        return 'Đủ nước';
       case FriendStatus.thirsty:
         return 'Đang khát';
+      case FriendStatus.dry:
+        return 'Khô';
       case FriendStatus.stressed:
         return 'Đang stress';
       case FriendStatus.offline:
@@ -73,11 +76,13 @@ enum FriendStatus {
   String get colorHex {
     switch (this) {
       case FriendStatus.normal:
-        return '#00B4D8'; // Cyan
+        return '#10B981'; // Green — đủ nước
       case FriendStatus.thirsty:
-        return '#FF6B6B'; // Red
+        return '#F97316'; // Orange — đang khát
+      case FriendStatus.dry:
+        return '#666666'; // Gray — khô
       case FriendStatus.stressed:
-        return '#FFB74D'; // Orange
+        return '#FFB74D';
       case FriendStatus.offline:
         return '#666666'; // Gray
     }

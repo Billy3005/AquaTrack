@@ -223,6 +223,8 @@ class FriendCard extends ConsumerWidget {
         return AppColors.success;
       case FriendStatus.thirsty:
         return AppColors.error;
+      case FriendStatus.dry:
+        return AppColors.textSecondary;
       case FriendStatus.stressed:
         return AppColors.warning;
       case FriendStatus.offline:
