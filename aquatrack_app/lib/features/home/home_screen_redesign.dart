@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/living_drop.dart';
 import '../../core/providers/user_stats_provider.dart';
+import '../../core/providers/weather_provider.dart';
 import '../../shared/widgets/coin_badge.dart';
 import '../level/providers/level_provider.dart';
 import 'providers/home_provider.dart';
@@ -26,6 +27,16 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
   int _activeChip = 250;
   bool _showXpPopup = false;
   bool _hasRefreshedThisBuild = false;
+
+  /// Temperature (°C) at/above which we nudge extra hydration. Tuned for VN.
+  static const double _hotThresholdC = 33.0;
+
+  /// Current temperature in °C from the weather provider (null until loaded /
+  /// when location unavailable). Set in build() from [homeWeatherProvider].
+  double? _weatherTempC;
+
+  /// Resolved location label for the weather chip (e.g. "TP.HCM").
+  String? _weatherLocation;
 
   @override
   void initState() {
@@ -157,6 +168,15 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
   Widget build(BuildContext context) {
     final homeSummaryAsync = ref.watch(homeNotifierProvider);
     final levelStateAsync = ref.watch(levelNotifierProvider);
+    final userStats = ref.watch(userStatsProvider).valueOrNull;
+    final todayLogs =
+        ref.watch(todayIntakeLogsProvider).valueOrNull ?? const [];
+
+    // Real weather (GPS → Open-Meteo, HCMC fallback). Drives the chip + the
+    // AQUA card's hot-weather nudge.
+    final weather = ref.watch(homeWeatherProvider).valueOrNull;
+    _weatherTempC = weather?.temperatureCelsius;
+    _weatherLocation = weather?.locationName;
 
     // Refresh data when screen comes into focus after navigation (once per build)
     if (!_hasRefreshedThisBuild) {
@@ -175,9 +195,11 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
           child: homeSummaryAsync.when(
             data: (summary) => levelStateAsync.when(
               data: (levelState) =>
-                  _buildMainContent(summary, null, levelState),
-              loading: () => _buildMainContent(summary, null, null),
-              error: (error, stack) => _buildMainContent(summary, null, null),
+                  _buildMainContent(summary, userStats, levelState, todayLogs),
+              loading: () =>
+                  _buildMainContent(summary, userStats, null, todayLogs),
+              error: (error, stack) =>
+                  _buildMainContent(summary, userStats, null, todayLogs),
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stack) => _buildErrorState(error),
@@ -189,17 +211,24 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
     );
   }
 
-  Widget _buildMainContent(
-      dynamic summary, UserStatsData? userStats, LevelState? levelState) {
+  Widget _buildMainContent(dynamic summary, UserStatsData? userStats,
+      LevelState? levelState, List<TodayLogEntry> todayLogs) {
     final current = (summary?.totalEffectiveMl ?? 0).toDouble();
     final goal = (summary?.dailyGoalMl ?? 2000)
         .toDouble(); // Use goal from summary or default
     final percent = ((current / goal) * 100.0).clamp(0.0, 100.0);
+    final remainingMl = (goal - current).clamp(0, goal).round();
+
+    // Real signals for the AQUA card / states.
+    final streak = levelState?.currentStreak ?? summary?.streakDays ?? 0;
+    final lastDrinkType =
+        todayLogs.isNotEmpty ? todayLogs.first.liquidType : null;
+    final temperatureC = _weatherTempC; // set by weather provider (#3)
 
     // Determine state based on current data
-    final isGoal = percent >= 80.0;
+    final isGoal = percent >= 80.0; // visual "gần đạt" state, not completion
     final isLow = percent < 31.0;
-    final hot = false; // Could be determined by weather API
+    final hot = temperatureC != null && temperatureC >= _hotThresholdC;
     final isNight = DateTime.now().hour >= 22 || DateTime.now().hour < 6;
 
     return Column(
@@ -217,9 +246,17 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
               children: [
                 _buildQuickTapRow(),
                 const SizedBox(height: 22),
-                _buildAquaAICard(hot, isLow, isGoal, isNight),
+                _buildAquaAICard(
+                  percent: percent.toDouble(),
+                  remainingMl: remainingMl,
+                  streak: streak,
+                  isNight: isNight,
+                  hot: hot,
+                  lastDrinkType: lastDrinkType,
+                  temperatureC: temperatureC,
+                ),
                 const SizedBox(height: 18),
-                _buildTodayLogSection(current.round()),
+                _buildTodayLogSection(todayLogs, current.round()),
               ],
             ),
           ),
@@ -362,11 +399,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
             ),
             const SizedBox(width: 6),
             Text(
-              hot
-                  ? 'HCMC · 34°C'
-                  : isNight
-                      ? 'Đêm · 22°C'
-                      : 'HCMC · 28°C',
+              _weatherChipText(isNight),
               style: TextStyle(
                 fontSize: 12,
                 color: const Color(0xFFBAE6FD).withValues(alpha: 0.85),
@@ -376,16 +409,24 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
           ],
         ),
 
-        // Coin and streak badges - use data from level state
+        // Coin and streak badges - real spendable coins + streak
         Row(
           children: [
-            CoinBadge(amount: levelState?.currentXP ?? 0),
+            CoinBadge(amount: userStats?.coins ?? 0),
             const SizedBox(width: 6),
             _buildStreakBadge(levelState?.currentStreak ?? 0),
           ],
         ),
       ],
     );
+  }
+
+  /// Weather chip text: "TP.HCM · 28°C". Shows just the location while temp
+  /// is still loading or unavailable.
+  String _weatherChipText(bool isNight) {
+    final loc = _weatherLocation ?? (isNight ? 'Đêm' : 'Thời tiết');
+    if (_weatherTempC == null) return loc;
+    return '$loc · ${_weatherTempC!.round()}°C';
   }
 
   Widget _buildStreakBadge(int days) {
@@ -434,10 +475,17 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
     String greetingTime;
     String greetingText;
 
+    final hour = DateTime.now().hour;
     if (isNight) {
       greetingTime = 'Tối muộn · ${TimeOfDay.now().format(context)}';
-    } else {
+    } else if (hour < 11) {
       greetingTime = 'Chào buổi sáng';
+    } else if (hour < 14) {
+      greetingTime = 'Chào buổi trưa';
+    } else if (hour < 18) {
+      greetingTime = 'Chào buổi chiều';
+    } else {
+      greetingTime = 'Chào buổi tối';
     }
 
     if (isLow) {
@@ -717,19 +765,62 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
     );
   }
 
-  Widget _buildAquaAICard(bool hot, bool isLow, bool isGoal, bool isNight) {
-    String message;
-    if (hot) {
-      message =
-          'Trời HCMC đang 34°C — uống thêm +300ml so với bình thường nhé.';
-    } else if (isLow) {
-      message = 'Đã 14h mà mới đạt 28%. Uống 300ml ngay để theo kịp nhé!';
-    } else if (isGoal) {
-      message = 'Bạn đang trên đà streak 13 ngày — chỉ còn 380ml nữa thôi!';
-    } else {
-      message =
-          'Cà phê bạn vừa log có tính lợi tiểu — cần thêm +250ml để bù lại.';
+  /// Build the AQUA AI nudge from REAL signals (no hardcoded numbers).
+  /// Rule-based, instant, offline-safe — matches CONTEXT.md "Graceful
+  /// Intelligence" (no LLM call on every home render).
+  String _aquaMessage({
+    required double percent,
+    required int remainingMl,
+    required int streak,
+    required bool isNight,
+    required bool hot,
+    String? lastDrinkType,
+    double? temperatureC,
+  }) {
+    final pct = percent.round();
+    final isDiuretic = lastDrinkType == 'coffee' || lastDrinkType == 'tea';
+
+    if (hot && temperatureC != null) {
+      return 'Trời đang ${temperatureC.round()}°C — uống thêm khoảng 300ml so với bình thường nhé.';
     }
+    if (percent < 31) {
+      return 'Mới đạt $pct%. Uống một ngụm ngay để bắt nhịp — còn ${remainingMl}ml nữa.';
+    }
+    if (isDiuretic) {
+      return '${_liquidLabel(lastDrinkType!)} vừa rồi có tính lợi tiểu — uống thêm khoảng 250ml để bù lại nhé.';
+    }
+    if (percent >= 100) {
+      return streak > 0
+          ? 'Đủ nước hôm nay rồi 🎉 Chuỗi $streak ngày của bạn vẫn đang cháy!'
+          : 'Bạn đã đủ nước hôm nay 🎉 Giữ nhịp này nhé!';
+    }
+    if (percent >= 80) {
+      return 'Tuyệt vời, chỉ còn ${remainingMl}ml nữa là đủ mục tiêu hôm nay!';
+    }
+    if (isNight) {
+      return 'Một ngụm nước nhỏ trước khi ngủ giúp cơ thể phục hồi tốt hơn.';
+    }
+    return 'Đang ở $pct% — còn ${remainingMl}ml. Cùng giữ nhịp uống nước nhé!';
+  }
+
+  Widget _buildAquaAICard({
+    required double percent,
+    required int remainingMl,
+    required int streak,
+    required bool isNight,
+    required bool hot,
+    String? lastDrinkType,
+    double? temperatureC,
+  }) {
+    final message = _aquaMessage(
+      percent: percent,
+      remainingMl: remainingMl,
+      streak: streak,
+      isNight: isNight,
+      hot: hot,
+      lastDrinkType: lastDrinkType,
+      temperatureC: temperatureC,
+    );
 
     return GestureDetector(
       onTap: () => context.push('/coach'),
@@ -827,13 +918,8 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
     );
   }
 
-  Widget _buildTodayLogSection(int currentMl) {
-    final todayEntries = [
-      {'type': 'water', 'amt': 250, 'time': '13:20', 'label': 'Nước lọc'},
-      {'type': 'coffee', 'amt': 180, 'time': '10:45', 'label': 'Cà phê đá'},
-      {'type': 'tea', 'amt': 200, 'time': '09:10', 'label': 'Trà sen'},
-    ];
-
+  Widget _buildTodayLogSection(
+      List<TodayLogEntry> todayEntries, int currentMl) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -856,87 +942,157 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
           ],
         ),
         const SizedBox(height: 10),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.nightSurface,
-            border: Border.all(color: AppColors.border),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            children: todayEntries.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              final isLast = index == todayEntries.length - 1;
+        if (todayEntries.isEmpty)
+          _buildEmptyTodayLog()
+        else
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.nightSurface,
+              border: Border.all(color: AppColors.border),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              children: todayEntries.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                final isLast = index == todayEntries.length - 1;
 
-              return Container(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                decoration: BoxDecoration(
-                  border: isLast
-                      ? null
-                      : Border(
-                          bottom: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.04),
+                return Container(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                  decoration: BoxDecoration(
+                    border: isLast
+                        ? null
+                        : Border(
+                            bottom: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.04),
+                            ),
                           ),
+                  ),
+                  child: Row(
+                    children: [
+                      _buildDrinkIcon(item.liquidType),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _liquidLabel(item.liquidType),
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'SF Pro Text',
+                              ),
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              _formatLogTime(item.loggedAt),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                          ],
                         ),
-                ),
-                child: Row(
-                  children: [
-                    _buildDrinkIcon(item['type'] as String),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item['label'] as String,
-                            style: const TextStyle(
-                              fontSize: 13.5,
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w500,
-                              fontFamily: 'SF Pro Text',
-                            ),
-                          ),
-                          const SizedBox(height: 1),
-                          Text(
-                            item['time'] as String,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                        ],
                       ),
-                    ),
-                    RichText(
-                      text: TextSpan(
-                        text: '${item['amt']}',
-                        style: const TextStyle(
-                          fontFamily: 'SF Pro Rounded',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                          fontFeatures: [FontFeature.tabularFigures()],
+                      RichText(
+                        text: TextSpan(
+                          text: '${item.volumeMl}',
+                          style: const TextStyle(
+                            fontFamily: 'SF Pro Rounded',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                          children: [
+                            TextSpan(
+                              text: ' ml',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
-                        children: [
-                          TextSpan(
-                            text: ' ml',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: AppColors.textMuted,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
           ),
-        ),
       ],
     );
+  }
+
+  /// Empty state when no drinks logged today yet.
+  Widget _buildEmptyTodayLog() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.nightSurface,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.water_drop_outlined, color: AppColors.textMuted, size: 28),
+          const SizedBox(height: 8),
+          Text(
+            'Chưa ghi ly nào hôm nay',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+              fontFamily: 'SF Pro Text',
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Ghi nhanh phía trên để bắt đầu nhé',
+            style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Vietnamese label for a liquid type.
+  String _liquidLabel(String type) {
+    switch (type) {
+      case 'water':
+        return 'Nước lọc';
+      case 'tea':
+        return 'Trà';
+      case 'coffee':
+        return 'Cà phê';
+      case 'juice':
+        return 'Nước trái cây';
+      case 'milk':
+        return 'Sữa';
+      case 'soda':
+        return 'Nước ngọt';
+      case 'sports_drink':
+        return 'Nước thể thao';
+      case 'smoothie':
+        return 'Sinh tố';
+      case 'other':
+        return 'Khác';
+      default:
+        return 'Nước';
+    }
+  }
+
+  /// Format a log timestamp as HH:mm (local time).
+  String _formatLogTime(DateTime dt) {
+    final local = dt.toLocal();
+    final hh = local.hour.toString().padLeft(2, '0');
+    final mm = local.minute.toString().padLeft(2, '0');
+    return '$hh:$mm';
   }
 
   Widget _buildDrinkIcon(String type) {

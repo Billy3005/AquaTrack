@@ -6,6 +6,7 @@ from app.core.security import get_current_user_id
 from app.crud import user_crud
 from app.schemas.user import UserResponse, UserStats, UserUpdate
 from app.services.onboarding_service import OnboardingService
+from app.services.streak_service import StreakService
 
 router = APIRouter()
 
@@ -124,10 +125,16 @@ async def get_user_stats(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
+    # Recompute the streak on read so it resets after a skipped day even when
+    # the user hasn't logged anything (the stored value is only updated on log).
+    current_streak = StreakService.calculate_current_streak(db, current_user_id)
+    if current_streak != user.current_streak:
+        user_crud.update_stats(db, user_id=current_user_id, new_streak=current_streak)
+
     return UserStats(
         current_level=user.current_level,
         total_xp=user.total_xp,
-        current_streak=user.current_streak,
+        current_streak=current_streak,
         longest_streak=user.longest_streak,
         total_logs_count=user.total_logs_count,
         total_volume_ml=user.total_volume_ml,

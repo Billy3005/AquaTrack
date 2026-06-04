@@ -21,51 +21,56 @@ class StreakService:
     @staticmethod
     def calculate_current_streak(db: Session, user_id: str) -> int:
         """
-        Calculate current consecutive streak for a user.
+        Calculate the current consecutive streak for a user.
+
+        A streak is the run of consecutive days (each meeting the goal
+        threshold) ending at the most recent achieved day. It is only
+        considered *current* (non-zero) if that most recent achieved day is
+        today or yesterday — this gives the user until the end of today to keep
+        it alive, but resets to 0 once a full day is missed.
 
         Returns:
-            int: Number of consecutive days user achieved daily goal (including today if achieved)
+            int: Length of the current streak (0 if broken).
         """
         user = user_crud.get(db, user_id)
         if not user:
             return 0
 
         daily_goal_ml = user.daily_goal_ml or 2000
+        threshold = daily_goal_ml * 0.8  # 80% counts as "achieved"
         today = date.today()
 
-        # Check all daily summaries in reverse chronological order
-        summaries = (
-            db.query(DailySummary)
+        # Achieved days, most recent first.
+        rows = (
+            db.query(DailySummary.date)
             .filter(
                 DailySummary.user_id == user_id,
-                DailySummary.total_effective_ml
-                >= daily_goal_ml * 0.8,  # 80% threshold for "achieved"
+                DailySummary.total_effective_ml >= threshold,
             )
             .order_by(DailySummary.date.desc())
             .all()
         )
-
-        if not summaries:
+        if not rows:
             return 0
 
-        # Calculate consecutive days from most recent achievement
+        achieved = [(d.date() if isinstance(d, datetime) else d) for (d,) in rows]
+
+        # If the latest achieved day is older than yesterday, the streak is
+        # broken (a full day was missed).
+        most_recent = achieved[0]
+        if most_recent < today - timedelta(days=1):
+            return 0
+
+        # Count consecutive days backwards from the most recent achieved day.
         streak = 0
-        current_date = today
-
-        for summary in summaries:
-            summary_date = (
-                summary.date.date()
-                if isinstance(summary.date, datetime)
-                else summary.date
-            )
-
-            # If this summary is for the current date we're checking
-            if summary_date == current_date:
+        expected = most_recent
+        for d in achieved:
+            if d == expected:
                 streak += 1
-                current_date -= timedelta(days=1)
-            # If there's a gap, stop counting
-            elif summary_date < current_date:
+                expected -= timedelta(days=1)
+            elif d < expected:
                 break
+            # d > expected (shouldn't happen with unique daily rows): skip.
 
         return streak
 
