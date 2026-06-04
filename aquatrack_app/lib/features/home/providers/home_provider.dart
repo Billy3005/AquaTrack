@@ -18,6 +18,55 @@ import '../../stats/providers/stats_provider.dart';
 
 part 'home_provider.g.dart';
 
+/// Lightweight display row for the home "Hôm nay" list. Decouples the UI from
+/// the two different IntakeLog types (server `core` model vs Hive `shared`
+/// model) so either source can feed the same list.
+class TodayLogEntry {
+  final String liquidType;
+  final int volumeMl;
+  final DateTime loggedAt;
+
+  const TodayLogEntry({
+    required this.liquidType,
+    required this.volumeMl,
+    required this.loggedAt,
+  });
+}
+
+/// Today's intake logs for the home "Hôm nay" list (real data, no mock).
+/// Re-runs whenever the home summary changes (e.g. after a quick log) so the
+/// list stays in sync. Server-first with local Hive fallback — mirrors how the
+/// home summary itself is loaded.
+final todayIntakeLogsProvider =
+    FutureProvider<List<TodayLogEntry>>((ref) async {
+  // Rebuild together with the daily summary after logging.
+  ref.watch(homeNotifierProvider);
+  try {
+    final logs = await IntakeRepository().getTodayIntakeLogs();
+    final entries = logs
+        .map((log) => TodayLogEntry(
+              liquidType: log.liquidType,
+              volumeMl: log.volumeMl,
+              loggedAt: log.loggedAt,
+            ))
+        .toList();
+    entries.sort((a, b) => b.loggedAt.compareTo(a.loggedAt));
+    return entries;
+  } catch (e) {
+    debugPrint('🏠 todayIntakeLogs: server failed, using local: $e');
+    final local = await HiveStorageService.instance.loadTodaysLogs();
+    final entries = local
+        .map((log) => TodayLogEntry(
+              liquidType: log.liquidType,
+              volumeMl: log.volumeMl,
+              loggedAt: log.loggedAt,
+            ))
+        .toList();
+    entries.sort((a, b) => b.loggedAt.compareTo(a.loggedAt));
+    return entries;
+  }
+});
+
 /// Provider for Stats Sync Repository dependency injection
 /// Returns null to indicate sync is not available - app works offline-only
 @riverpod
