@@ -5,6 +5,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud import user_crud
 from app.schemas.user import UserResponse, UserStats, UserUpdate
+from app.services.avatar_service import AvatarService
 from app.services.onboarding_service import OnboardingService
 from app.services.streak_service import StreakService
 
@@ -69,6 +70,14 @@ async def update_user_profile(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
+
+    # Only an owned avatar may be equipped.
+    if user_update.avatar_id and user_update.avatar_id != user.avatar_id:
+        if not AvatarService.is_owned(user, user_update.avatar_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Bạn chưa sở hữu avatar này",
+            )
 
     # Check if username is already taken (if being updated)
     if user_update.username and user_update.username != user.username:

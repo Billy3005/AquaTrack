@@ -79,6 +79,7 @@ class UserResponse(BaseModel):
     username: str
     full_name: Optional[str]
     avatar_id: str
+    owned_avatars: list = []
     is_active: bool
     is_verified: bool
 

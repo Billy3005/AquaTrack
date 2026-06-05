@@ -40,7 +40,9 @@ class ProfileState {
   final int? coffeeCupsPerDay;
   final int? alcoholUnitsPerDay;
   // Computed properties
-  final int coins; // Use total_xp as coins for simplicity
+  final int coins; // Real spendable coin balance from backend
+  // Avatars bought with coins (level/streak unlocks are derived, not listed).
+  final List<String> ownedAvatars;
 
   const ProfileState({
     required this.userName,
@@ -71,6 +73,7 @@ class ProfileState {
     this.coffeeCupsPerDay,
     this.alcoholUnitsPerDay,
     this.coins = 0,
+    this.ownedAvatars = const [],
   });
 
   ProfileState copyWith({
@@ -99,6 +102,7 @@ class ProfileState {
     int? coffeeCupsPerDay,
     int? alcoholUnitsPerDay,
     int? coins,
+    List<String>? ownedAvatars,
   }) {
     return ProfileState(
       userName: userName ?? this.userName,
@@ -126,6 +130,7 @@ class ProfileState {
       coffeeCupsPerDay: coffeeCupsPerDay ?? this.coffeeCupsPerDay,
       alcoholUnitsPerDay: alcoholUnitsPerDay ?? this.alcoholUnitsPerDay,
       coins: coins ?? this.coins,
+      ownedAvatars: ownedAvatars ?? this.ownedAvatars,
     );
   }
 
@@ -385,6 +390,7 @@ class ProfileNotifier extends _$ProfileNotifier {
             alcoholUnitsPerDay: user.alcoholUnitsPerDay,
             // Real spendable coin balance from backend
             coins: user.coins,
+            ownedAvatars: _parseOwnedAvatars(userData),
           );
 
           // Sync to local storage for offline fallback
@@ -443,6 +449,7 @@ class ProfileNotifier extends _$ProfileNotifier {
               alcoholUnitsPerDay: userData['alcohol_units_per_day'] as int?,
               // Real spendable coin balance from backend
               coins: userData['coins'] as int? ?? 0,
+              ownedAvatars: _parseOwnedAvatars(userData),
             );
 
             await _saveProfile();
@@ -503,10 +510,58 @@ class ProfileNotifier extends _$ProfileNotifier {
     await _saveProfile();
   }
 
-  /// Update selected avatar
-  Future<void> updateAvatar(String avatarKey) async {
-    state = state.copyWith(selectedAvatar: avatarKey);
+  /// Parse the coin-purchased avatar ids from a backend user payload.
+  List<String> _parseOwnedAvatars(Map<String, dynamic> data) {
+    final raw = data['owned_avatars'];
+    if (raw is List) return raw.map((e) => e.toString()).toList();
+    return const [];
+  }
+
+  /// Equip an avatar. Optimistic UI, persisted to the backend; rolls back on
+  /// failure (e.g. equipping an un-owned avatar is rejected server-side).
+  Future<void> updateAvatar(String avatarId) async {
+    final previous = state.selectedAvatar;
+    if (previous == avatarId) return;
+
+    state = state.copyWith(selectedAvatar: avatarId);
     await _saveProfile();
+
+    try {
+      final apiService = ApiService();
+      final response = await apiService.put(
+        '/users/profile',
+        data: {'avatar_id': avatarId},
+      );
+      if (response.statusCode != 200) {
+        throw Exception('Equip failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      // Roll back to the previously equipped avatar.
+      state = state.copyWith(selectedAvatar: previous);
+      await _saveProfile();
+      rethrow;
+    }
+  }
+
+  /// Buy a coin-unlock avatar. On success the backend returns the new coin
+  /// balance and ownership list, which we apply locally.
+  Future<void> purchaseAvatar(String avatarId) async {
+    final apiService = ApiService();
+    final response = await apiService.post('/avatars/$avatarId/purchase');
+
+    final data = response.data;
+    if (response.statusCode == 200 && data is Map) {
+      state = state.copyWith(
+        coins: data['coins'] as int? ?? state.coins,
+        ownedAvatars: (data['owned_avatars'] as List?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            state.ownedAvatars,
+      );
+      await _saveProfile();
+    } else {
+      throw Exception('Mua thất bại (${response.statusCode})');
+    }
   }
 
   /// Daily goal is computed-only via Water Formula

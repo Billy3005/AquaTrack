@@ -57,6 +57,22 @@ last_updated: 2026-05-30
 
 **Reminder** — A hydration nudge one user sends to a friend. Counts toward the "Hội Bạn Cùng Uống" Quest.
 
+## Avatars & Collection
+
+**Avatar** (Hình hài) — A water-spirit form the user displays as their identity. The canonical set is 12 forms (Giọt Nước → Thủy Đế) defined in the Avatar Catalog (`avatar_catalog`, mirrored on backend and Flutter — the catalog is the source of truth, not sample data). Each form is rendered parametrically from a spec (body gradient, face, features, aura), not a static image.
+
+**Tier** (Bậc hiếm) — An Avatar's rarity band: Common (Thường), Rare (Hiếm), Epic (Sử thi), Legendary (Huyền thoại). Tier sets the ring/glow palette and groups Avatars in the Collection.
+
+**Owned** (Đã mở) — The user is entitled to equip this Avatar. Ownership is permanent and comes from one of: meeting a level/streak threshold (derived, never stored — recomputed from current_level/longest_streak), or a Coin purchase (stored in `owned_avatars`). Distinct from Equipped.
+
+**Equipped** (Đang dùng) — The single Owned Avatar currently shown as the user's identity. Stored as `avatar_id`. A user may equip any Owned Avatar for free; equipping an un-owned Avatar is rejected.
+
+**Locked** — An Avatar the user does not yet own. The Collection shows it as a silhouette with its Unlock Condition.
+
+**Unlock Condition** — How a Locked Avatar becomes Owned. Types: `level` (auto on reaching a level), `coin` (buy with Coins), `streak` (auto on reaching a longest-streak), `mission` (complete a Quest chain — planned, shown as "Sắp ra mắt"). Some Avatars offer two paths (e.g. "Cấp 10 hoặc 280 xu") — meeting either grants ownership.
+
+**Collection** (Bộ sưu tập) — The screen listing all Avatars grouped by Tier, with owned/total progress and a detail sheet for equipping or buying. Theme and Khung (frame) tabs are placeholders ("Sắp ra mắt").
+
 ## UI Principles
 
 **Trust AI with Transparency** — Show final goal and weather recommendation without exposing internal calculation breakdown. Focus on clear action ("Uống 2.850ml hôm nay") rather than mathematical explanation.
