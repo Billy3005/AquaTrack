@@ -25,7 +25,11 @@ class User(Base):
     # Profile fields
     username = Column(String, nullable=False, default="Aqua Warrior")
     full_name = Column(String, nullable=True)
-    avatar_id = Column(String, default="avatar_1")  # Matches Flutter avatar system
+    avatar_id = Column(
+        String, default="giot_nuoc"
+    )  # Equipped avatar (Avatar Catalog id)
+    # Avatars bought with Coins. Level/streak unlocks are derived, not stored here.
+    owned_avatars = Column(JSON, default=list)
 
     # Preferences
     daily_goal_ml = Column(Integer, default=2000)

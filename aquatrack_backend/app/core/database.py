@@ -87,3 +87,15 @@ def _ensure_user_columns() -> None:
                 {"start": STARTING_COINS},
             )
             conn.execute(text("UPDATE users SET coins_seeded = 1"))
+        if "owned_avatars" not in existing:
+            # Avatar Catalog rollout: add the purchased-avatars store and migrate
+            # legacy icon-based ids (avatar_1..8) to the new default water-spirit.
+            conn.execute(
+                text("ALTER TABLE users ADD COLUMN owned_avatars JSON DEFAULT '[]'")
+            )
+            conn.execute(
+                text(
+                    "UPDATE users SET avatar_id = 'giot_nuoc' "
+                    "WHERE avatar_id IS NULL OR avatar_id LIKE 'avatar%'"
+                )
+            )

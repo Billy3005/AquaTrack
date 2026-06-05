@@ -7,6 +7,9 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/repositories/auth_repository.dart';
 import '../../shared/widgets/coin_badge.dart';
+import '../avatars/avatar_collection_screen.dart';
+import '../avatars/data/avatar_catalog.dart';
+import '../avatars/widgets/aqua_avatar.dart';
 import 'providers/profile_provider.dart';
 import 'edit_body_info_screen.dart';
 
@@ -299,40 +302,15 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
 
   Widget _buildAvatar() {
     return Stack(
+      clipBehavior: Clip.none,
       children: [
-        Container(
-          width: 76,
-          height: 76,
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            gradient: const SweepGradient(
-              startAngle: 3.83, // 220deg in radians
-              colors: [
-                Color(0xFFFBBF24),
-                Color(0xFF818CF8),
-                Color(0xFF38BDF8),
-                Color(0xFFFBBF24),
-              ],
-            ),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0x5938BDF8), // rgba(56,189,248,0.35)
-                blurRadius: 24,
-              ),
-            ],
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: const RadialGradient(
-                center: Alignment(0.3, 0.3),
-                colors: [Color(0xFF7DD3FC), Color(0xFF0284C7)],
-              ),
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.background, width: 2),
-            ),
-            child: const Icon(Icons.water_drop, color: Colors.white, size: 32),
-          ),
+        Consumer(
+          builder: (context, ref, _) {
+            final spec = avatarSpecOrDefault(
+              ref.watch(profileNotifierProvider).selectedAvatar,
+            );
+            return AvatarBubble(spec: spec, size: 76);
+          },
         ),
         Positioned(
           bottom: -4,
@@ -551,173 +529,87 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
   }
 
   Widget _buildAvatarCollection() {
-    final avatars = [
-      AvatarData(
-        color: const Color(0xFF38BDF8),
-        name: 'Drop',
-        unlocked: true,
-        current: true,
-      ),
-      AvatarData(
-        color: const Color(0xFF0EA5E9),
-        name: 'Wave',
-        unlocked: true,
-        current: false,
-      ),
-      AvatarData(
-        color: const Color(0xFFA78BFA),
-        name: 'Glacier',
-        unlocked: true,
-        current: false,
-      ),
-      AvatarData(
-        color: const Color(0xFF0284C7),
-        name: 'Ocean',
-        unlocked: false,
-        current: false,
-        level: 'LV 10',
-      ),
-      AvatarData(
-        color: const Color(0xFF94A3B8),
-        name: 'Cloud',
-        unlocked: false,
-        current: false,
-        level: 'LV 12',
-      ),
-      AvatarData(
-        color: const Color(0xFF10B981),
-        name: 'Spring',
-        unlocked: false,
-        current: false,
-        level: 'LV 15',
-      ),
-    ];
+    return Consumer(
+      builder: (context, ref, _) {
+        final profile = ref.watch(profileNotifierProvider);
 
-    return Column(
-      children: [
-        _buildSectionHeader(title: 'Bộ sưu tập avatar', trailing: '3/5'),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: avatars.length,
-            itemBuilder: (context, index) {
-              final avatar = avatars[index];
-              return Container(
-                width: 84,
-                margin: EdgeInsets.only(left: index == 0 ? 0 : 10),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 84,
-                      height: 84,
-                      decoration: BoxDecoration(
-                        gradient: avatar.unlocked
-                            ? RadialGradient(
-                                center: const Alignment(0.3, 0.3),
-                                colors: [
-                                  avatar.color.withValues(alpha: 0.87),
-                                  avatar.color.withValues(alpha: 0.33),
-                                ],
-                              )
-                            : null,
-                        color: avatar.unlocked
-                            ? null
-                            : Colors.white.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(18),
-                        border: avatar.current
-                            ? Border.all(
-                                color: const Color(0xFFFBBF24),
-                                width: 2,
-                              )
-                            : avatar.unlocked
-                                ? Border.all(
-                                    color: avatar.color.withValues(alpha: 0.4),
-                                  )
-                                : Border.all(
-                                    color: Colors.white.withValues(alpha: 0.15),
-                                    style: BorderStyle.solid,
-                                  ),
-                        boxShadow: avatar.unlocked
-                            ? [
-                                BoxShadow(
-                                  color: avatar.color.withValues(alpha: 0.2),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
+        AvatarOwnership stateOf(AquaAvatarSpec spec) => avatarOwnership(
+              spec,
+              level: profile.currentLevel,
+              longestStreak: profile.longestStreak,
+              ownedAvatars: profile.ownedAvatars,
+              equippedId: profile.selectedAvatar,
+            );
+
+        final ownedCount = kAvatarCatalog
+            .where((a) => stateOf(a) != AvatarOwnership.locked)
+            .length;
+
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const AvatarCollectionScreen()),
+          ),
+          child: Column(
+            children: [
+              _buildSectionHeader(
+                title: 'Bộ sưu tập avatar',
+                trailing: '$ownedCount/${kAvatarCatalog.length} ›',
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 104,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: kAvatarCatalog.length,
+                  itemBuilder: (context, index) {
+                    final spec = kAvatarCatalog[index];
+                    final state = stateOf(spec);
+                    final locked = state == AvatarOwnership.locked;
+                    final equipped = state == AvatarOwnership.equipped;
+                    return Container(
+                      width: 78,
+                      margin: EdgeInsets.only(left: index == 0 ? 0 : 10),
+                      child: Column(
                         children: [
-                          avatar.unlocked
-                              ? const Icon(
-                                  Icons.water_drop,
-                                  color: Colors.white,
-                                  size: 30,
-                                )
-                              : Text(
-                                  '🔒',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                          if (avatar.current)
-                            Positioned(
-                              top: -8,
-                              right: -8,
-                              child: Container(
-                                padding: const EdgeInsets.fromLTRB(7, 2, 7, 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFBBF24),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: const Text(
-                                  'CUR',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF451A03),
-                                    fontFamily: 'SF Pro Rounded',
-                                    letterSpacing: 0.04,
-                                  ),
-                                ),
-                              ),
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(18),
+                              border: equipped
+                                  ? Border.all(
+                                      color: spec.tierStyle.color, width: 2)
+                                  : Border.all(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.08)),
                             ),
+                            child: AquaAvatar(
+                                spec: spec, size: 60, silhouette: locked),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            spec.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: locked
+                                  ? AppColors.textSecondary
+                                  : AppColors.textPrimary,
+                              fontFamily: 'SF Pro Rounded',
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      avatar.name,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                        fontFamily: 'SF Pro Rounded',
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (!avatar.unlocked && avatar.level != null) ...[
-                      const SizedBox(height: 1),
-                      Text(
-                        avatar.level!,
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          color: AppColors.textSecondary,
-                          fontFamily: 'SF Pro Rounded',
-                        ),
-                      ),
-                    ],
-                  ],
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+            ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -1536,22 +1428,6 @@ class ReminderData {
       isOn: isOn ?? this.isOn,
     );
   }
-}
-
-class AvatarData {
-  final Color color;
-  final String name;
-  final bool unlocked;
-  final bool current;
-  final String? level;
-
-  AvatarData({
-    required this.color,
-    required this.name,
-    required this.unlocked,
-    required this.current,
-    this.level,
-  });
 }
 
 class ThemeData {
