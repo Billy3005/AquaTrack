@@ -13,6 +13,11 @@ part 'profile_provider.g.dart';
 /// Profile state class
 class ProfileState {
   final String userName;
+  // Human-entered display name (full_name). Distinct from the auto-derived
+  // username; preferred for the profile header. May be empty.
+  final String fullName;
+  // Account email, shown on the profile header.
+  final String userEmail;
   final String selectedAvatar;
   final int dailyGoalMl;
   final bool notificationsEnabled;
@@ -46,6 +51,8 @@ class ProfileState {
 
   const ProfileState({
     required this.userName,
+    this.fullName = '',
+    this.userEmail = '',
     required this.selectedAvatar,
     required this.dailyGoalMl,
     this.notificationsEnabled = true,
@@ -78,6 +85,8 @@ class ProfileState {
 
   ProfileState copyWith({
     String? userName,
+    String? fullName,
+    String? userEmail,
     String? selectedAvatar,
     int? dailyGoalMl,
     bool? notificationsEnabled,
@@ -106,6 +115,8 @@ class ProfileState {
   }) {
     return ProfileState(
       userName: userName ?? this.userName,
+      fullName: fullName ?? this.fullName,
+      userEmail: userEmail ?? this.userEmail,
       selectedAvatar: selectedAvatar ?? this.selectedAvatar,
       dailyGoalMl: dailyGoalMl ?? this.dailyGoalMl,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
@@ -135,6 +146,13 @@ class ProfileState {
   }
 
   // Computed properties for UI display
+  /// Name shown on the profile header. Prefers the human-entered full_name,
+  /// falling back to the (auto-derived) username.
+  String get displayName {
+    final fn = fullName.trim();
+    return fn.isNotEmpty ? fn : userName;
+  }
+
   /// Format total volume as liters (e.g., "284L")
   String get totalVolumeLiters {
     if (totalVolumeMl == 0) return '0L';
@@ -361,6 +379,8 @@ class ProfileNotifier extends _$ProfileNotifier {
 
           state = ProfileState(
             userName: user.username ?? user.email.split('@')[0],
+            fullName: user.fullName ?? '',
+            userEmail: user.email,
             selectedAvatar: user.avatarId ?? 'avatar_1',
             // Use calculated goal from Water Formula, fallback to daily_goal_ml
             dailyGoalMl: user.calculatedDailyGoalMl ?? user.dailyGoalMl,
@@ -410,6 +430,8 @@ class ProfileNotifier extends _$ProfileNotifier {
               userName: userData['username']?.toString() ??
                   userData['email']?.split('@')[0] ??
                   'Aqua Warrior',
+              fullName: userData['full_name']?.toString() ?? '',
+              userEmail: userData['email']?.toString() ?? '',
               selectedAvatar: userData['avatar_id']?.toString() ?? 'avatar_1',
               dailyGoalMl: userData['calculated_daily_goal_ml'] as int? ??
                   userData['daily_goal_ml'] as int? ??
@@ -472,6 +494,8 @@ class ProfileNotifier extends _$ProfileNotifier {
         final data = Map<String, dynamic>.from(profileData);
         state = ProfileState(
           userName: data['userName'] ?? 'Aqua Warrior',
+          fullName: data['fullName'] ?? '',
+          userEmail: data['userEmail'] ?? '',
           selectedAvatar: data['selectedAvatar'] ?? 'avatar_1',
           dailyGoalMl: data['dailyGoalMl'] ?? 2000,
           notificationsEnabled: data['notificationsEnabled'] ?? true,
@@ -492,6 +516,8 @@ class ProfileNotifier extends _$ProfileNotifier {
       final storage = HiveStorageService.instance;
       await storage.saveSetting('user_profile', {
         'userName': state.userName,
+        'fullName': state.fullName,
+        'userEmail': state.userEmail,
         'selectedAvatar': state.selectedAvatar,
         'dailyGoalMl': state.dailyGoalMl,
         'notificationsEnabled': state.notificationsEnabled,

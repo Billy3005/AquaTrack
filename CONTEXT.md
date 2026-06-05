@@ -55,7 +55,7 @@ last_updated: 2026-05-30
 
 **Coin** — A spendable in-app currency, separate from XP, earned from Quests and spent in the Shop.
 
-**Reminder** — A hydration nudge one user sends to a friend. Counts toward the "Hội Bạn Cùng Uống" Quest.
+**Reminder (Friend Nudge)** — A hydration nudge one user sends to a *friend*. Counts toward the "Hội Bạn Cùng Uống" Quest. Distinct from a **Reminder Slot** (a user's self-reminder — see Hydration Reminders).
 
 ## Avatars & Collection
 
@@ -72,6 +72,16 @@ last_updated: 2026-05-30
 **Unlock Condition** — How a Locked Avatar becomes Owned. Types: `level` (auto on reaching a level), `coin` (buy with Coins), `streak` (auto on reaching a longest-streak), `mission` (complete a Quest chain — planned, shown as "Sắp ra mắt"). Some Avatars offer two paths (e.g. "Cấp 10 hoặc 280 xu") — meeting either grants ownership.
 
 **Collection** (Bộ sưu tập) — The screen listing all Avatars grouped by Tier, with owned/total progress and a detail sheet for equipping or buying. Theme and Khung (frame) tabs are placeholders ("Sắp ra mắt").
+
+## Hydration Reminders
+
+**Hydration Schedule** (Lịch nhắc nhở) — A user's personal set of daily local notifications nudging *themselves* to drink water. Distinct from a **Reminder (Friend Nudge)**. Stored on-device only (Hive); notifications fire locally via `flutter_local_notifications`, with no backend involvement.
+
+**Reminder Slot** (Mốc nhắc) — One entry in the Hydration Schedule: a daily clock time + on/off state + Tone. Repeats every day. The display label is derived from time-of-day (sáng/trưa/chiều/tối), not user-entered.
+
+**Tone** (Giọng nhắc) — The voice/style of a Reminder Slot's notification copy (e.g. Năng động, Thân thiện, Nhẹ nhàng, Bình yên). Selects which message template fires; does not affect timing.
+
+**Schedule Suggestion** (Gợi ý lịch) — A generated Hydration Schedule spread evenly (~every 2h) across the user's waking window (wake time → sleep time). Exists to reduce setup friction; the user can then edit, add, or remove Slots manually. Regenerating replaces the current Slots.
 
 ## UI Principles
 
