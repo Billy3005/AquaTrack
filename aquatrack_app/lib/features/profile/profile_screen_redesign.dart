@@ -10,6 +10,9 @@ import '../../shared/widgets/coin_badge.dart';
 import '../avatars/avatar_collection_screen.dart';
 import '../avatars/data/avatar_catalog.dart';
 import '../avatars/widgets/aqua_avatar.dart';
+import '../reminders/data/reminder_slot.dart';
+import '../reminders/providers/reminder_provider.dart';
+import '../reminders/widgets/reminder_sheets.dart';
 import 'providers/profile_provider.dart';
 import 'edit_body_info_screen.dart';
 
@@ -33,39 +36,6 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
       ref.read(profileNotifierProvider.notifier).refreshProfile();
     });
   }
-
-  final List<ReminderData> _reminders = [
-    ReminderData(
-      time: '08:00',
-      tone: 'Năng động',
-      label: 'Khởi động ngày mới',
-      isOn: true,
-    ),
-    ReminderData(
-      time: '12:00',
-      tone: 'Thân thiện',
-      label: 'Nhắc giữa trưa',
-      isOn: true,
-    ),
-    ReminderData(
-      time: '15:00',
-      tone: 'Nhẹ nhàng',
-      label: 'Buổi chiều dễ quên',
-      isOn: true,
-    ),
-    ReminderData(
-      time: '18:30',
-      tone: 'Thân thiện',
-      label: 'Sau giờ làm',
-      isOn: false,
-    ),
-    ReminderData(
-      time: '20:00',
-      tone: 'Bình yên',
-      label: 'Cuối ngày',
-      isOn: true,
-    ),
-  ];
 
   // No initialization needed - using ProfileProvider computed goal
 
@@ -220,7 +190,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                profile.userName,
+                                profile.displayName,
                                 style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w600,
@@ -231,13 +201,17 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                               const SizedBox(height: 2),
                               Row(
                                 children: [
-                                  const Text(
-                                    'Chiến binh Nước',
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      color: Color(0xFFA5B4FC),
-                                      fontFamily: 'SF Pro Rounded',
-                                      fontWeight: FontWeight.w600,
+                                  Flexible(
+                                    child: Text(
+                                      profile.userEmail,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 12.5,
+                                        color: Color(0xFFA5B4FC),
+                                        fontFamily: 'SF Pro Rounded',
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                   Container(
@@ -946,148 +920,221 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
   }
 
   Widget _buildReminderSection() {
-    final activeCount = _reminders.where((r) => r.isOn).length;
-
-    return Column(
-      children: [
-        _buildSectionHeader(
-          title: 'Lịch nhắc nhở',
-          trailing: '$activeCount/${_reminders.length}',
-        ),
-        const SizedBox(height: 10),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.textHint),
-          ),
-          child: Column(
-            children: [
-              ...List.generate(_reminders.length, (index) {
-                final reminder = _reminders[index];
-                return _buildReminderRow(
-                  reminder,
-                  index,
-                  index == _reminders.length - 1,
-                );
-              }),
-              Container(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.04),
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.add, color: Color(0xFF38BDF8), size: 14),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Thêm slot',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: const Color(0xFF7DD3FC),
-                        fontFamily: 'SF Pro Text',
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+    return Consumer(
+      builder: (context, ref, child) {
+        final state = ref.watch(reminderProvider);
+        final slots = state.slots;
+        return Column(
+          children: [
+            _buildSectionHeader(
+              title: 'Lịch nhắc nhở',
+              trailing: '${state.activeCount}/${slots.length}',
+            ),
+            const SizedBox(height: 10),
+            if (state.blockedByPermission) ...[
+              _buildReminderPermissionHint(ref),
+              const SizedBox(height: 10),
             ],
-          ),
-        ),
-      ],
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.textHint),
+              ),
+              child: Column(
+                children: [
+                  if (slots.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      child: Text(
+                        'Chưa có mốc nhắc nào — thêm hoặc dùng gợi ý',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12.5,
+                          fontFamily: 'SF Pro Text',
+                        ),
+                      ),
+                    )
+                  else
+                    ...List.generate(slots.length, (index) {
+                      return _buildReminderRow(
+                        ref,
+                        slots[index],
+                        index == slots.length - 1,
+                      );
+                    }),
+                  _buildReminderAction(
+                    icon: Icons.auto_awesome,
+                    label: 'Gợi ý lịch',
+                    onTap: () => showSuggestionSheet(context, ref),
+                  ),
+                  _buildReminderAction(
+                    icon: Icons.add,
+                    label: 'Thêm mốc',
+                    onTap: () => showSlotEditSheet(context, ref),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildReminderRow(ReminderData reminder, int index, bool isLast) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : Border(
-                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.04)),
-              ),
-      ),
-      child: Row(
-        children: [
-          // Time display
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: reminder.isOn
-                  ? const Color(0x1F38BDF8) // rgba(56,189,248,0.12)
-                  : Colors.white.withValues(alpha: 0.04),
-              border: Border.all(
-                color: reminder.isOn
-                    ? const Color(0x4D38BDF8) // rgba(56,189,248,0.3)
-                    : Colors.white.withValues(alpha: 0.06),
-              ),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
+  Widget _buildReminderPermissionHint(WidgetRef ref) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => ref.read(reminderProvider.notifier).ensurePermission(),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 11, 14, 11),
+        decoration: BoxDecoration(
+          color: const Color(0x1FF59E0B),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0x4DF59E0B)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.notifications_off_outlined,
+                color: Color(0xFFFBBF24), size: 16),
+            const SizedBox(width: 10),
+            const Expanded(
               child: Text(
-                reminder.time,
+                'Thông báo đang tắt — bật để nhận nhắc nhở',
                 style: TextStyle(
-                  fontFamily: 'SF Pro Rounded',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                  color: reminder.isOn
-                      ? const Color(0xFFBAE6FD)
-                      : AppColors.textSecondary,
-                  fontFeatures: const [FontFeature.tabularFigures()],
+                  color: Color(0xFFFBBF24),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'SF Pro Text',
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
+            const Icon(Icons.chevron_right, color: Color(0xFFFBBF24), size: 18),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // Label and tone
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  reminder.label,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w500,
-                    color: reminder.isOn
-                        ? AppColors.textPrimary
-                        : AppColors.textSecondary,
-                    fontFamily: 'SF Pro Text',
-                  ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  'Tone: ${reminder.tone}',
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    color: AppColors.textSecondary,
-                    fontFamily: 'SF Pro Text',
-                  ),
-                ),
-              ],
+  Widget _buildReminderAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 11, 14, 11),
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: Colors.white.withValues(alpha: 0.04)),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: const Color(0xFF38BDF8), size: 15),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12.5,
+                color: Color(0xFF7DD3FC),
+                fontFamily: 'SF Pro Text',
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // Toggle switch
-          _buildToggleSwitch(
-            isOn: reminder.isOn,
-            onChanged: () {
-              setState(() {
-                _reminders[index] = _reminders[index].copyWith(
-                  isOn: !_reminders[index].isOn,
-                );
-              });
-            },
-          ),
-        ],
+  Widget _buildReminderRow(WidgetRef ref, ReminderSlot slot, bool isLast) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => showSlotEditSheet(context, ref, existing: slot),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        decoration: BoxDecoration(
+          border: isLast
+              ? null
+              : Border(
+                  bottom:
+                      BorderSide(color: Colors.white.withValues(alpha: 0.04)),
+                ),
+        ),
+        child: Row(
+          children: [
+            // Time display
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: slot.enabled
+                    ? const Color(0x1F38BDF8) // rgba(56,189,248,0.12)
+                    : Colors.white.withValues(alpha: 0.04),
+                border: Border.all(
+                  color: slot.enabled
+                      ? const Color(0x4D38BDF8) // rgba(56,189,248,0.3)
+                      : Colors.white.withValues(alpha: 0.06),
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: Text(
+                  slot.timeLabel,
+                  style: TextStyle(
+                    fontFamily: 'SF Pro Rounded',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    color: slot.enabled
+                        ? const Color(0xFFBAE6FD)
+                        : AppColors.textSecondary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Label and tone
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    slot.label,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
+                      color: slot.enabled
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
+                      fontFamily: 'SF Pro Text',
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    'Giọng: ${slot.tone.label}',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: AppColors.textSecondary,
+                      fontFamily: 'SF Pro Text',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Toggle switch
+            _buildToggleSwitch(
+              isOn: slot.enabled,
+              onChanged: () =>
+                  ref.read(reminderProvider.notifier).toggleSlot(slot.id),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1402,34 +1449,6 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
 }
 
 // Data classes
-class ReminderData {
-  final String time;
-  final String tone;
-  final String label;
-  final bool isOn;
-
-  ReminderData({
-    required this.time,
-    required this.tone,
-    required this.label,
-    required this.isOn,
-  });
-
-  ReminderData copyWith({
-    String? time,
-    String? tone,
-    String? label,
-    bool? isOn,
-  }) {
-    return ReminderData(
-      time: time ?? this.time,
-      tone: tone ?? this.tone,
-      label: label ?? this.label,
-      isOn: isOn ?? this.isOn,
-    );
-  }
-}
-
 class ThemeData {
   final String name;
   final LinearGradient gradient;
