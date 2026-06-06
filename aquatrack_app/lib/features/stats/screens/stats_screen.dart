@@ -33,7 +33,7 @@ class StatsScreen extends ConsumerWidget {
                 child: CompactPeriodSelector(
                   selectedPeriod: statsData.period,
                   onPeriodChanged: (period) {
-                    ref.read(statsNotifierProvider.notifier).setPeriod(period);
+                    ref.read(statsPeriodProvider.notifier).state = period;
                   },
                 ),
               ),
