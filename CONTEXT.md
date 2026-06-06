@@ -33,6 +33,8 @@ last_updated: 2026-05-30
 
 **AI Insights Layer** — Recommendation system that generates personalized hydration suggestions based on user patterns and environmental factors. Operates separately from Daily Goal calculation, providing supplementary advice without affecting goal completion status.
 
+> **Wiring status (2026-06-05):** The Stats screen sources its insights from the **backend** `/stats/insights` endpoint (rule-based, computed from real logs). The Flutter-side intelligence layer below (Insight Context, Weather State, Context Builder) is **not currently wired into Stats** — it remains in the codebase as a parked/planned capability for weather-aware insights, but does not feed the Stats screen. Do not treat its glossary terms as describing live Stats behaviour.
+
 ## Quests & Rewards
 
 **Quest** (Nhiệm vụ) — A goal the user completes to earn rewards within a fixed time period. Canonical set of quests is defined in `quests_spec.md` (the spec, not the frontend sample data, is the source of truth).
@@ -82,6 +84,14 @@ last_updated: 2026-05-30
 **Tone** (Giọng nhắc) — The voice/style of a Reminder Slot's notification copy (e.g. Năng động, Thân thiện, Nhẹ nhàng, Bình yên). Selects which message template fires; does not affect timing.
 
 **Schedule Suggestion** (Gợi ý lịch) — A generated Hydration Schedule spread evenly (~every 2h) across the user's waking window (wake time → sleep time). Exists to reduce setup friction; the user can then edit, add, or remove Slots manually. Regenerating replaces the current Slots.
+
+## Statistics & History
+
+**Stats Period** — The time window the History/Stats screen aggregates over: `week` (last 7 days) or `month` (last 30 days). Selected via the period toggle; the selection drives both the wave chart density and the metric labels. Week renders 7 day-points with weekday labels (T2–CN); Month renders 30 day-points with day labels hidden.
+
+**Day Progress** — One day's hydration outcome used to plot the wave chart: effective ml vs that day's Daily Goal, with a goal-achieved flag. Sourced from the backend `/stats/goals/progress` endpoint, which carries the **real** per-day Daily Goal (not a hardcoded constant). This is the canonical chart source — the `/stats/trends/daily` endpoint is *not* used for the chart because it lacks per-day goal context.
+
+**Liquid Breakdown** — The share of each drink type (Nước lọc, Trà, Cà phê, …) over the Stats Period, by volume / effective volume / frequency. Sourced from `/stats/liquid-types`. Distinct from a single "top liquid" value; the screen shows the full breakdown.
 
 ## UI Principles
 

@@ -85,11 +85,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   selectedTheme: profileState.selectedTheme,
                   soundEnabled: profileState.soundEnabled,
                   language: profileState.language,
-                  onDailyGoalChanged: (goal) {
-                    ref
-                        .read(profileNotifierProvider.notifier)
-                        .updateDailyGoal(goal);
-                  },
                   onNotificationsChanged: (enabled) {
                     ref
                         .read(profileNotifierProvider.notifier)
