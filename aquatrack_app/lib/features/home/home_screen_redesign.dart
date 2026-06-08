@@ -132,22 +132,8 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
       // Log water
       await ref.read(homeNotifierProvider.notifier).quickLog(amount);
 
-      // Show XP popup animation
+      // XP popup animation is the only success feedback (no green snackbar).
       _showXpAnimation(20);
-
-      // Show success feedback
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Đã log ${amount}ml nước! +20 XP 💧',
-              style: AppTextStyles.bodyMedium,
-            ),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

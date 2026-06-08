@@ -892,14 +892,17 @@ class _MissionCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
+        // Completed (claimed) missions read as a clear success state — a green
+        // tint distinct from both the amber "claimable" glow and the neutral
+        // in-progress card, so a finished mission stands out instead of dimming.
         color: mission.claimed
-            ? const Color(0xFF0F1A2E).withValues(alpha: 0.5)
+            ? AppColors.success.withValues(alpha: 0.10)
             : isClaimable
                 ? const Color(0xFFFBBF24).withValues(alpha: 0.10)
                 : AppColors.nightSurface,
         border: Border.all(
           color: mission.claimed
-              ? Colors.white.withValues(alpha: 0.08)
+              ? AppColors.success.withValues(alpha: 0.45)
               : isClaimable
                   ? const Color(0xFFFBBF24).withValues(alpha: 0.5)
                   : AppColors.nightCard,
@@ -1060,8 +1063,11 @@ class _MissionCard extends StatelessWidget {
                             widthFactor: progress / 100,
                             child: Container(
                               decoration: BoxDecoration(
+                                // Full bar stays colored when completed (green)
+                                // — never a washed-out gray — so a done mission
+                                // looks rewarded, not deactivated.
                                 color: mission.claimed
-                                    ? Colors.white.withValues(alpha: 0.18)
+                                    ? AppColors.success
                                     : isDone
                                         ? const Color(0xFFFBBF24)
                                         : Color(
@@ -1073,12 +1079,13 @@ class _MissionCard extends StatelessWidget {
                                                 0xFF000000,
                                           ),
                                 borderRadius: BorderRadius.circular(999),
-                                boxShadow: isDone && !mission.claimed
+                                boxShadow: isDone
                                     ? [
                                         BoxShadow(
-                                          color: const Color(
-                                            0xFFFBBF24,
-                                          ).withValues(alpha: 0.6),
+                                          color: (mission.claimed
+                                                  ? AppColors.success
+                                                  : const Color(0xFFFBBF24))
+                                              .withValues(alpha: 0.6),
                                           blurRadius: 8,
                                         ),
                                       ]

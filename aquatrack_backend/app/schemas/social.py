@@ -107,6 +107,20 @@ class UserSearchResult(BaseModel):
         from_attributes = True
 
 
+class SuggestedUser(BaseModel):
+    """People-you-may-know entry — a friend-of-friend with a mutual count."""
+
+    id: str
+    username: str
+    display_name: str
+    avatar_url: Optional[str] = None
+    current_streak: int = 0
+    mutual_friends: int = Field(0, description="Number of friends in common")
+
+    class Config:
+        from_attributes = True
+
+
 # Leaderboard schemas
 class LeaderboardEntryBase(BaseModel):
     """Base leaderboard entry schema"""

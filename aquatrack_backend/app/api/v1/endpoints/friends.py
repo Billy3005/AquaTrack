@@ -17,7 +17,7 @@ from app.schemas.friends_view import (FriendRequestsResponse, FriendsResponse,
 from app.schemas.gifts import CoinGiftCreate, CoinGiftResponse
 from app.schemas.social import (FriendReminderRequest, FriendReminderResponse,
                                 FriendRequestResponse, FriendResponse,
-                                UserSearchResult)
+                                SuggestedUser, UserSearchResult)
 from app.services import challenges_service as ch
 from app.services import friends_view_service as fvs
 from app.services import gifts_service as gifts
@@ -291,6 +291,19 @@ async def search_users(
     )
 
     return users
+
+
+# Static single-segment route — must precede "/{friend_id}/" (see note below).
+@router.get("/suggestions/", response_model=List[SuggestedUser])
+async def get_suggested_friends(
+    limit: int = Query(10, ge=1, le=20),
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """People you may know — friends-of-friends ranked by mutual count."""
+    return friend_crud.get_suggested_friends(
+        db, current_user_id=current_user_id, limit=limit
+    )
 
 
 # Static single-segment routes must come BEFORE /{friend_id}/ so they are not
