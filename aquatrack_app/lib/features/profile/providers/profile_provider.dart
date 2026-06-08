@@ -590,6 +590,22 @@ class ProfileNotifier extends _$ProfileNotifier {
     }
   }
 
+  /// Buy a one-time Streak Freeze (ADR 0004). Backend deducts coins and returns
+  /// the new balance, which we apply locally. Throws on failure (already owned
+  /// or insufficient coins) so the caller can surface the message.
+  Future<void> purchaseStreakFreeze() async {
+    final apiService = ApiService();
+    final response = await apiService.post('/shop/streak-freeze/purchase');
+
+    final data = response.data;
+    if (response.statusCode == 200 && data is Map) {
+      state = state.copyWith(coins: data['coins'] as int? ?? state.coins);
+      await _saveProfile();
+    } else {
+      throw Exception('Mua thất bại (${response.statusCode})');
+    }
+  }
+
   /// Daily goal is computed-only via Water Formula
   /// Cannot be manually updated - use backend profile sync instead
 

@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 # Import individual routers
 from app.api.v1.endpoints import (auth, avatars, coach, friends, intake,
-                                  levels, quests, stats, users, vision,
+                                  levels, quests, shop, stats, users, vision,
                                   water_profile)
 
 # Main API router
@@ -19,6 +19,7 @@ api_router.include_router(vision.router, prefix="/vision", tags=["smart-scan"])
 api_router.include_router(friends.router, prefix="/friends", tags=["social-features"])
 api_router.include_router(quests.router, prefix="/quests", tags=["quests"])
 api_router.include_router(avatars.router, prefix="/avatars", tags=["avatars"])
+api_router.include_router(shop.router, prefix="/shop", tags=["shop"])
 api_router.include_router(
     water_profile.router, prefix="/water-profile", tags=["water-calculation"]
 )
