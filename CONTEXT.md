@@ -93,7 +93,11 @@ last_updated: 2026-05-30
 
 **Unlock Condition** — How a Locked Avatar becomes Owned. Types: `level` (auto on reaching a level), `coin` (buy with Coins), `streak` (auto on reaching a longest-streak), `mission` (complete a Quest chain — planned, shown as "Sắp ra mắt"). Some Avatars offer two paths (e.g. "Cấp 10 hoặc 280 xu") — meeting either grants ownership.
 
-**Collection** (Bộ sưu tập) — The screen listing all Avatars grouped by Tier, with owned/total progress and a detail sheet for equipping or buying. Theme and Khung (frame) tabs are placeholders ("Sắp ra mắt").
+**Collection** (Bộ sưu tập) — The screen listing all Avatars grouped by Tier, with owned/total progress and a detail sheet for equipping. Shows every Avatar regardless of unlock path (level/streak/mission/coin). Buying a coin-Avatar is the **Shop**'s job, not the Collection's — the Collection is the trophy cabinet (browse + equip). Theme and Khung (frame) tabs are placeholders ("Sắp ra mắt").
+
+**Shop** (Cửa hàng) — The coin storefront: the canonical place to **spend Coins**. The coin badge everywhere in the app routes here. Today the Shop sells the coin-purchasable Avatars (those whose Unlock Condition includes a `coin` price) plus the **Streak Freeze** consumable; Theme and Khung are shown as "Sắp ra mắt". The Shop never sells XP or coin multipliers — XP stays monotonic from real sources and Coins are the only spendable currency. Distinct from the **Collection**, which displays *all* Avatars and handles equipping.
+
+**Streak Freeze** (Đóng băng chuỗi) — A one-time consumable bought with Coins that bridges a single fully-missed day so the user's Streak does not reset. Inventory is binary — a user owns at most one Freeze at a time; protecting a missed day consumes it (back to zero, must re-buy). A bridged day preserves continuity but does **not** add to streak length (the user did not hit goal that day). Consumed at log time, not on read; while owned, a single missed day is treated as provisionally protected so reads never show a false break. Multiple consecutive missed days break the streak — one Freeze covers one day only.
 
 ## Hydration Reminders
 

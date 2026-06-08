@@ -99,3 +99,16 @@ def _ensure_user_columns() -> None:
                     "WHERE avatar_id IS NULL OR avatar_id LIKE 'avatar%'"
                 )
             )
+        if "streak_freeze_owned" not in existing:
+            # Streak Freeze rollout (ADR 0004): binary inventory + the missed days
+            # a Freeze has bridged so the derived streak stays continuous.
+            conn.execute(
+                text(
+                    "ALTER TABLE users ADD COLUMN streak_freeze_owned "
+                    "BOOLEAN DEFAULT 0"
+                )
+            )
+        if "frozen_dates" not in existing:
+            conn.execute(
+                text("ALTER TABLE users ADD COLUMN frozen_dates JSON DEFAULT '[]'")
+            )

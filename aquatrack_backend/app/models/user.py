@@ -73,6 +73,12 @@ class User(Base):
     coins = Column(Integer, default=100)
     current_streak = Column(Integer, default=0)
     longest_streak = Column(Integer, default=0)
+    # Streak Freeze (one-time consumable bought in the Shop; see ADR 0004).
+    # `streak_freeze_owned` is a binary inventory (own at most one). `frozen_dates`
+    # records the missed days a Freeze has bridged so the derived streak stays
+    # continuous across them (a bridged day adds 0 length).
+    streak_freeze_owned = Column(Boolean, default=False)
+    frozen_dates = Column(JSON, default=list)
 
     # Statistics
     total_logs_count = Column(Integer, default=0)
