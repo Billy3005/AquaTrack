@@ -227,6 +227,88 @@ class CRUDFriend(CRUDBase[Friend, dict, dict]):
 
         return result
 
+    def get_suggested_friends(
+        self, db: Session, *, current_user_id: str, limit: int = 10
+    ) -> List[dict]:
+        """People-you-may-know: friends-of-friends ranked by how many friends
+        they share with the current user ("X bạn chung").
+
+        Excludes the user, anyone already a friend, and anyone with a pending
+        request in either direction. Returns an empty list when the user has no
+        friends yet (no graph to mine).
+        """
+        my_friend_rows = (
+            db.query(Friend.friend_user_id)
+            .filter(
+                and_(
+                    Friend.user_id == current_user_id,
+                    Friend.is_active == True,
+                    Friend.is_blocked == False,
+                )
+            )
+            .all()
+        )
+        my_friend_ids = [fid for (fid,) in my_friend_rows]
+        if not my_friend_ids:
+            return []
+
+        # A candidate is a friend of one of my friends; rank by distinct mutuals.
+        mutual_count = func.count(func.distinct(Friend.user_id)).label("mutual")
+        rows = (
+            db.query(Friend.friend_user_id, mutual_count)
+            .filter(
+                and_(
+                    Friend.user_id.in_(my_friend_ids),
+                    Friend.is_active == True,
+                    Friend.is_blocked == False,
+                    Friend.friend_user_id != current_user_id,
+                    Friend.friend_user_id.notin_(my_friend_ids),
+                )
+            )
+            .group_by(Friend.friend_user_id)
+            .order_by(desc("mutual"))
+            # Over-fetch so the pending-request filter below still leaves enough.
+            .limit(limit * 3)
+            .all()
+        )
+        if not rows:
+            return []
+
+        mutual_by_id = {cid: int(m) for (cid, m) in rows}
+        users = (
+            db.query(User)
+            .filter(User.id.in_(list(mutual_by_id.keys())), User.is_active == True)
+            .all()
+        )
+        users_by_id = {u.id: u for u in users}
+
+        result = []
+        # Preserve the mutual-count ranking from `rows`.
+        for candidate_id, _ in rows:
+            user = users_by_id.get(candidate_id)
+            if not user:
+                continue
+            pending = friend_request_crud.has_pending_request(
+                db, sender_id=current_user_id, receiver_id=candidate_id
+            ) or friend_request_crud.has_pending_request(
+                db, sender_id=candidate_id, receiver_id=current_user_id
+            )
+            if pending:
+                continue
+            result.append(
+                {
+                    "id": user.id,
+                    "username": user.username,
+                    "display_name": user.full_name or user.username,
+                    "avatar_url": None,
+                    "current_streak": user.current_streak or 0,
+                    "mutual_friends": mutual_by_id.get(candidate_id, 0),
+                }
+            )
+            if len(result) >= limit:
+                break
+        return result
+
     def get_friend_profile(
         self, db: Session, *, user_id: str, friend_user_id: str
     ) -> Optional[dict]:

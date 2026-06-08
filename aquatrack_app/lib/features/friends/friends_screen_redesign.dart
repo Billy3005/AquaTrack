@@ -6,8 +6,10 @@ import '../../shared/widgets/coin_badge.dart';
 import '../profile/providers/profile_provider.dart';
 import 'models/friend_model.dart';
 import 'models/social_failure.dart';
+import 'models/suggested_friend.dart';
 import 'providers/friends_provider.dart';
 import 'providers/notifications_provider.dart';
+import 'providers/suggestions_provider.dart';
 import 'widgets/friend_search.dart';
 import 'widgets/notifications_dropdown.dart';
 
@@ -26,6 +28,7 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
   String? _toastMessage;
   late AnimationController _toastController;
   final Set<String> _remindedFriends = <String>{}; // Track reminded friends
+  final Set<String> _requestedUsers = <String>{}; // Suggestions already invited
 
   // Helper methods to map backend data to UI
   Color _getFriendMoodColor(FriendStatus status) {
@@ -1592,24 +1595,54 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
           ),
         ),
         const SizedBox(height: 8),
-        _buildSuggestedFriend(
-          'Khánh Lê',
-          '@khanhle',
-          6,
-          5,
-          const Color(0xFF0EA5E9),
-        ),
-        const SizedBox(height: 8),
-        _buildSuggestedFriend(
-          'Trang Phạm',
-          '@trangp',
-          10,
-          2,
-          const Color(0xFFFB7185),
-        ),
-        const SizedBox(height: 8),
-        _buildSuggestedFriend('An Đỗ', '@ando', 3, 8, const Color(0xFF34D399)),
+        _buildSuggestions(),
       ],
+    );
+  }
+
+  /// Real "people you may know" — friends-of-friends ranked by mutual count
+  /// (replaces the old hardcoded trio). Empty/loading/error states stay quiet
+  /// so the tab never shows fake names again.
+  Widget _buildSuggestions() {
+    final suggestionsAsync = ref.watch(friendSuggestionsProvider);
+    return suggestionsAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Color(0xFF38BDF8),
+            ),
+          ),
+        ),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (suggestions) {
+        if (suggestions.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              'Kết bạn thêm để chúng tôi gợi ý người bạn có thể biết.',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+          );
+        }
+        return Column(
+          children: [
+            for (final s in suggestions) ...[
+              _buildSuggestedFriend(s),
+              const SizedBox(height: 8),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -1753,13 +1786,13 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
     );
   }
 
-  Widget _buildSuggestedFriend(
-    String name,
-    String handle,
-    int level,
-    int mutual,
-    Color avatar,
-  ) {
+  Widget _buildSuggestedFriend(SuggestedFriend suggestion) {
+    final avatar = _getAvatarColor(suggestion.avatarUrl, suggestion.id);
+    final requested = _requestedUsers.contains(suggestion.id);
+    final mutualText = suggestion.mutualFriends > 0
+        ? '${suggestion.mutualFriends} bạn chung'
+        : '@${suggestion.username}';
+
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
@@ -1801,7 +1834,7 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name,
+                  suggestion.displayName,
                   style: const TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
@@ -1810,7 +1843,7 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
                 ),
                 const SizedBox(height: 1),
                 Text(
-                  '$mutual bạn chung',
+                  mutualText,
                   style: TextStyle(
                     fontSize: 10.5,
                     color: AppColors.textSecondary,
@@ -1819,27 +1852,60 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
-              border: Border.all(
-                color: const Color(0xFF38BDF8).withValues(alpha: 0.3),
+          GestureDetector(
+            onTap: requested ? null : () => _addSuggestedFriend(suggestion),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: (requested
+                        ? const Color(0xFF10B981)
+                        : const Color(0xFF38BDF8))
+                    .withValues(alpha: 0.12),
+                border: Border.all(
+                  color: (requested
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFF38BDF8))
+                      .withValues(alpha: 0.3),
+                ),
+                borderRadius: BorderRadius.circular(999),
               ),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              '+ Kết bạn',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textBright,
+              child: Text(
+                requested ? '✓ Đã gửi' : '+ Kết bạn',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: requested
+                      ? const Color(0xFF86EFAC)
+                      : AppColors.textBright,
+                ),
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// Send a friend request to a suggested user; flips the chip to "Đã gửi" and
+  /// keeps it that way (the backend filters out pending requests on re-fetch).
+  void _addSuggestedFriend(SuggestedFriend suggestion) async {
+    setState(() => _requestedUsers.add(suggestion.id));
+    final shortName = suggestion.displayName.split(' ').last;
+    try {
+      await ref
+          .read(socialServiceProvider)
+          .sendFriendRequest(suggestion.username, null);
+      if (!mounted) return;
+      _showToast('Đã gửi lời mời kết bạn tới $shortName 🤝');
+      HapticFeedback.lightImpact();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _requestedUsers.remove(suggestion.id));
+      final msg = e is SocialFailure
+          ? e.message
+          : 'Không thể gửi lời mời. Thử lại sau!';
+      _showToast(msg);
+    }
   }
 
   Widget _buildToast() {

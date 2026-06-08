@@ -152,7 +152,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                               colors: [Color(0x33FBBF24), Color(0x14F59E0B)],
                             )
                           : null,
-                      color: active ? null : Colors.white.withValues(alpha: 0.04),
+                      color:
+                          active ? null : Colors.white.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: active
@@ -229,8 +230,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        for (final tier in kTierOrder)
-          _buildTierGroup(tier, profile, stateOf),
+        for (final tier in kTierOrder) _buildTierGroup(tier, profile, stateOf),
       ],
     );
   }
@@ -276,7 +276,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
     final freezeAsync = ref.watch(streakFreezeStatusProvider);
     final price =
         freezeAsync.maybeWhen(data: (s) => s.price, orElse: () => 300);
-    final owned = freezeAsync.maybeWhen(data: (s) => s.owned, orElse: () => false);
+    final owned =
+        freezeAsync.maybeWhen(data: (s) => s.owned, orElse: () => false);
     final busy = _busyId == 'freeze';
     final canAfford = coins >= price;
 
@@ -356,7 +357,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
     }
     return _pill(
       label: canAfford ? 'Mua · $price' : 'Cần $price xu',
-      bg: canAfford ? const Color(0xFFF59E0B) : Colors.white.withValues(alpha: 0.05),
+      bg: canAfford
+          ? const Color(0xFFF59E0B)
+          : Colors.white.withValues(alpha: 0.05),
       fg: canAfford ? const Color(0xFF451A03) : AppColors.textMuted,
       onTap: canAfford ? _buyFreeze : null,
       coin: canAfford,
@@ -436,7 +439,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
         children: [
           Expanded(
             child: Center(
-              child: AquaAvatar(spec: spec, size: 64, silhouette: !owned),
+              // Always show the real form (not a silhouette) so users can see
+              // exactly what they're buying — drives purchase desire.
+              child: AquaAvatar(spec: spec, size: 64),
             ),
           ),
           const SizedBox(height: 6),
@@ -497,7 +502,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
     }
     return _wideButton(
       label: canAfford ? '$price' : 'Cần $price xu',
-      bg: canAfford ? const Color(0xFFF59E0B) : Colors.white.withValues(alpha: 0.05),
+      bg: canAfford
+          ? const Color(0xFFF59E0B)
+          : Colors.white.withValues(alpha: 0.05),
       fg: canAfford ? const Color(0xFF451A03) : AppColors.textMuted,
       onTap: canAfford ? () => _buyAvatar(spec) : null,
       coin: canAfford,

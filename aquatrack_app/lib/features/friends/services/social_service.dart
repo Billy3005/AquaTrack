@@ -4,6 +4,7 @@ import '../../../core/services/api_service.dart';
 import '../models/friend_model.dart';
 import '../models/notification_models.dart';
 import '../models/social_failure.dart';
+import '../models/suggested_friend.dart';
 
 /// Social service for friend management and social features
 class SocialService {
@@ -229,6 +230,36 @@ class SocialService {
     } catch (e) {
       throw SocialFailure.unknown(
         message: 'Unexpected error searching users',
+        originalException: e is Exception ? e : Exception(e.toString()),
+      );
+    }
+  }
+
+  /// People you may know — friends-of-friends ranked by mutual count.
+  Future<List<SuggestedFriend>> getSuggestedFriends() async {
+    try {
+      final response = await _apiService.get<List<dynamic>>(
+        '/friends/suggestions/',
+      );
+
+      if (response.isSuccess && response.data != null) {
+        return response.data!
+            .map((json) =>
+                SuggestedFriend.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
+
+      throw SocialFailure.server(
+        message: 'Failed to load suggestions',
+        statusCode: response.statusCode,
+      );
+    } on ApiException catch (e) {
+      throw SocialFailure.fromApiException(e);
+    } on SocketException {
+      throw const SocialFailure.network(message: 'Network connection failed');
+    } catch (e) {
+      throw SocialFailure.unknown(
+        message: 'Unexpected error loading suggestions',
         originalException: e is Exception ? e : Exception(e.toString()),
       );
     }

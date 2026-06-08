@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_text_styles.dart';
 import '../../core/repositories/auth_repository.dart';
 import '../../shared/widgets/coin_badge.dart';
 import '../avatars/avatar_collection_screen.dart';
@@ -588,14 +587,17 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
   }
 
   Widget _buildThemesSection() {
+    // Theme switching is not wired to a real theme engine yet, so every option
+    // is locked and labelled "Sắp ra mắt" — no theme is presented as active or
+    // owned until the feature actually changes the app's appearance.
     final themes = [
       ThemeData(
         name: 'Ocean Night',
         gradient: const LinearGradient(
           colors: [Color(0xFF0C4A80), Color(0xFF082F5C)],
         ),
-        current: true,
-        unlocked: true,
+        current: false,
+        unlocked: false,
       ),
       ThemeData(
         name: 'Default Blue',
@@ -603,7 +605,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
           colors: [Color(0xFF38BDF8), Color(0xFF0EA5E9)],
         ),
         current: false,
-        unlocked: true,
+        unlocked: false,
       ),
       ThemeData(
         name: 'Desert Sunset',
@@ -612,7 +614,6 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
         ),
         current: false,
         unlocked: false,
-        level: 'LV 9',
       ),
       ThemeData(
         name: 'Forest Rain',
@@ -621,13 +622,12 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
         ),
         current: false,
         unlocked: false,
-        level: 'LV 11',
       ),
     ];
 
     return Column(
       children: [
-        _buildSectionHeader(title: 'Themes', trailing: '2/4'),
+        _buildSectionHeader(title: 'Themes', trailing: 'Sắp ra mắt'),
         const SizedBox(height: 10),
         GridView.builder(
           shrinkWrap: true,
@@ -684,16 +684,10 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                           ),
                           const SizedBox(height: 1),
                           Text(
-                            theme.current
-                                ? 'Đang dùng'
-                                : theme.unlocked
-                                    ? 'Đã mở'
-                                    : theme.level ?? '',
+                            'Sắp ra mắt',
                             style: TextStyle(
                               fontSize: 10,
-                              color: theme.current
-                                  ? const Color(0xFFFBBF24)
-                                  : AppColors.textSecondary,
+                              color: AppColors.textSecondary,
                               fontFamily: 'SF Pro Rounded',
                               fontWeight: FontWeight.w600,
                             ),
