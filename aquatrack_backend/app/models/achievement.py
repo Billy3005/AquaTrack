@@ -3,7 +3,7 @@ import uuid
 
 from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -211,3 +211,38 @@ class Achievement(Base):
             achievements.append(achievement)
 
         return achievements
+
+
+class AchievementClaim(Base):
+    """Records that a user has Claimed a milestone Achievement (once, for life).
+
+    Mirrors QuestClaim but without a period_key: achievements never reset, so the
+    unique constraint is simply (user_id, achievement_id). Achievement *progress*
+    is derived on read from source tables (see achievement_service); this table
+    persists only the fact that the Milestone XP was collected. See
+    docs/adr/0003-levels-and-achievements.md.
+    """
+
+    __tablename__ = "achievement_claims"
+    __table_args__ = (
+        UniqueConstraint("user_id", "achievement_id", name="uq_achievement_claim"),
+    )
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+
+    # Achievement identifier from the registry, e.g. "scan_first", "streak_7".
+    achievement_id = Column(String, nullable=False, index=True)
+
+    # Milestone XP actually granted at claim time (snapshot for audit).
+    reward_xp = Column(Integer, default=0)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="achievement_claims")
+
+    def __repr__(self):
+        return (
+            f"<AchievementClaim(user_id={self.user_id}, "
+            f"achievement_id={self.achievement_id})>"
+        )
