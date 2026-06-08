@@ -53,11 +53,31 @@ last_updated: 2026-05-30
 
 **Lucky Chest** (Rương may mắn) — The Weekly Completion Bonus. Grants a random Coin amount (50–150). Item rewards are a planned future addition.
 
-**XP** — Experience points. Quest XP rewards feed the existing total_xp and level system; they are not a separate currency.
+**XP** — Experience points. Earned from two kinds of source: **Repeatable XP** (renewable, keeps long-term users levelling — daily-goal completion and Quests) and **Milestone XP** (one-time, granted by an Achievement unlock). All XP feeds the single Total XP pool; XP is not a spendable currency.
+
+**Total XP** — The cumulative, monotonic (never-decreasing) sum of all XP a user has earned. The user's Level is derived from Total XP through one canonical XP curve; the curve lives in exactly one place so Quests, Achievements, and the Level screen can never disagree.
 
 **Coin** — A spendable in-app currency, separate from XP, earned from Quests and spent in the Shop.
 
 **Reminder (Friend Nudge)** — A hydration nudge one user sends to a *friend*. Counts toward the "Hội Bạn Cùng Uống" Quest. Distinct from a **Reminder Slot** (a user's self-reminder — see Hydration Reminders).
+
+## Levels & Achievements
+
+**Level** — A progression tier derived purely from Total XP via the canonical XP curve. Never stored as an editable value; recomputed from Total XP. A Level may carry a display name (the canonical tier names live in one place, not duplicated per screen).
+
+**Achievement** (Thành tựu) — A one-time milestone the user unlocks by reaching a threshold (a streak length, total volume, level, log count, …). Unlike a Quest, it does not reset. The canonical Achievement catalog lives in exactly one place (one definition shared by backend and the Level screen — never two competing sets). Each Achievement carries a Tier (rarity) and a Milestone XP reward — **and nothing else**. Achievements do **not** unlock Avatars; Avatar ownership stays purely on the level/coin/streak/mission rails defined under Avatars & Collection. (A streak Achievement and a streak-gated Avatar may share the same milestone, but the Avatar comes from the streak rail, the XP from the Claim — never a double grant.)
+
+**Done / Claim (Achievement)** — An Achievement reuses the Quest **Done** and **Claim** semantics: reaching the threshold makes it **Done**; the user must **Claim** it to actually receive its Milestone XP (and any Avatar unlock). XP is credited only on Claim, never silently on unlock.
+
+**Tier (Achievement rarity)** — An Achievement's rarity band: Common / Rare / Epic / Legendary. Sets the badge palette and signals how hard it was. (Distinct from **Tier (Bậc hiếm)** for Avatars, though both use the same four bands.)
+
+**Achievement Domain** — The behaviour an Achievement ladder measures. Beyond the hydration core (streak, total volume, level, daily-goal, log frequency), the catalog spans: **Quest** (lifetime Quests Claimed), **Coach** (lifetime AI Coach conversations), **Scan** (lifetime Smart Scans), and **Social** (current friend count). Each Domain has its own laddered thresholds and counting source (below).
+
+**Conversation (Coach Achievement unit)** — One AI Coach **session** (a `ConversationSession`), not one message. The Coach ladder (Cuộc Trò Chuyện Đầu Tiên → Tri Kỷ at 500) counts sessions. A session is created when the user genuinely starts a conversation, not on merely opening the Coach tab.
+
+**Quests Claimed (Quest Achievement unit)** — The lifetime count of Quest rewards **Claimed** (`QuestClaim` rows), not Quests merely Done-but-unclaimed. Drives the Tân Binh (10) / Chiến Binh (100) / Huyền Thoại (1000) ladder.
+
+**Locked Teaser** — An Achievement whose Domain depends on a feature not yet shipped (Smart Scan, Social) is still shown in the catalog as a locked badge at 0 progress, so users can see the roadmap. It becomes earnable once its counting source goes live; it is never hidden just because the feature is pending.
 
 ## Avatars & Collection
 

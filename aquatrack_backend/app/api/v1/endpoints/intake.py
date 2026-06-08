@@ -77,8 +77,8 @@ async def create_intake_log(
     """
     # Import services here to avoid circular imports
     # Create intake log (temporarily disable streak for testing)
+    from app.core.leveling import calculate_level_from_xp
     from app.crud.user import user_crud
-    from app.services.achievement_service import achievement_service
 
     # Create simple intake log
     db_intake_log = intake_log_crud.create(
@@ -157,7 +157,21 @@ async def create_intake_log(
     user = user_crud.get(db, current_user_id)
     level_progress = None
     if user:
-        level_progress = achievement_service.get_level_progress(user.total_xp)
+        # Total XP = intake-log XP + bonus/quest XP (matches /levels/current);
+        # never user.total_xp alone, which would underreport the level.
+        _intake_xp = (
+            db.query(func.sum(IntakeLog.xp_earned + IntakeLog.bonus_xp))
+            .filter(IntakeLog.user_id == current_user_id)
+            .scalar()
+            or 0
+        )
+        _li = calculate_level_from_xp(_intake_xp + (user.total_xp or 0))
+        level_progress = {
+            "current_level": _li["level"],
+            "current_level_xp": _li["current_xp"],
+            "next_level_xp": _li["xp_for_next_level"],
+            "progress_percent": _li["progress_percentage"],
+        }
         # Add streak info to level progress
         level_progress.update(
             {
