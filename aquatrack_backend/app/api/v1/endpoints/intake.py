@@ -149,6 +149,30 @@ async def create_intake_log(
         current_streak = user.current_streak if user else 0
         longest_streak = user.longest_streak if user else 0
 
+    # Streak Freeze + canonical streak (ADR 0004): consume an owned Freeze to
+    # bridge a single missed day, then derive the streak from StreakService so the
+    # value we show is freeze-aware and gap-correct (the inline counter above does
+    # not reset on a missed day). Best-effort; never blocks a log.
+    try:
+        from app.services.streak_service import StreakService
+
+        StreakService.reconcile_freeze(db, current_user_id)
+        canonical_streak = StreakService.calculate_current_streak(db, current_user_id)
+        current_streak = canonical_streak
+        longest_streak = max(longest_streak, canonical_streak)
+        fresh_user = user_crud.get(db, current_user_id)
+        if fresh_user and (
+            fresh_user.current_streak != canonical_streak
+            or fresh_user.longest_streak < canonical_streak
+        ):
+            fresh_user.current_streak = canonical_streak
+            if fresh_user.longest_streak < canonical_streak:
+                fresh_user.longest_streak = canonical_streak
+            db.add(fresh_user)
+            db.commit()
+    except Exception:
+        pass
+
     print(
         f"MANUAL STREAK: Total: {today_total_ml}/{daily_goal}ml, Goal: {goal_achieved}, Streak: {current_streak}"
     )

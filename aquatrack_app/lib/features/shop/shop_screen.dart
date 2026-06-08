@@ -1,327 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/constants/app_text_styles.dart';
-import '../../shared/widgets/coin_badge.dart';
 
-class ShopScreen extends StatefulWidget {
+import '../../core/constants/app_text_styles.dart';
+import '../../core/theme/app_colors.dart';
+import '../../shared/widgets/coin_badge.dart';
+import '../avatars/data/avatar_catalog.dart';
+import '../avatars/widgets/aqua_avatar.dart';
+import '../profile/providers/profile_provider.dart';
+import 'providers/shop_providers.dart';
+
+/// Cửa hàng — the coin storefront (ADR 0004). Sells the coin-purchasable
+/// Avatars and the one-time Streak Freeze; Theme and Khung are "Sắp ra mắt".
+/// Balance, ownership and purchases are all real (no fabricated items). The
+/// Collection screen remains the trophy cabinet for browsing/equipping.
+class ShopScreen extends ConsumerStatefulWidget {
   const ShopScreen({super.key});
 
   @override
-  State<ShopScreen> createState() => _ShopScreenState();
+  ConsumerState<ShopScreen> createState() => _ShopScreenState();
 }
 
-class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
-  String _activeTab = 'all';
-  final Map<String, bool> _purchased = {};
-  String _equipped = 'theme_ocean';
-  String? _toastMessage;
-  String? _toastType;
+class _ShopScreenState extends ConsumerState<ShopScreen> {
+  String _tab = 'avatar';
+  String? _busyId; // avatar id currently purchasing, or 'freeze'
 
-  late AnimationController _toastController;
-  late Animation<double> _toastAnimation;
-  late AnimationController _shineController;
-
-  final int _balance = 1240;
-
-  @override
-  void initState() {
-    super.initState();
-    _toastController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _toastAnimation = CurvedAnimation(
-      parent: _toastController,
-      curve: Curves.elasticOut,
-    );
-
-    _shineController = AnimationController(
-      duration: const Duration(milliseconds: 3500),
-      vsync: this,
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _toastController.dispose();
-    _shineController.dispose();
-    super.dispose();
-  }
-
-  List<ShopItem> get _items => [
-        // Featured / limited
-        ShopItem(
-          id: 'theme_aurora',
-          category: 'theme',
-          name: 'Aurora Night',
-          subtitle: 'Theme · giới hạn',
-          price: 450,
-          rarity: 'epic',
-          featured: true,
-          colorSwatch: const [
-            Color(0xFF312E81),
-            Color(0xFF7C3AED),
-            Color(0xFF06B6D4),
-          ],
-        ),
-        ShopItem(
-          id: 'frame_dragon',
-          category: 'frame',
-          name: 'Rồng nước',
-          subtitle: 'Khung avatar · hiếm',
-          price: 600,
-          rarity: 'epic',
-          featured: true,
-          ringColors: const [
-            Color(0xFFFBBF24),
-            Color(0xFFF472B6),
-            Color(0xFF0EA5E9),
-          ],
-        ),
-
-        // Themes
-        ShopItem(
-          id: 'theme_ocean',
-          category: 'theme',
-          name: 'Đêm Đại dương',
-          subtitle: 'Theme · đã có',
-          price: 0,
-          rarity: 'common',
-          owned: true,
-          colorSwatch: const [
-            Color(0xFF0C4A80),
-            Color(0xFF082F5C),
-            Color(0xFF38BDF8),
-          ],
-        ),
-        ShopItem(
-          id: 'theme_forest',
-          category: 'theme',
-          name: 'Mưa rừng',
-          subtitle: 'Theme',
-          price: 280,
-          rarity: 'rare',
-          colorSwatch: const [
-            Color(0xFF064E3B),
-            Color(0xFF059669),
-            Color(0xFFA3E635),
-          ],
-        ),
-        ShopItem(
-          id: 'theme_desert',
-          category: 'theme',
-          name: 'Hoàng hôn sa mạc',
-          subtitle: 'Theme',
-          price: 320,
-          rarity: 'rare',
-          colorSwatch: const [
-            Color(0xFF7C2D12),
-            Color(0xFFF59E0B),
-            Color(0xFFFDE68A),
-          ],
-        ),
-        ShopItem(
-          id: 'theme_sakura',
-          category: 'theme',
-          name: 'Hoa anh đào',
-          subtitle: 'Theme',
-          price: 380,
-          rarity: 'rare',
-          colorSwatch: const [
-            Color(0xFF831843),
-            Color(0xFFEC4899),
-            Color(0xFFFBCFE8),
-          ],
-        ),
-
-        // Avatar frames
-        ShopItem(
-          id: 'frame_ocean',
-          category: 'frame',
-          name: 'Sóng Ocean',
-          subtitle: 'Khung avatar · đã có',
-          price: 0,
-          rarity: 'common',
-          owned: true,
-          ringColors: const [Color(0xFF0EA5E9), Color(0xFF38BDF8)],
-        ),
-        ShopItem(
-          id: 'frame_gold',
-          category: 'frame',
-          name: 'Vàng ròng',
-          subtitle: 'Khung avatar',
-          price: 220,
-          rarity: 'rare',
-          ringColors: const [Color(0xFFFBBF24), Color(0xFFF59E0B)],
-        ),
-        ShopItem(
-          id: 'frame_aurora',
-          category: 'frame',
-          name: 'Cực quang',
-          subtitle: 'Khung avatar',
-          price: 480,
-          rarity: 'epic',
-          ringColors: const [
-            Color(0xFFA78BFA),
-            Color(0xFF22D3EE),
-            Color(0xFF10B981),
-          ],
-        ),
-
-        // Boosters / consumables
-        ShopItem(
-          id: 'boost_2x',
-          category: 'boost',
-          name: 'Nhân đôi 24h',
-          subtitle: 'Toàn bộ xu nhận được × 2',
-          price: 180,
-          rarity: 'rare',
-          icon: '⚡',
-        ),
-        ShopItem(
-          id: 'boost_freeze',
-          category: 'boost',
-          name: 'Đóng băng chuỗi',
-          subtitle: 'Bảo vệ streak 1 ngày',
-          price: 120,
-          rarity: 'common',
-          icon: '🧊',
-        ),
-        ShopItem(
-          id: 'boost_xpkit',
-          category: 'boost',
-          name: 'Gói +500 XP',
-          subtitle: 'Nạp ngay 500 XP',
-          price: 250,
-          rarity: 'rare',
-          icon: '💎',
-        ),
-
-        // Drink stickers (cosmetic)
-        ShopItem(
-          id: 'sticker_neon',
-          category: 'sticker',
-          name: 'Drop Neon',
-          subtitle: 'Hiệu ứng giọt nước',
-          price: 90,
-          rarity: 'common',
-          icon: '💧',
-        ),
-        ShopItem(
-          id: 'sticker_bubble',
-          category: 'sticker',
-          name: 'Bong bóng vàng',
-          subtitle: 'Hiệu ứng khi log',
-          price: 140,
-          rarity: 'common',
-          icon: '🫧',
-        ),
-      ];
-
-  List<String> get _tabs => ['all', 'theme', 'frame', 'boost', 'sticker'];
-
-  String _getTabLabel(String tab) {
-    switch (tab) {
-      case 'all':
-        return 'Tất cả';
-      case 'theme':
-        return 'Theme';
-      case 'frame':
-        return 'Khung';
-      case 'boost':
-        return 'Tăng tốc';
-      case 'sticker':
-        return 'Sticker';
-      default:
-        return tab;
-    }
-  }
-
-  List<ShopItem> get _filteredItems {
-    if (_activeTab == 'all') return _items;
-    return _items.where((item) => item.category == _activeTab).toList();
-  }
-
-  List<ShopItem> get _featuredItems =>
-      _items.where((item) => item.featured).toList();
-
-  bool _isOwned(ShopItem item) => item.owned || _purchased[item.id] == true;
-
-  int get _currentBalance {
-    final spent = _items
-        .where((item) => _purchased[item.id] == true)
-        .fold(0, (sum, item) => sum + item.price);
-    return _balance - spent;
-  }
-
-  void _buyItem(ShopItem item) {
-    if (_isOwned(item)) {
-      setState(() {
-        _equipped = item.id;
-      });
-      _showToast('Đã chọn "${item.name}"', 'equip');
-    } else if (_currentBalance < item.price) {
-      _showToast('Thiếu ${item.price - _currentBalance} xu', 'error');
-    } else {
-      setState(() {
-        _purchased[item.id] = true;
-      });
-      _showToast('Đã mua "${item.name}" · −${item.price} xu', 'success');
-    }
-  }
-
-  void _showToast(String message, String type) {
-    setState(() {
-      _toastMessage = message;
-      _toastType = type;
-    });
-
-    _toastController.forward().then((_) {
-      Future.delayed(const Duration(milliseconds: 2200), () {
-        if (mounted) {
-          _toastController.reverse().then((_) {
-            setState(() {
-              _toastMessage = null;
-              _toastType = null;
-            });
-          });
-        }
-      });
-    });
-  }
-
-  Color _getRarityColor(String rarity) {
-    switch (rarity) {
-      case 'epic':
-        return const Color(0xFFA78BFA);
-      case 'rare':
-        return const Color(0xFF38BDF8);
-      default:
-        return const Color(0xFF94A3B8);
-    }
-  }
+  // Only avatars with a coin price are sold here (coin is an alt path to the
+  // level/streak rail). Grouped by tier for display.
+  static final List<AquaAvatarSpec> _coinAvatars =
+      kAvatarCatalog.where((a) => a.unlock.coinPrice != null).toList();
 
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(profileNotifierProvider);
+
     return Scaffold(
       backgroundColor: AppColors.nightBase,
-      body: Stack(
+      body: Column(
         children: [
-          Column(
-            children: [
-              _buildHeader(),
-              _buildTabs(),
-              Expanded(child: _buildContent()),
-            ],
-          ),
-          if (_toastMessage != null) _buildToast(),
+          _buildHeader(profile.coins),
+          _buildTabs(),
+          Expanded(child: _buildBody(profile)),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
+  // ── Header ─────────────────────────────────────────────────────────────
+
+  Widget _buildHeader(int coins) {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -338,7 +65,10 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
             children: [
               Row(
                 children: [
-                  _buildBackButton(),
+                  _circleButton(
+                    icon: Icons.arrow_back_ios_new,
+                    onTap: () => context.pop(),
+                  ),
                   Expanded(
                     child: Column(
                       children: [
@@ -365,7 +95,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
               ),
               const SizedBox(height: 14),
               LargeCoinBadge(
-                amount: _currentBalance,
+                amount: coins,
                 subtitle: 'SỐ DƯ',
                 onTap: () => context.go('/missions'),
               ),
@@ -376,226 +106,154 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildBackButton() {
+  Widget _circleButton({required IconData icon, required VoidCallback onTap}) {
     return Container(
       width: 36,
       height: 36,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        color: Colors.white.withOpacity(0.06),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        color: Colors.white.withValues(alpha: 0.06),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: IconButton(
-        onPressed: () => context.pop(),
+        onPressed: onTap,
         padding: EdgeInsets.zero,
-        icon: const Icon(
-          Icons.arrow_back_ios_new,
-          color: Colors.white,
-          size: 16,
-        ),
+        icon: Icon(icon, color: Colors.white, size: 16),
       ),
     );
   }
 
-  Widget _buildWalletCard() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFFBBF24).withOpacity(0.16),
-            const Color(0xFFF59E0B).withOpacity(0.06),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFBBF24).withOpacity(0.4)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(23),
-                gradient: const RadialGradient(
-                  center: Alignment(-0.4, -0.4),
-                  colors: [Color(0xFFFEF3C7), Color(0xFFB45309)],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFF59E0B).withOpacity(0.45),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.monetization_on,
-                color: Color(0xFF451A03),
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'SỐ DƯ',
-                    style: AppTextStyles.caption.copyWith(
-                      color: const Color(0xFFFCD34D),
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        _currentBalance.toString().replaceAllMapped(
-                              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                              (match) => '${match[1]}.',
-                            ),
-                        style: AppTextStyles.headingMedium.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'xu',
-                        style: AppTextStyles.caption.copyWith(
-                          color: const Color(0xFFFDE68A),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: Colors.white.withOpacity(0.1),
-                border: Border.all(color: Colors.white.withOpacity(0.18)),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => context.go('/missions'),
-                  borderRadius: BorderRadius.circular(10),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 11,
-                      vertical: 7,
-                    ),
-                    child: Text(
-                      '+ Kiếm xu',
-                      style: AppTextStyles.caption.copyWith(
-                        color: const Color(0xFFFDE68A),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // ── Tabs ───────────────────────────────────────────────────────────────
 
   Widget _buildTabs() {
+    const tabs = {'avatar': 'Avatar', 'theme': 'Theme', 'frame': 'Khung'};
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.nightBase,
         border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: _tabs.map((tab) {
-              final isActive = tab == _activeTab;
-              return Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: isActive
-                        ? LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              const Color(0xFFFBBF24).withOpacity(0.2),
-                              const Color(0xFFF59E0B).withOpacity(0.08),
-                            ],
-                          )
-                        : null,
-                    color: isActive ? null : Colors.white.withOpacity(0.04),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isActive
-                          ? const Color(0xFFFBBF24).withOpacity(0.45)
-                          : Colors.white.withOpacity(0.06),
-                    ),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => setState(() => _activeTab = tab),
+        child: Row(
+          children: tabs.entries.map((e) {
+            final active = e.key == _tab;
+            final comingSoon = e.key != 'avatar';
+            return Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => setState(() => _tab = e.key),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: active
+                          ? const LinearGradient(
+                              colors: [Color(0x33FBBF24), Color(0x14F59E0B)],
+                            )
+                          : null,
+                      color: active ? null : Colors.white.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(20),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        child: Text(
-                          _getTabLabel(tab),
+                      border: Border.all(
+                        color: active
+                            ? const Color(0x73FBBF24)
+                            : Colors.white.withValues(alpha: 0.06),
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          e.value,
                           style: AppTextStyles.caption.copyWith(
-                            color: isActive
+                            color: active
                                 ? const Color(0xFFFDE68A)
                                 : AppColors.textSecondary,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
                         ),
-                      ),
+                        if (comingSoon) ...[
+                          const SizedBox(width: 5),
+                          const Icon(
+                            Icons.lock_clock,
+                            size: 11,
+                            color: Color(0xFF64748B),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),
-              );
-            }).toList(),
-          ),
+              ),
+            );
+          }).toList(),
         ),
       ),
     );
   }
 
-  Widget _buildContent() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
+  // ── Body ───────────────────────────────────────────────────────────────
+
+  Widget _buildBody(ProfileState profile) {
+    if (_tab != 'avatar') {
+      return _buildComingSoon(_tab == 'theme' ? 'Theme' : 'Khung avatar');
+    }
+
+    AvatarOwnership stateOf(AquaAvatarSpec spec) => avatarOwnership(
+          spec,
+          level: profile.currentLevel,
+          longestStreak: profile.longestStreak,
+          ownedAvatars: profile.ownedAvatars,
+          equippedId: profile.selectedAvatar,
+        );
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+      children: [
+        _buildSectionLabel('🧊 Bảo vệ chuỗi'),
+        const SizedBox(height: 10),
+        _buildFreezeCard(profile.coins),
+        const SizedBox(height: 20),
+        _buildSectionLabel('Avatar · mua bằng xu'),
+        const SizedBox(height: 4),
+        Text(
+          'Trang bị hình hài ở Bộ sưu tập sau khi mua.',
+          style: AppTextStyles.caption.copyWith(
+            color: AppColors.textMuted,
+            fontSize: 10.5,
+          ),
+        ),
+        const SizedBox(height: 12),
+        for (final tier in kTierOrder)
+          _buildTierGroup(tier, profile, stateOf),
+      ],
+    );
+  }
+
+  Widget _buildComingSoon(String what) {
+    return Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (_activeTab == 'all') ...[
-            _buildSectionLabel('✨ Nổi bật tuần này'),
-            const SizedBox(height: 10),
-            _buildFeaturedCarousel(),
-            const SizedBox(height: 18),
-            _buildSectionLabel('Tất cả vật phẩm'),
-            const SizedBox(height: 10),
-          ],
-          _buildItemsGrid(),
+          const Icon(Icons.auto_awesome, color: Color(0xFF64748B), size: 40),
+          const SizedBox(height: 12),
+          Text(
+            '$what · Sắp ra mắt',
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Đang được phát triển. Hãy quay lại sau nhé!',
+            style: AppTextStyles.caption.copyWith(color: AppColors.textMuted),
+          ),
         ],
       ),
     );
@@ -604,509 +262,280 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
   Widget _buildSectionLabel(String text) {
     return Text(
       text,
-      style: AppTextStyles.caption.copyWith(
+      style: AppTextStyles.bodyLarge.copyWith(
         color: AppColors.textBright,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 1.2,
-        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        fontSize: 13,
       ),
     );
   }
 
-  Widget _buildFeaturedCarousel() {
-    return SizedBox(
-      height: 160,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: _featuredItems.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          return _buildFeaturedCard(_featuredItems[index]);
-        },
-      ),
-    );
-  }
+  // ── Streak Freeze card ─────────────────────────────────────────────────
 
-  Widget _buildFeaturedCard(ShopItem item) {
-    final rarityColor = _getRarityColor(item.rarity);
-    final isOwned = _isOwned(item);
-    final isEquipped = _equipped == item.id;
+  Widget _buildFreezeCard(int coins) {
+    final freezeAsync = ref.watch(streakFreezeStatusProvider);
+    final price =
+        freezeAsync.maybeWhen(data: (s) => s.price, orElse: () => 300);
+    final owned = freezeAsync.maybeWhen(data: (s) => s.owned, orElse: () => false);
+    final busy = _busyId == 'freeze';
+    final canAfford = coins >= price;
 
     return Container(
-      width: 215,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            rarityColor.withOpacity(0.13),
-            const Color(0xFF0B1120).withOpacity(0.6),
-          ],
+          colors: [Color(0x2638BDF8), Color(0x0A0EA5E9)],
         ),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: rarityColor.withOpacity(0.33)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0x4D38BDF8)),
       ),
-      child: Stack(
+      padding: const EdgeInsets.all(14),
+      child: Row(
         children: [
-          // Shine animation
-          AnimatedBuilder(
-            animation: _shineController,
-            builder: (context, child) {
-              return Positioned(
-                top: 0,
-                bottom: 0,
-                left: -40 + (_shineController.value * 300),
-                child: Container(
-                  width: 40,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Color(0x26FFFFFF),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              gradient: const RadialGradient(
+                center: Alignment(-0.3, -0.3),
+                colors: [Color(0xFF7DD3FC), Color(0xFF0284C7)],
+              ),
+            ),
+            child: const Center(
+              child: Text('🧊', style: TextStyle(fontSize: 26)),
+            ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(12),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: rarityColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        item.rarity.toUpperCase(),
-                        style: AppTextStyles.caption.copyWith(
-                          color: rarityColor,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 8.5,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  height: 92,
-                  decoration: BoxDecoration(
-                    color: AppColors.nightSurface,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(child: _buildItemPreview(item, large: true)),
-                ),
-                const SizedBox(height: 10),
                 Text(
-                  item.name,
+                  'Đóng băng chuỗi',
                   style: AppTextStyles.bodyLarge.copyWith(
                     color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 1),
+                const SizedBox(height: 2),
                 Text(
-                  item.subtitle,
+                  'Giữ chuỗi không reset khi lỡ 1 ngày. Tự dùng khi cần.',
                   style: AppTextStyles.caption.copyWith(
                     color: AppColors.textSecondary,
                     fontSize: 10.5,
                   ),
                 ),
-                const Spacer(),
-                _buildBuyButton(item, isOwned, isEquipped, compact: false),
               ],
             ),
           ),
+          const SizedBox(width: 10),
+          _freezeButton(owned, busy, canAfford, price),
         ],
       ),
     );
   }
 
-  Widget _buildItemsGrid() {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: 0.75,
-      ),
-      itemCount: _filteredItems.length,
-      itemBuilder: (context, index) {
-        return _buildShopItemCard(_filteredItems[index]);
-      },
+  Widget _freezeButton(bool owned, bool busy, bool canAfford, int price) {
+    if (owned) {
+      return _pill(
+        label: '✓ Đã có',
+        bg: const Color(0x1F38BDF8),
+        fg: const Color(0xFF7DD3FC),
+        onTap: null,
+      );
+    }
+    if (busy) {
+      return const SizedBox(
+        width: 22,
+        height: 22,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    return _pill(
+      label: canAfford ? 'Mua · $price' : 'Cần $price xu',
+      bg: canAfford ? const Color(0xFFF59E0B) : Colors.white.withValues(alpha: 0.05),
+      fg: canAfford ? const Color(0xFF451A03) : AppColors.textMuted,
+      onTap: canAfford ? _buyFreeze : null,
+      coin: canAfford,
     );
   }
 
-  Widget _buildShopItemCard(ShopItem item) {
-    final rarityColor = _getRarityColor(item.rarity);
-    final isOwned = _isOwned(item);
-    final isEquipped = _equipped == item.id;
+  // ── Avatar tier group ──────────────────────────────────────────────────
+
+  Widget _buildTierGroup(
+    AquaTier tier,
+    ProfileState profile,
+    AvatarOwnership Function(AquaAvatarSpec) stateOf,
+  ) {
+    final list = _coinAvatars.where((a) => a.tier == tier).toList();
+    if (list.isEmpty) return const SizedBox.shrink();
+    final style = kAquaTiers[tier]!;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Transform.rotate(
+              angle: 0.785,
+              child: Container(width: 7, height: 7, color: style.color),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              style.name,
+              style: AppTextStyles.caption.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 0.74,
+          children: [
+            for (final spec in list)
+              _buildAvatarCard(spec, stateOf(spec), profile.coins),
+          ],
+        ),
+        const SizedBox(height: 4),
+      ],
+    );
+  }
+
+  Widget _buildAvatarCard(
+    AquaAvatarSpec spec,
+    AvatarOwnership state,
+    int coins,
+  ) {
+    final tier = spec.tierStyle;
+    final owned = state != AvatarOwnership.locked;
+    final price = spec.unlock.coinPrice!;
+    final busy = _busyId == spec.id;
+    final canAfford = coins >= price;
 
     return Container(
       decoration: BoxDecoration(
         color: AppColors.nightSurface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isEquipped ? AppColors.glow : AppColors.border,
-          width: isEquipped ? 1.5 : 1,
-        ),
-        boxShadow: isEquipped
-            ? [
-                BoxShadow(
-                  color: AppColors.glow.withOpacity(0.1),
-                  blurRadius: 8,
-                  spreadRadius: 4,
-                ),
-              ]
-            : null,
+        border: Border.all(color: tier.color.withValues(alpha: 0.18)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Preview area
-            Container(
-              height: 82,
-              decoration: BoxDecoration(
-                color: AppColors.nightBase,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: Stack(
-                children: [
-                  Center(child: _buildItemPreview(item)),
-                  Positioned(
-                    top: 6,
-                    left: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: rarityColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: Text(
-                        item.rarity.toUpperCase(),
-                        style: AppTextStyles.caption.copyWith(
-                          color: rarityColor,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 8,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (isEquipped)
-                    Positioned(
-                      top: 6,
-                      right: 6,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF38BDF8).withOpacity(0.25),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: const Color(0xFF38BDF8).withOpacity(0.4),
-                          ),
-                        ),
-                        child: Text(
-                          'ĐANG DÙNG',
-                          style: AppTextStyles.caption.copyWith(
-                            color: const Color(0xFFBAE6FD),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 8.5,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+      padding: const EdgeInsets.all(10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Center(
+              child: AquaAvatar(spec: spec, size: 64, silhouette: !owned),
             ),
-            const SizedBox(height: 9),
-            Text(
-              item.name,
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-                fontSize: 12.5,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            spec.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+              fontSize: 12.5,
             ),
-            const SizedBox(height: 1),
-            Text(
-              item.subtitle,
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.textMuted,
-                fontSize: 10,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 1),
+          Text(
+            spec.meaning,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textMuted,
+              fontSize: 9.5,
+              fontStyle: FontStyle.italic,
             ),
-            const Spacer(),
-            _buildBuyButton(item, isOwned, isEquipped, compact: true),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+          _avatarButton(spec, owned, busy, canAfford, price),
+        ],
       ),
     );
   }
 
-  Widget _buildItemPreview(ShopItem item, {bool large = false}) {
-    switch (item.category) {
-      case 'theme':
-        return SizedBox(
-          width: large ? 70 : 56,
-          height: large ? 40 : 32,
-          child: Row(
-            children: item.colorSwatch!.map((color) {
-              return Expanded(child: Container(color: color));
-            }).toList(),
-          ),
-        );
-
-      case 'frame':
-        final size = large ? 72.0 : 56.0;
-        return Container(
-          width: size,
-          height: size,
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(size / 2),
-            gradient: SweepGradient(
-              colors: [...item.ringColors!, item.ringColors!.first],
-              transform: const GradientRotation(3.8),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFA5B4FC).withOpacity(0.4),
-                blurRadius: 20,
-              ),
-            ],
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(size / 2),
-              gradient: const RadialGradient(
-                center: Alignment(-0.4, -0.4),
-                colors: [Color(0xFF7DD3FC), Color(0xFF0284C7)],
-              ),
-              border: Border.all(color: const Color(0xFF0B1120), width: 2),
-            ),
-            child: Icon(
-              Icons.water_drop,
-              color: Colors.white,
-              size: large ? 26 : 20,
-            ),
-          ),
-        );
-
-      case 'boost':
-        final size = large ? 64.0 : 52.0;
-        return Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(large ? 16 : 12),
-            gradient: const RadialGradient(
-              center: Alignment(-0.4, -0.4),
-              colors: [Color(0x59A78BFA), Color(0x1A7C3AED)],
-            ),
-            border: Border.all(color: const Color(0xFFA78BFA).withOpacity(0.4)),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF7C3AED).withOpacity(0.25),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Center(
-            child: Text(
-              item.icon!,
-              style: TextStyle(fontSize: large ? 30 : 24),
-            ),
-          ),
-        );
-
-      case 'sticker':
-        final size = large ? 64.0 : 52.0;
-        return Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(size / 2),
-            gradient: const RadialGradient(
-              center: Alignment(-0.4, -0.4),
-              colors: [Color(0xFF7DD3FC), Color(0xFF0EA5E9)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF38BDF8).withOpacity(0.4),
-                blurRadius: 20,
-              ),
-            ],
-          ),
-          child: Center(
-            child: Text(
-              item.icon!,
-              style: TextStyle(fontSize: large ? 28 : 22),
-            ),
-          ),
-        );
-
-      default:
-        return Container();
+  Widget _avatarButton(
+    AquaAvatarSpec spec,
+    bool owned,
+    bool busy,
+    bool canAfford,
+    int price,
+  ) {
+    if (owned) {
+      return _wideButton(
+        label: '✓ Đã sở hữu',
+        bg: const Color(0x1F38BDF8),
+        fg: const Color(0xFF7DD3FC),
+        onTap: null,
+      );
     }
+    if (busy) {
+      return const SizedBox(
+        height: 32,
+        child: Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+    return _wideButton(
+      label: canAfford ? '$price' : 'Cần $price xu',
+      bg: canAfford ? const Color(0xFFF59E0B) : Colors.white.withValues(alpha: 0.05),
+      fg: canAfford ? const Color(0xFF451A03) : AppColors.textMuted,
+      onTap: canAfford ? () => _buyAvatar(spec) : null,
+      coin: canAfford,
+    );
   }
 
-  Widget _buildBuyButton(
-    ShopItem item,
-    bool isOwned,
-    bool isEquipped, {
-    required bool compact,
+  // ── Shared button widgets ──────────────────────────────────────────────
+
+  Widget _wideButton({
+    required String label,
+    required Color bg,
+    required Color fg,
+    VoidCallback? onTap,
+    bool coin = false,
   }) {
-    final cantAfford = !isOwned && _currentBalance < item.price;
-
-    if (isOwned && isEquipped) {
-      return Container(
-        width: double.infinity,
-        height: compact ? 32 : 36,
-        decoration: BoxDecoration(
-          color: const Color(0xFF38BDF8).withOpacity(0.12),
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(color: const Color(0xFF38BDF8).withOpacity(0.3)),
-        ),
-        child: Center(
-          child: Text(
-            '✓ ĐANG DÙNG',
-            style: AppTextStyles.caption.copyWith(
-              color: const Color(0xFF7DD3FC),
-              fontWeight: FontWeight.w700,
-              fontSize: compact ? 11 : 12,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (isOwned) {
-      return Container(
-        width: double.infinity,
-        height: compact ? 32 : 36,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0EA5E9), Color(0xFF0284C7)],
-          ),
-          borderRadius: BorderRadius.circular(9),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF0EA5E9).withOpacity(0.35),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _buyItem(item),
-            borderRadius: BorderRadius.circular(9),
-            child: Center(
-              child: Text(
-                'CHỌN DÙNG',
-                style: AppTextStyles.caption.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: compact ? 11 : 12,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      height: compact ? 32 : 36,
-      decoration: BoxDecoration(
-        gradient: cantAfford
-            ? null
-            : const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
-              ),
-        color: cantAfford ? Colors.white.withOpacity(0.04) : null,
-        borderRadius: BorderRadius.circular(9),
-        border: cantAfford
-            ? Border.all(color: Colors.white.withOpacity(0.06))
-            : null,
-        boxShadow: cantAfford
-            ? null
-            : [
-                BoxShadow(
-                  color: const Color(0xFFF59E0B).withOpacity(0.35),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-      ),
+      height: 32,
       child: Material(
-        color: Colors.transparent,
+        color: bg,
+        borderRadius: BorderRadius.circular(9),
         child: InkWell(
-          onTap: cantAfford ? null : () => _buyItem(item),
+          onTap: onTap,
           borderRadius: BorderRadius.circular(9),
           child: Center(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.monetization_on,
-                  color: cantAfford
-                      ? AppColors.textMuted
-                      : const Color(0xFF451A03),
-                  size: compact ? 12 : 14,
-                ),
-                const SizedBox(width: 5),
+                if (coin) ...[
+                  Icon(Icons.monetization_on, color: fg, size: 13),
+                  const SizedBox(width: 4),
+                ],
                 Text(
-                  item.price.toString().replaceAllMapped(
-                        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                        (match) => '${match[1]}.',
-                      ),
+                  label,
                   style: AppTextStyles.caption.copyWith(
-                    color: cantAfford
-                        ? AppColors.textMuted
-                        : const Color(0xFF451A03),
+                    color: fg,
                     fontWeight: FontWeight.w700,
-                    fontSize: compact ? 11 : 12,
+                    fontSize: 11.5,
                   ),
                 ),
               ],
@@ -1117,78 +546,74 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildToast() {
-    Color toastColor;
-    switch (_toastType) {
-      case 'error':
-        toastColor = const Color(0xFFEF4444);
-        break;
-      case 'equip':
-        toastColor = const Color(0xFF38BDF8);
-        break;
-      default:
-        toastColor = const Color(0xFF22C55E);
-    }
-
-    return Positioned(
-      bottom: 90,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: ScaleTransition(
-          scale: _toastAnimation,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            decoration: BoxDecoration(
-              color: toastColor.withOpacity(0.95),
-              borderRadius: BorderRadius.circular(25),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.5),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
+  Widget _pill({
+    required String label,
+    required Color bg,
+    required Color fg,
+    VoidCallback? onTap,
+    bool coin = false,
+  }) {
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (coin) ...[
+                Icon(Icons.monetization_on, color: fg, size: 13),
+                const SizedBox(width: 4),
               ],
-            ),
-            child: Text(
-              _toastMessage!,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
+              Text(
+                label,
+                style: AppTextStyles.caption.copyWith(
+                  color: fg,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
     );
   }
-}
 
-class ShopItem {
-  final String id;
-  final String category;
-  final String name;
-  final String subtitle;
-  final int price;
-  final String rarity;
-  final bool featured;
-  final bool owned;
-  final List<Color>? colorSwatch;
-  final List<Color>? ringColors;
-  final String? icon;
+  // ── Actions ────────────────────────────────────────────────────────────
 
-  const ShopItem({
-    required this.id,
-    required this.category,
-    required this.name,
-    required this.subtitle,
-    required this.price,
-    required this.rarity,
-    this.featured = false,
-    this.owned = false,
-    this.colorSwatch,
-    this.ringColors,
-    this.icon,
-  });
+  Future<void> _buyAvatar(AquaAvatarSpec spec) async {
+    setState(() => _busyId = spec.id);
+    try {
+      await ref.read(profileNotifierProvider.notifier).purchaseAvatar(spec.id);
+      _snack('Đã mở khoá ${spec.name}!');
+    } catch (e) {
+      _snack(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _busyId = null);
+    }
+  }
+
+  Future<void> _buyFreeze() async {
+    setState(() => _busyId = 'freeze');
+    try {
+      await ref.read(profileNotifierProvider.notifier).purchaseStreakFreeze();
+      ref.invalidate(streakFreezeStatusProvider);
+      _snack('Đã mua Đóng băng chuỗi!');
+    } catch (e) {
+      _snack(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _busyId = null);
+    }
+  }
+
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
+    );
+  }
 }
