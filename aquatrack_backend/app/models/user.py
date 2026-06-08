@@ -121,6 +121,9 @@ class User(Base):
     quest_claims = relationship(
         "QuestClaim", back_populates="user", cascade="all, delete-orphan"
     )
+    achievement_claims = relationship(
+        "AchievementClaim", back_populates="user", cascade="all, delete-orphan"
+    )
     reminder_logs = relationship(
         "ReminderLog", back_populates="user", cascade="all, delete-orphan"
     )

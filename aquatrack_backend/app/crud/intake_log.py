@@ -53,27 +53,6 @@ class CRUDIntakeLog(CRUDBase[IntakeLog, IntakeLogCreate, IntakeLogUpdate]):
         db.refresh(db_obj)
         return db_obj
 
-    async def create_with_achievements(
-        self, db: Session, *, obj_in: IntakeLogCreate, user_id: str
-    ) -> tuple[IntakeLog, List[dict]]:
-        """Create new intake log and process achievements"""
-        # Import here to avoid circular imports
-        from app.services.achievement_service import achievement_service
-
-        # Create the intake log
-        intake_log = self.create(db, obj_in=obj_in, user_id=user_id)
-
-        # Process achievements
-        try:
-            achievements = await achievement_service.process_intake_log_achievements(
-                db, user_id=user_id, intake_log=intake_log
-            )
-            return intake_log, achievements
-        except Exception as e:
-            # Log error but don't fail the intake creation
-            print(f"Achievement processing failed for user {user_id}: {e}")
-            return intake_log, []
-
     def get_by_user_and_date(
         self,
         db: Session,
