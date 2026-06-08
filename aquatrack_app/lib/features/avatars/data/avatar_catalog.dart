@@ -378,7 +378,7 @@ const List<AquaAvatarSpec> kAvatarCatalog = [
       coinPrice: 5000,
       levelReq: 40,
       label: '5.000 xu',
-      sub: 'Đỉnh cao · cần Cấp 40',
+      sub: 'hoặc đạt Cấp 40',
     ),
   ),
 ];
