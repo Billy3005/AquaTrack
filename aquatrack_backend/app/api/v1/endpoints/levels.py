@@ -9,11 +9,13 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.leveling import calculate_level_from_xp, calculate_xp_for_level
 from app.core.security import get_current_user_id
-from app.crud.achievement import achievement_crud
-from app.crud.intake_log import intake_log_crud
 from app.crud.user import user_crud
-from app.models.achievement import Achievement, AchievementType
 from app.models.intake_log import IntakeLog
+from app.services import achievement_service
+from app.services.achievement_service import (AchievementAlreadyClaimed,
+                                              AchievementNotDone,
+                                              AchievementNotFound)
+from app.services.avatar_service import AVATAR_CATALOG, AvatarService
 
 router = APIRouter()
 
@@ -85,56 +87,43 @@ async def get_current_level(
     )
 
 
+def _to_progress(a: dict) -> AchievementProgress:
+    """Map a derived-on-read achievement dict to the API response shape.
+
+    `type`/`rarity` carry the achievement's Domain/Tier; `unlock_avatar_id` is
+    always None (achievements no longer unlock avatars — see ADR 0003).
+    """
+    target = a["target"] or 1
+    return AchievementProgress(
+        id=a["id"],
+        title=a["name"],
+        description=a["description"],
+        icon=a["icon"],
+        type=a["domain"],
+        rarity=a["tier"],
+        current_value=a["progress"],
+        required_value=a["target"],
+        progress_percentage=min(int(a["progress"] / target * 100), 100),
+        is_unlocked=a["unlocked"],
+        is_claimed=a["claimed"],
+        xp_reward=a["reward_xp"],
+        unlock_avatar_id=None,
+    )
+
+
 @router.get("/achievements", response_model=List[AchievementProgress])
 async def get_achievements(
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    """
-    Get all achievements with current progress
-    """
-    # Get user's achievements
-    achievements = (
-        db.query(Achievement).filter(Achievement.user_id == current_user_id).all()
-    )
-
-    # If no achievements exist, create default ones
-    if not achievements:
-        default_achievements = Achievement.create_default_achievements(current_user_id)
-        for achievement in default_achievements:
-            db.add(achievement)
-        db.commit()
-
-        # Refresh achievements list
-        achievements = (
-            db.query(Achievement).filter(Achievement.user_id == current_user_id).all()
+    """Get the full achievement catalog with derived progress and claim state."""
+    user = user_crud.get(db, id=current_user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    # Update achievements with current progress
-    await _update_achievements_progress(db, current_user_id, achievements)
-
-    # Convert to response format
-    response = []
-    for achievement in achievements:
-        response.append(
-            AchievementProgress(
-                id=achievement.id,
-                title=achievement.title,
-                description=achievement.description,
-                icon=achievement.icon,
-                type=achievement.type.value,
-                rarity=achievement.rarity.value,
-                current_value=achievement.current_value,
-                required_value=achievement.required_value,
-                progress_percentage=achievement.progress_percentage,
-                is_unlocked=achievement.is_unlocked,
-                is_claimed=achievement.is_claimed,
-                xp_reward=achievement.xp_reward,
-                unlock_avatar_id=achievement.unlock_avatar_id,
-            )
-        )
-
-    return response
+    return [_to_progress(a) for a in achievement_service.get_achievements(db, user)]
 
 
 @router.post("/achievements/{achievement_id}/claim")
@@ -143,48 +132,38 @@ async def claim_achievement(
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    """
-    Claim achievement rewards
-    """
-    achievement = achievement_crud.get(db, achievement_id)
-    if not achievement:
+    """Claim a Done achievement's Milestone XP (credited exactly once)."""
+    user = user_crud.get(db, id=current_user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    try:
+        result = achievement_service.claim_achievement(db, user, achievement_id)
+    except AchievementNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Achievement not found"
         )
-
-    if achievement.user_id != current_user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
-        )
-
-    if not achievement.is_unlocked:
+    except AchievementNotDone:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Achievement not unlocked yet",
         )
-
-    if achievement.is_claimed:
+    except AchievementAlreadyClaimed:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_409_CONFLICT,
             detail="Achievement already claimed",
         )
 
-    # Claim the achievement
-    success = achievement.claim_rewards()
-    if success:
-        db.commit()
-
-        return {
-            "message": "Achievement claimed successfully!",
-            "xp_reward": achievement.xp_reward,
-            "unlock_avatar_id": achievement.unlock_avatar_id,
-            "unlock_badge_id": achievement.unlock_badge_id,
-        }
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to claim achievement",
-        )
+    return {
+        "message": "Achievement claimed successfully!",
+        "xp_reward": result["reward_xp"],
+        "total_xp": result["total_xp"],
+        "current_level": result["current_level"],
+        "unlock_avatar_id": None,
+        "unlock_badge_id": None,
+    }
 
 
 @router.get("/unlocked-avatars")
@@ -192,28 +171,20 @@ async def get_unlocked_avatars(
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
+    """List avatars the user owns, derived from the level/streak/coin rails.
+
+    Avatars are unlocked by the Avatar Catalog rules (ADR 0003) — never by
+    achievements. Ownership is recomputed from current_level/longest_streak plus
+    coin purchases, never stored as an unlock list.
     """
-    Get list of unlocked avatars from achievements
-    """
-    unlocked_avatars = (
-        db.query(Achievement.unlock_avatar_id)
-        .filter(
-            and_(
-                Achievement.user_id == current_user_id,
-                Achievement.is_unlocked == True,
-                Achievement.unlock_avatar_id.isnot(None),
-            )
+    user = user_crud.get(db, id=current_user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
-        .distinct()
-        .all()
-    )
 
-    avatars = [avatar[0] for avatar in unlocked_avatars if avatar[0]]
-
-    # Add default avatar
-    avatars.insert(0, "avatar_1")  # Default avatar
-
-    return {"unlocked_avatars": avatars}
+    owned = [aid for aid in AVATAR_CATALOG if AvatarService.is_owned(user, aid)]
+    return {"unlocked_avatars": owned}
 
 
 @router.get("/leaderboard")
@@ -423,13 +394,10 @@ async def get_level_stats(
 
     level_info = _calculate_level_from_xp(total_xp)
 
-    # Achievement stats
-    achievements = (
-        db.query(Achievement).filter(Achievement.user_id == current_user_id).all()
-    )
-
-    unlocked_count = sum(1 for a in achievements if a.is_unlocked)
-    claimed_count = sum(1 for a in achievements if a.is_claimed)
+    # Achievement stats (derived on read from the canonical catalog)
+    achievements = achievement_service.get_achievements(db, user) if user else []
+    unlocked_count = sum(1 for a in achievements if a["unlocked"])
+    claimed_count = sum(1 for a in achievements if a["claimed"])
     total_count = len(achievements)
 
     # XP breakdown
@@ -475,49 +443,3 @@ def _calculate_level_from_xp(total_xp: int) -> dict:
 
 def _calculate_xp_for_level(level: int) -> int:
     return calculate_xp_for_level(level)
-
-
-async def _update_achievements_progress(
-    db: Session, user_id: str, achievements: List[Achievement]
-) -> None:
-    """Update achievement progress based on current user data"""
-
-    # Get user stats
-    today = date.today()
-    total_xp = (
-        db.query(func.sum(IntakeLog.xp_earned + IntakeLog.bonus_xp))
-        .filter(IntakeLog.user_id == user_id)
-        .scalar()
-        or 0
-    )
-
-    total_volume = (
-        db.query(func.sum(IntakeLog.effective_volume_ml))
-        .filter(IntakeLog.user_id == user_id)
-        .scalar()
-        or 0
-    )
-
-    total_logs = (
-        db.query(func.count(IntakeLog.id)).filter(IntakeLog.user_id == user_id).scalar()
-        or 0
-    )
-
-    current_level = _calculate_level_from_xp(total_xp)["level"]
-
-    # Get real current streak from user model
-    user = user_crud.get(db, id=user_id)
-    current_streak = user.current_streak if user else 0
-
-    # Update each achievement
-    for achievement in achievements:
-        if achievement.type == AchievementType.LEVEL:
-            achievement.update_progress(current_level)
-        elif achievement.type == AchievementType.TOTAL_VOLUME:
-            achievement.update_progress(total_volume)
-        elif achievement.type == AchievementType.FREQUENCY:
-            achievement.update_progress(total_logs)
-        elif achievement.type == AchievementType.STREAK:
-            achievement.update_progress(current_streak)
-
-    db.commit()

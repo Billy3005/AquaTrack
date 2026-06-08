@@ -1,5 +1,5 @@
 # Export all models for easy imports
-from .achievement import Achievement
+from .achievement import Achievement, AchievementClaim
 from .challenge import Challenge, ChallengeStatus
 from .coin_gift import CoinGift
 from .conversation import Conversation, ConversationSession
@@ -18,6 +18,7 @@ __all__ = [
     "IntakeLog",
     "DailySummary",
     "Achievement",
+    "AchievementClaim",
     "Conversation",
     "ConversationSession",
     "ScanHistory",

@@ -1,544 +1,664 @@
-"""
-Achievement service for automatic progression and XP calculation
-Handles achievement unlocking, level progression, and rewards
+"""Achievement progress (derived-on-read) and milestone-XP claiming.
+
+See docs/adr/0003-levels-and-achievements.md. Achievements are lifetime
+milestones: progress is computed from source tables, never stored per-row, and
+only Claims are persisted (AchievementClaim). XP is credited on Claim, never on
+unlock. The registry below is the single source of truth for the catalog
+(mirrored to docs in achievements_spec.md); the legacy per-user Achievement
+table and its XP-by-type map are no longer used by the Level screen.
 """
 
-from datetime import date, datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Callable, Dict, List
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
-from app.crud.achievement import achievement_crud
-from app.crud.daily_summary import daily_summary_crud
-from app.crud.intake_log import intake_log_crud
-from app.crud.user import user_crud
-from app.models.achievement import Achievement, AchievementType
-from app.models.daily_summary import DailySummary
-from app.models.intake_log import IntakeLog
-from app.models.user import User
+from app.core.leveling import calculate_level_from_xp
+from app.models import (AchievementClaim, ConversationSession, DailySummary,
+                        Friend, IntakeLog, QuestClaim, ScanHistory, User)
+
+# --- errors -------------------------------------------------------------
 
 
-class AchievementService:
-    """Service for managing achievements and user progression"""
+class AchievementError(Exception):
+    """Base class for achievement claim errors."""
 
-    def __init__(self):
-        self.xp_rewards = {
-            AchievementType.DAILY_GOAL: 50,
-            AchievementType.STREAK: 100,
-            AchievementType.TOTAL_VOLUME: 200,
-            AchievementType.LEVEL: 75,
-            AchievementType.FREQUENCY: 150,
-        }
 
-    def calculate_level_from_xp(self, total_xp: int) -> int:
-        """Calculate level based on total XP with exponential scaling"""
-        if total_xp <= 0:
-            return 1
+class AchievementNotFound(AchievementError):
+    pass
 
-        # Formula: XP needed = base * (multiplier ^ (level - 1))
-        base_xp = settings.BASE_XP_PER_LEVEL
-        multiplier = settings.XP_MULTIPLIER
 
-        level = 1
-        xp_needed = 0
+class AchievementNotDone(AchievementError):
+    pass
 
-        while level <= settings.MAX_LEVEL:
-            level_xp = int(base_xp * (multiplier ** (level - 1)))
-            if xp_needed + level_xp > total_xp:
-                break
-            xp_needed += level_xp
-            level += 1
 
-        return min(level, settings.MAX_LEVEL)
+class AchievementAlreadyClaimed(AchievementError):
+    pass
 
-    def calculate_xp_for_level(self, level: int) -> int:
-        """Calculate total XP needed to reach a specific level"""
-        if level <= 1:
-            return 0
 
-        base_xp = settings.BASE_XP_PER_LEVEL
-        multiplier = settings.XP_MULTIPLIER
+# --- per-tier Milestone XP ----------------------------------------------
 
-        total_xp = 0
-        for l in range(1, level):
-            level_xp = int(base_xp * (multiplier ** (l - 1)))
-            total_xp += level_xp
+_TIER_XP = {
+    "common": 50,
+    "rare": 150,
+    "epic": 400,
+    "legendary": 1000,
+}
 
-        return total_xp
 
-    def get_level_progress(self, total_xp: int) -> Dict[str, int]:
-        """Get current level and progress to next level"""
-        current_level = self.calculate_level_from_xp(total_xp)
+# --- derived user stats snapshot ----------------------------------------
 
-        if current_level >= settings.MAX_LEVEL:
-            return {
-                "current_level": current_level,
-                "current_level_xp": total_xp
-                - self.calculate_xp_for_level(current_level),
-                "next_level_xp": 0,
-                "progress_percent": 100,
-            }
 
-        current_level_min_xp = self.calculate_xp_for_level(current_level)
-        next_level_min_xp = self.calculate_xp_for_level(current_level + 1)
+@dataclass
+class _Stats:
+    longest_streak: int
+    total_volume_ml: int
+    level: int
+    log_count: int
+    goal_days: int
+    quest_claims: int
+    coach_sessions: int
+    scans: int
+    friends: int
 
-        current_level_xp = total_xp - current_level_min_xp
-        next_level_xp = next_level_min_xp - current_level_min_xp
 
-        progress_percent = (
-            int((current_level_xp / next_level_xp) * 100) if next_level_xp > 0 else 0
+def _scalar(db, query) -> int:
+    return query.scalar() or 0
+
+
+def _total_xp(db: Session, user: User) -> int:
+    """True Total XP = intake-log XP + bonus/quest XP on the user record.
+
+    The canonical level (and any level-gated avatar) must be derived from this
+    full sum, never from user.total_xp alone (which holds only the bonus part).
+    """
+    intake_xp = _scalar(
+        db,
+        db.query(func.sum(IntakeLog.xp_earned + IntakeLog.bonus_xp)).filter(
+            IntakeLog.user_id == user.id
+        ),
+    )
+    return intake_xp + (user.total_xp or 0)
+
+
+def _load_stats(db: Session, user: User) -> _Stats:
+    """One snapshot of every counter the catalog measures (9 queries, not 41)."""
+    total_xp = _total_xp(db, user)
+
+    return _Stats(
+        longest_streak=user.longest_streak or 0,
+        total_volume_ml=_scalar(
+            db,
+            db.query(func.sum(IntakeLog.effective_volume_ml)).filter(
+                IntakeLog.user_id == user.id
+            ),
+        ),
+        level=calculate_level_from_xp(total_xp)["level"],
+        log_count=_scalar(
+            db, db.query(func.count(IntakeLog.id)).filter(IntakeLog.user_id == user.id)
+        ),
+        goal_days=_scalar(
+            db,
+            db.query(func.count(DailySummary.id)).filter(
+                DailySummary.user_id == user.id,
+                DailySummary.goal_achieved.is_(True),
+            ),
+        ),
+        quest_claims=_scalar(
+            db,
+            db.query(func.count(QuestClaim.id)).filter(QuestClaim.user_id == user.id),
+        ),
+        coach_sessions=_scalar(
+            db,
+            db.query(func.count(ConversationSession.id)).filter(
+                ConversationSession.user_id == user.id
+            ),
+        ),
+        scans=_scalar(
+            db,
+            db.query(func.count(ScanHistory.id)).filter(ScanHistory.user_id == user.id),
+        ),
+        friends=_scalar(
+            db,
+            db.query(func.count(Friend.id)).filter(
+                Friend.user_id == user.id,
+                Friend.is_active.is_(True),
+                Friend.is_blocked.is_(False),
+            ),
+        ),
+    )
+
+
+# --- registry (spec: achievements_spec.md) ------------------------------
+
+
+@dataclass(frozen=True)
+class AchievementDef:
+    id: str
+    domain: str
+    tier: str
+    name: str
+    description: str
+    icon: str
+    target: int
+    progress_fn: Callable[[_Stats], int]
+
+    @property
+    def reward_xp(self) -> int:
+        return _TIER_XP[self.tier]
+
+
+def _d(id, domain, tier, name, description, icon, target, fn) -> AchievementDef:
+    return AchievementDef(id, domain, tier, name, description, icon, target, fn)
+
+
+CATALOG: List[AchievementDef] = [
+    # ── Streak (longest streak ever reached) ────────────────────────
+    _d(
+        "streak_3",
+        "streak",
+        "common",
+        "Khởi đầu",
+        "Giữ chuỗi 3 ngày liên tiếp",
+        "🔥",
+        3,
+        lambda s: s.longest_streak,
+    ),
+    _d(
+        "streak_7",
+        "streak",
+        "rare",
+        "Chiến binh tuần",
+        "Giữ chuỗi 7 ngày liên tiếp",
+        "⚔️",
+        7,
+        lambda s: s.longest_streak,
+    ),
+    _d(
+        "streak_14",
+        "streak",
+        "rare",
+        "Nửa tháng bền bỉ",
+        "Giữ chuỗi 14 ngày liên tiếp",
+        "🌟",
+        14,
+        lambda s: s.longest_streak,
+    ),
+    _d(
+        "streak_30",
+        "streak",
+        "epic",
+        "Bậc thầy tháng",
+        "Giữ chuỗi 30 ngày liên tiếp",
+        "👑",
+        30,
+        lambda s: s.longest_streak,
+    ),
+    _d(
+        "streak_60",
+        "streak",
+        "epic",
+        "Hai tháng kiên định",
+        "Giữ chuỗi 60 ngày liên tiếp",
+        "💎",
+        60,
+        lambda s: s.longest_streak,
+    ),
+    _d(
+        "streak_100",
+        "streak",
+        "legendary",
+        "Centurion",
+        "Giữ chuỗi 100 ngày liên tiếp",
+        "🏛️",
+        100,
+        lambda s: s.longest_streak,
+    ),
+    _d(
+        "streak_365",
+        "streak",
+        "legendary",
+        "Trọn một năm",
+        "Giữ chuỗi 365 ngày liên tiếp",
+        "🗓️",
+        365,
+        lambda s: s.longest_streak,
+    ),
+    # ── Volume (lifetime effective ml) ──────────────────────────────
+    _d(
+        "volume_1l",
+        "volume",
+        "common",
+        "Lít đầu tiên",
+        "Tích luỹ 1 lít nước",
+        "💧",
+        1_000,
+        lambda s: s.total_volume_ml,
+    ),
+    _d(
+        "volume_10l",
+        "volume",
+        "common",
+        "Thùng nước",
+        "Tích luỹ 10 lít nước",
+        "🪣",
+        10_000,
+        lambda s: s.total_volume_ml,
+    ),
+    _d(
+        "volume_50l",
+        "volume",
+        "rare",
+        "Bể nhỏ",
+        "Tích luỹ 50 lít nước",
+        "🛁",
+        50_000,
+        lambda s: s.total_volume_ml,
+    ),
+    _d(
+        "volume_100l",
+        "volume",
+        "rare",
+        "Biển nước",
+        "Tích luỹ 100 lít nước",
+        "🌊",
+        100_000,
+        lambda s: s.total_volume_ml,
+    ),
+    _d(
+        "volume_500l",
+        "volume",
+        "epic",
+        "Đại dương",
+        "Tích luỹ 500 lít nước",
+        "🌌",
+        500_000,
+        lambda s: s.total_volume_ml,
+    ),
+    _d(
+        "volume_1000l",
+        "volume",
+        "legendary",
+        "Hydrator Thiên niên kỷ",
+        "Tích luỹ 1000 lít nước",
+        "🏆",
+        1_000_000,
+        lambda s: s.total_volume_ml,
+    ),
+    # ── Level ───────────────────────────────────────────────────────
+    _d(
+        "level_5",
+        "level",
+        "common",
+        "Tân binh",
+        "Đạt cấp 5",
+        "🆙",
+        5,
+        lambda s: s.level,
+    ),
+    _d(
+        "level_10",
+        "level",
+        "rare",
+        "Lão luyện",
+        "Đạt cấp 10",
+        "⬆️",
+        10,
+        lambda s: s.level,
+    ),
+    _d(
+        "level_20",
+        "level",
+        "epic",
+        "Chuyên gia",
+        "Đạt cấp 20",
+        "🚀",
+        20,
+        lambda s: s.level,
+    ),
+    _d(
+        "level_30",
+        "level",
+        "epic",
+        "Siêu phàm",
+        "Đạt cấp 30",
+        "✨",
+        30,
+        lambda s: s.level,
+    ),
+    _d(
+        "level_50",
+        "level",
+        "legendary",
+        "Đỉnh cao",
+        "Đạt cấp 50",
+        "🌠",
+        50,
+        lambda s: s.level,
+    ),
+    # ── Frequency (lifetime log count) ──────────────────────────────
+    _d(
+        "log_first",
+        "frequency",
+        "common",
+        "Bước đầu",
+        "Ghi nhận lần uống đầu tiên",
+        "🎉",
+        1,
+        lambda s: s.log_count,
+    ),
+    _d(
+        "log_100",
+        "frequency",
+        "rare",
+        "Người uống chăm chỉ",
+        "Ghi nhận 100 lần uống",
+        "🔄",
+        100,
+        lambda s: s.log_count,
+    ),
+    _d(
+        "log_500",
+        "frequency",
+        "epic",
+        "Thói quen vàng",
+        "Ghi nhận 500 lần uống",
+        "📈",
+        500,
+        lambda s: s.log_count,
+    ),
+    _d(
+        "log_1000",
+        "frequency",
+        "legendary",
+        "Nghìn nhịp nước",
+        "Ghi nhận 1000 lần uống",
+        "🎯",
+        1000,
+        lambda s: s.log_count,
+    ),
+    # ── Daily goal (lifetime goal-achieved days) ────────────────────
+    _d(
+        "goal_first",
+        "daily_goal",
+        "common",
+        "Hoàn thành đầu tiên",
+        "Đạt mục tiêu ngày đầu tiên",
+        "🌱",
+        1,
+        lambda s: s.goal_days,
+    ),
+    _d(
+        "goal_10",
+        "daily_goal",
+        "common",
+        "Mười ngày vàng",
+        "Đạt mục tiêu 10 ngày",
+        "✅",
+        10,
+        lambda s: s.goal_days,
+    ),
+    _d(
+        "goal_50",
+        "daily_goal",
+        "rare",
+        "Năm mươi cột mốc",
+        "Đạt mục tiêu 50 ngày",
+        "🥇",
+        50,
+        lambda s: s.goal_days,
+    ),
+    _d(
+        "goal_100",
+        "daily_goal",
+        "epic",
+        "Trăm ngày hoàn hảo",
+        "Đạt mục tiêu 100 ngày",
+        "💯",
+        100,
+        lambda s: s.goal_days,
+    ),
+    _d(
+        "goal_365",
+        "daily_goal",
+        "legendary",
+        "Cả năm trọn vẹn",
+        "Đạt mục tiêu 365 ngày",
+        "🏅",
+        365,
+        lambda s: s.goal_days,
+    ),
+    # ── Quest (lifetime Quests Claimed) ─────────────────────────────
+    _d(
+        "quest_10",
+        "quest",
+        "common",
+        "Tân Binh",
+        "Hoàn thành 10 nhiệm vụ",
+        "📋",
+        10,
+        lambda s: s.quest_claims,
+    ),
+    _d(
+        "quest_100",
+        "quest",
+        "rare",
+        "Chiến Binh",
+        "Hoàn thành 100 nhiệm vụ",
+        "🎖️",
+        100,
+        lambda s: s.quest_claims,
+    ),
+    _d(
+        "quest_1000",
+        "quest",
+        "legendary",
+        "Huyền Thoại",
+        "Hoàn thành 1000 nhiệm vụ",
+        "🏆",
+        1000,
+        lambda s: s.quest_claims,
+    ),
+    # ── Coach (lifetime AI Coach sessions) ──────────────────────────
+    _d(
+        "coach_first",
+        "coach",
+        "common",
+        "Cuộc Trò Chuyện Đầu Tiên",
+        "Trò chuyện với AI Coach lần đầu",
+        "💬",
+        1,
+        lambda s: s.coach_sessions,
+    ),
+    _d(
+        "coach_10",
+        "coach",
+        "common",
+        "Học Viên",
+        "10 cuộc trò chuyện với AI Coach",
+        "📚",
+        10,
+        lambda s: s.coach_sessions,
+    ),
+    _d(
+        "coach_100",
+        "coach",
+        "rare",
+        "Bạn Đồng Hành",
+        "100 cuộc trò chuyện với AI Coach",
+        "🤝",
+        100,
+        lambda s: s.coach_sessions,
+    ),
+    _d(
+        "coach_500",
+        "coach",
+        "epic",
+        "Tri Kỷ",
+        "500 cuộc trò chuyện với AI Coach",
+        "💙",
+        500,
+        lambda s: s.coach_sessions,
+    ),
+    # ── Scan (lifetime Smart Scans) ─────────────────────────────────
+    _d(
+        "scan_first",
+        "scan",
+        "common",
+        "Scan lần đầu",
+        "Dùng Smart Scan lần đầu tiên",
+        "📷",
+        1,
+        lambda s: s.scans,
+    ),
+    _d(
+        "scan_50",
+        "scan",
+        "rare",
+        "Nhà Phân Tích",
+        "Thực hiện 50 lần scan",
+        "🔬",
+        50,
+        lambda s: s.scans,
+    ),
+    _d(
+        "scan_500",
+        "scan",
+        "epic",
+        "Chuyên Gia",
+        "Thực hiện 500 lần scan",
+        "🧪",
+        500,
+        lambda s: s.scans,
+    ),
+    # ── Social (current friend count) ───────────────────────────────
+    _d(
+        "social_first",
+        "social",
+        "common",
+        "Mời bạn đầu tiên",
+        "Kết nối người bạn đầu tiên",
+        "👋",
+        1,
+        lambda s: s.friends,
+    ),
+    _d(
+        "social_5",
+        "social",
+        "rare",
+        "Người Kết Nối",
+        "Có 5 người bạn",
+        "🧑‍🤝‍🧑",
+        5,
+        lambda s: s.friends,
+    ),
+    _d(
+        "social_20",
+        "social",
+        "epic",
+        "Thủ Lĩnh",
+        "Có 20 người bạn",
+        "🫂",
+        20,
+        lambda s: s.friends,
+    ),
+    _d(
+        "social_50",
+        "social",
+        "legendary",
+        "Aqua Community Hero",
+        "Có 50 người bạn",
+        "🌐",
+        50,
+        lambda s: s.friends,
+    ),
+]
+
+_BY_ID: Dict[str, AchievementDef] = {a.id: a for a in CATALOG}
+
+
+# --- read ---------------------------------------------------------------
+
+
+def _claimed_ids(db: Session, user_id: str) -> set:
+    rows = (
+        db.query(AchievementClaim.achievement_id)
+        .filter(AchievementClaim.user_id == user_id)
+        .all()
+    )
+    return {r[0] for r in rows}
+
+
+def _state(adef: AchievementDef, progress: int, claimed: bool) -> dict:
+    unlocked = progress >= adef.target
+    return {
+        "id": adef.id,
+        "domain": adef.domain,
+        "tier": adef.tier,
+        "name": adef.name,
+        "description": adef.description,
+        "icon": adef.icon,
+        "progress": min(int(progress), adef.target),
+        "target": adef.target,
+        "reward_xp": adef.reward_xp,
+        "unlocked": bool(unlocked),
+        "claimed": bool(claimed),
+    }
+
+
+def get_achievements(db: Session, user: User) -> List[dict]:
+    """Return the full catalog with derived progress and claim state."""
+    stats = _load_stats(db, user)
+    claimed = _claimed_ids(db, user.id)
+    return [
+        _state(adef, adef.progress_fn(stats), adef.id in claimed) for adef in CATALOG
+    ]
+
+
+# --- claim --------------------------------------------------------------
+
+
+def claim_achievement(db: Session, user: User, achievement_id: str) -> dict:
+    """Validate an Achievement is Done and unclaimed, then grant its XP once."""
+    adef = _BY_ID.get(achievement_id)
+    if adef is None:
+        raise AchievementNotFound(achievement_id)
+
+    stats = _load_stats(db, user)
+    if adef.progress_fn(stats) < adef.target:
+        raise AchievementNotDone(achievement_id)
+
+    existing = (
+        db.query(AchievementClaim)
+        .filter(
+            AchievementClaim.user_id == user.id,
+            AchievementClaim.achievement_id == achievement_id,
         )
+        .first()
+    )
+    if existing is not None:
+        raise AchievementAlreadyClaimed(achievement_id)
 
-        return {
-            "current_level": current_level,
-            "current_level_xp": current_level_xp,
-            "next_level_xp": next_level_xp,
-            "progress_percent": min(progress_percent, 100),
-        }
-
-    async def process_intake_log_achievements(
-        self, db: Session, user_id: str, intake_log: IntakeLog
-    ) -> List[Dict[str, any]]:
-        """Process all achievements triggered by a new intake log"""
-        unlocked_achievements = []
-
-        # Get user and current stats
-        user = user_crud.get(db, user_id)
-        if not user:
-            return unlocked_achievements
-
-        today = date.today()
-
-        # Get or create today's daily summary
-        daily_summary = daily_summary_crud.get_or_create_daily_summary(
-            db, user_id=user_id, date=today
+    reward_xp = adef.reward_xp
+    db.add(
+        AchievementClaim(
+            user_id=user.id, achievement_id=achievement_id, reward_xp=reward_xp
         )
+    )
 
-        # Update daily summary with new intake
-        self._update_daily_summary(db, daily_summary, intake_log)
+    user.total_xp = (user.total_xp or 0) + reward_xp
+    # Level must come from the FULL Total XP (intake + bonus), never user.total_xp
+    # alone — otherwise current_level (and level-gated avatars) go stale.
+    full_total_xp = _total_xp(db, user)
+    user.current_level = calculate_level_from_xp(full_total_xp)["level"]
 
-        # Check all achievement categories
-        unlocked_achievements.extend(
-            await self._check_hydration_achievements(db, user_id, daily_summary)
-        )
-        unlocked_achievements.extend(
-            await self._check_streak_achievements(db, user_id, daily_summary)
-        )
-        unlocked_achievements.extend(
-            await self._check_milestone_achievements(db, user_id, user)
-        )
-        unlocked_achievements.extend(
-            await self._check_consistency_achievements(db, user_id)
-        )
+    db.commit()
+    db.refresh(user)
 
-        # Calculate total XP gained
-        total_xp_gained = sum(
-            self.xp_rewards.get(AchievementType(ach["achievement_type"]), 0)
-            for ach in unlocked_achievements
-        )
-
-        # Update user XP and level if achievements were unlocked
-        if total_xp_gained > 0:
-            old_level = user.current_level
-            new_total_xp = user.total_xp + total_xp_gained
-            new_level = self.calculate_level_from_xp(new_total_xp)
-
-            user_crud.update_stats(
-                db, user_id=user_id, xp_gained=total_xp_gained, new_level=new_level
-            )
-
-            # Check for level-up achievements
-            if new_level > old_level:
-                level_achievements = await self._check_level_achievements(
-                    db, user_id, old_level, new_level
-                )
-                unlocked_achievements.extend(level_achievements)
-
-        return unlocked_achievements
-
-    def _update_daily_summary(
-        self, db: Session, daily_summary: DailySummary, intake_log: IntakeLog
-    ):
-        """Update daily summary with new intake log"""
-        daily_summary.total_volume_ml += intake_log.effective_volume_ml
-        daily_summary.log_count += 1
-        daily_summary.last_log_at = intake_log.logged_at
-
-        # Update goal achievement
-        daily_summary.goal_achieved = (
-            daily_summary.total_volume_ml >= daily_summary.daily_goal_ml
-        )
-
-        # Calculate completion percentage
-        daily_summary.completion_percentage = min(
-            int((daily_summary.total_volume_ml / daily_summary.daily_goal_ml) * 100),
-            100,
-        )
-
-        db.add(daily_summary)
-        db.commit()
-
-    async def _check_hydration_achievements(
-        self, db: Session, user_id: str, daily_summary: DailySummary
-    ) -> List[Dict[str, any]]:
-        """Check for daily hydration achievements"""
-        achievements = []
-
-        # First Goal Achievement
-        if daily_summary.goal_achieved and daily_summary.log_count == 1:
-            if not self._is_achievement_unlocked(db, user_id, "FIRST_GOAL"):
-                achievements.append(
-                    await self._unlock_achievement(
-                        db, user_id, "FIRST_GOAL", AchievementType.DAILY_GOAL
-                    )
-                )
-
-        # Daily Goal Achievement
-        elif daily_summary.goal_achieved:
-            if not self._is_achievement_unlocked(db, user_id, "DAILY_GOAL"):
-                achievements.append(
-                    await self._unlock_achievement(
-                        db, user_id, "DAILY_GOAL", AchievementType.DAILY_GOAL
-                    )
-                )
-
-        # Overachiever (150% of goal)
-        if daily_summary.total_volume_ml >= daily_summary.daily_goal_ml * 1.5:
-            if not self._is_achievement_unlocked(db, user_id, "OVERACHIEVER"):
-                achievements.append(
-                    await self._unlock_achievement(
-                        db, user_id, "OVERACHIEVER", AchievementType.DAILY_GOAL
-                    )
-                )
-
-        # Hydration Hero (200% of goal)
-        if daily_summary.total_volume_ml >= daily_summary.daily_goal_ml * 2.0:
-            if not self._is_achievement_unlocked(db, user_id, "HYDRATION_HERO"):
-                achievements.append(
-                    await self._unlock_achievement(
-                        db, user_id, "HYDRATION_HERO", AchievementType.DAILY_GOAL
-                    )
-                )
-
-        return achievements
-
-    async def _check_streak_achievements(
-        self, db: Session, user_id: str, daily_summary: DailySummary
-    ) -> List[Dict[str, any]]:
-        """Check for streak-based achievements"""
-        achievements = []
-
-        if not daily_summary.goal_achieved:
-            return achievements
-
-        # Calculate current streak
-        current_streak = self._calculate_current_streak(db, user_id)
-
-        # Update user streak
-        user_crud.update_stats(db, user_id=user_id, new_streak=current_streak)
-
-        # Streak milestones
-        streak_milestones = {
-            3: "STREAK_3",
-            7: "WEEK_WARRIOR",
-            14: "STREAK_14",
-            30: "MONTH_MASTER",
-            60: "STREAK_60",
-            100: "CENTURION",
-        }
-
-        for streak_days, achievement_key in streak_milestones.items():
-            if current_streak >= streak_days:
-                if not self._is_achievement_unlocked(db, user_id, achievement_key):
-                    achievements.append(
-                        await self._unlock_achievement(
-                            db, user_id, achievement_key, AchievementType.STREAK
-                        )
-                    )
-
-        return achievements
-
-    async def _check_milestone_achievements(
-        self, db: Session, user_id: str, user: User
-    ) -> List[Dict[str, any]]:
-        """Check for milestone achievements based on total volume"""
-        achievements = []
-
-        # Volume milestones (in liters)
-        volume_milestones = {
-            10: "FIRST_10_LITERS",
-            50: "MILESTONE_50L",
-            100: "MILESTONE_100L",
-            500: "MILESTONE_500L",
-            1000: "MILLENNIUM_HYDRATOR",
-        }
-
-        total_volume_l = user.total_volume_ml / 1000
-
-        for milestone_l, achievement_key in volume_milestones.items():
-            if total_volume_l >= milestone_l:
-                if not self._is_achievement_unlocked(db, user_id, achievement_key):
-                    achievements.append(
-                        await self._unlock_achievement(
-                            db, user_id, achievement_key, AchievementType.TOTAL_VOLUME
-                        )
-                    )
-
-        return achievements
-
-    async def _check_consistency_achievements(
-        self, db: Session, user_id: str
-    ) -> List[Dict[str, any]]:
-        """Check for consistency-based achievements"""
-        achievements = []
-
-        # Check weekly consistency (7 days goal achievement)
-        end_date = date.today()
-        start_date = end_date - timedelta(days=6)  # Last 7 days
-
-        week_summaries = daily_summary_crud.get_summaries_by_date_range(
-            db, user_id=user_id, start_date=start_date, end_date=end_date
-        )
-
-        goals_achieved = sum(1 for summary in week_summaries if summary.goal_achieved)
-
-        if goals_achieved >= 7:
-            if not self._is_achievement_unlocked(db, user_id, "WEEKLY_CONSISTENT"):
-                achievements.append(
-                    await self._unlock_achievement(
-                        db, user_id, "WEEKLY_CONSISTENT", AchievementType.FREQUENCY
-                    )
-                )
-
-        # Check monthly consistency (28 days)
-        month_start = end_date - timedelta(days=27)  # Last 28 days
-        month_summaries = daily_summary_crud.get_summaries_by_date_range(
-            db, user_id=user_id, start_date=month_start, end_date=end_date
-        )
-
-        month_goals = sum(1 for summary in month_summaries if summary.goal_achieved)
-
-        if month_goals >= 28:
-            if not self._is_achievement_unlocked(db, user_id, "MONTHLY_MASTER"):
-                achievements.append(
-                    await self._unlock_achievement(
-                        db, user_id, "MONTHLY_MASTER", AchievementType.FREQUENCY
-                    )
-                )
-
-        return achievements
-
-    async def _check_level_achievements(
-        self, db: Session, user_id: str, old_level: int, new_level: int
-    ) -> List[Dict[str, any]]:
-        """Check for level-based achievements"""
-        achievements = []
-
-        level_milestones = {
-            5: "LEVEL_5",
-            10: "LEVEL_10",
-            20: "LEVEL_20",
-            30: "LEVEL_30",
-            50: "MAX_LEVEL",
-        }
-
-        for milestone_level, achievement_key in level_milestones.items():
-            if new_level >= milestone_level and old_level < milestone_level:
-                if not self._is_achievement_unlocked(db, user_id, achievement_key):
-                    achievements.append(
-                        await self._unlock_achievement(
-                            db, user_id, achievement_key, AchievementType.TOTAL_VOLUME
-                        )
-                    )
-
-        return achievements
-
-    def _calculate_current_streak(self, db: Session, user_id: str) -> int:
-        """Calculate current consecutive goal achievement streak"""
-        current_date = date.today()
-        streak = 0
-
-        # Check backwards from today until we find a non-goal day
-        for days_back in range(365):  # Max check 1 year
-            check_date = current_date - timedelta(days=days_back)
-
-            summary = daily_summary_crud.get_daily_summary(
-                db, user_id=user_id, date=check_date
-            )
-
-            if summary and summary.goal_achieved:
-                streak += 1
-            else:
-                break
-
-        return streak
-
-    def _is_achievement_unlocked(
-        self, db: Session, user_id: str, achievement_key: str
-    ) -> bool:
-        """Check if user has already unlocked this achievement"""
-        achievement = achievement_crud.get_user_achievement(
-            db, user_id=user_id, achievement_key=achievement_key
-        )
-        return achievement and achievement.unlocked
-
-    async def _unlock_achievement(
-        self,
-        db: Session,
-        user_id: str,
-        achievement_key: str,
-        achievement_type: AchievementType,
-    ) -> Dict[str, any]:
-        """Unlock an achievement for user"""
-        # Get achievement definition
-        achievement_data = self._get_achievement_data(achievement_key)
-
-        # Update achievement as unlocked
-        achievement = achievement_crud.unlock_achievement(
-            db, user_id=user_id, achievement_key=achievement_key
-        )
-
-        return {
-            "achievement_id": achievement.id,
-            "achievement_key": achievement_key,
-            "achievement_type": achievement_type,
-            "title": achievement_data["title"],
-            "description": achievement_data["description"],
-            "icon": achievement_data["icon"],
-            "xp_reward": self.xp_rewards.get(achievement_type, 0),
-            "unlocked_at": achievement.unlocked_at,
-        }
-
-    def _get_achievement_data(self, achievement_key: str) -> Dict[str, str]:
-        """Get achievement title, description, and icon"""
-        achievement_definitions = {
-            # Hydration achievements
-            "FIRST_GOAL": {
-                "title": "Khởi đầu tuyệt vời!",
-                "description": "Đạt mục tiêu hydration ngày đầu tiên",
-                "icon": "🌱",
-            },
-            "DAILY_GOAL": {
-                "title": "Mục tiêu hàng ngày",
-                "description": "Hoàn thành mục tiêu hydration trong ngày",
-                "icon": "🎯",
-            },
-            "OVERACHIEVER": {
-                "title": "Siêu vượt mức",
-                "description": "Đạt 150% mục tiêu trong ngày",
-                "icon": "⚡",
-            },
-            "HYDRATION_HERO": {
-                "title": "Anh hùng hydration",
-                "description": "Đạt 200% mục tiêu trong ngày",
-                "icon": "🦸‍♂️",
-            },
-            # Streak achievements
-            "STREAK_3": {
-                "title": "Streak 3 ngày",
-                "description": "Duy trì mục tiêu 3 ngày liên tiếp",
-                "icon": "🔥",
-            },
-            "WEEK_WARRIOR": {
-                "title": "Chiến binh tuần",
-                "description": "Duy trì mục tiêu 7 ngày liên tiếp",
-                "icon": "⚔️",
-            },
-            "STREAK_14": {
-                "title": "Streak 14 ngày",
-                "description": "Duy trì mục tiêu 2 tuần liên tiếp",
-                "icon": "🌟",
-            },
-            "MONTH_MASTER": {
-                "title": "Bậc thầy tháng",
-                "description": "Duy trì mục tiêu 30 ngày liên tiếp",
-                "icon": "👑",
-            },
-            "STREAK_60": {
-                "title": "Streak 60 ngày",
-                "description": "Duy trì mục tiêu 2 tháng liên tiếp",
-                "icon": "💎",
-            },
-            "CENTURION": {
-                "title": "Centurion",
-                "description": "Duy trì mục tiêu 100 ngày liên tiếp",
-                "icon": "🏛️",
-            },
-            # Milestone achievements
-            "FIRST_10_LITERS": {
-                "title": "10 lít đầu tiên",
-                "description": "Tích lũy 10 lít nước",
-                "icon": "💧",
-            },
-            "MILESTONE_50L": {
-                "title": "50 lít chinh phục",
-                "description": "Tích lũy 50 lít nước",
-                "icon": "🌊",
-            },
-            "MILESTONE_100L": {
-                "title": "100 lít thành công",
-                "description": "Tích lũy 100 lít nước",
-                "icon": "🌊",
-            },
-            "MILESTONE_500L": {
-                "title": "500 lít khủng",
-                "description": "Tích lũy 500 lít nước",
-                "icon": "🌊",
-            },
-            "MILLENNIUM_HYDRATOR": {
-                "title": "Hydrator Thiên niên kỷ",
-                "description": "Tích lũy 1000 lít nước",
-                "icon": "🏆",
-            },
-            # Level achievements
-            "LEVEL_5": {
-                "title": "Cấp 5 đạt được",
-                "description": "Đạt level 5",
-                "icon": "🆙",
-            },
-            "LEVEL_10": {
-                "title": "Cấp 10 chinh phục",
-                "description": "Đạt level 10",
-                "icon": "⬆️",
-            },
-            "LEVEL_20": {
-                "title": "Cấp 20 uy lực",
-                "description": "Đạt level 20",
-                "icon": "🚀",
-            },
-            "LEVEL_30": {
-                "title": "Cấp 30 siêu phàm",
-                "description": "Đạt level 30",
-                "icon": "✨",
-            },
-            "MAX_LEVEL": {
-                "title": "Cấp tối đa",
-                "description": "Đạt level cao nhất",
-                "icon": "🏆",
-            },
-            # Consistency achievements
-            "WEEKLY_CONSISTENT": {
-                "title": "Nhất quán tuần",
-                "description": "Đạt mục tiêu 7 ngày trong tuần",
-                "icon": "📅",
-            },
-            "MONTHLY_MASTER": {
-                "title": "Bậc thầy tháng",
-                "description": "Đạt mục tiêu 28 ngày trong tháng",
-                "icon": "📊",
-            },
-        }
-
-        return achievement_definitions.get(
-            achievement_key,
-            {
-                "title": "Achievement không xác định",
-                "description": "Mô tả achievement",
-                "icon": "🏅",
-            },
-        )
-
-
-# Global achievement service instance
-achievement_service = AchievementService()
+    return {
+        "achievement_id": achievement_id,
+        "reward_xp": reward_xp,
+        "total_xp": full_total_xp,
+        "current_level": user.current_level,
+    }
