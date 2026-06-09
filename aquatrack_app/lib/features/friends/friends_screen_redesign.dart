@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/coin_badge.dart';
+import '../avatars/data/avatar_catalog.dart';
+import '../avatars/widgets/aqua_avatar.dart';
 import '../profile/providers/profile_provider.dart';
 import 'models/friend_model.dart';
 import 'models/social_failure.dart';
@@ -65,18 +67,14 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
     return status == FriendStatus.thirsty || status == FriendStatus.stressed;
   }
 
-  Color _getAvatarColor(String? avatarUrl, String userId) {
-    // Generate color based on user ID if no avatar
-    final hash = userId.hashCode;
-    final colors = [
-      const Color(0xFFFBBF24),
-      const Color(0xFFF97316),
-      const Color(0xFFA78BFA),
-      const Color(0xFF10B981),
-      const Color(0xFFEC4899),
-      const Color(0xFF06B6D4),
-    ];
-    return colors[hash.abs() % colors.length];
+  /// Resolve a friend's equipped water-spirit from the backend's
+  /// "/avatars/<catalog_id>" url, defaulting to the base drop when absent.
+  AquaAvatarSpec _avatarSpec(String? avatarUrl) {
+    const prefix = '/avatars/';
+    final id = (avatarUrl != null && avatarUrl.startsWith(prefix))
+        ? avatarUrl.substring(prefix.length)
+        : null;
+    return avatarSpecOrDefault(id);
   }
 
   // Last time the friend opened the app (last_login/updated_at), shown like a
@@ -770,19 +768,7 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
                 width: size,
                 height: size,
                 decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: const Alignment(-0.7, -0.7),
-                    colors: [
-                      _getAvatarColor(
-                        entry.avatarUrl,
-                        entry.userId,
-                      ).withValues(alpha: 0.93),
-                      _getAvatarColor(
-                        entry.avatarUrl,
-                        entry.userId,
-                      ).withValues(alpha: 0.53),
-                    ],
-                  ),
+                  color: const Color(0xFF0B1322),
                   border: Border.all(color: ringColor, width: 2),
                   borderRadius: BorderRadius.circular(999),
                   boxShadow: rank == 1
@@ -794,10 +780,12 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
                         ]
                       : null,
                 ),
-                child: const Icon(
-                  Icons.water_drop,
-                  color: Colors.white,
-                  size: 24,
+                clipBehavior: Clip.antiAlias,
+                child: Center(
+                  child: AquaAvatar(
+                    spec: _avatarSpec(entry.avatarUrl),
+                    size: size * 0.9,
+                  ),
                 ),
               ),
               Positioned(
@@ -1265,35 +1253,9 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
   }
 
   Widget _buildAvatar(Friend friend) {
-    final avatarColor = _getAvatarColor(friend.avatarUrl, friend.id);
     return Stack(
       children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: const Alignment(-0.7, -0.7),
-              colors: [
-                avatarColor.withValues(alpha: 0.93),
-                avatarColor.withValues(alpha: 0.53),
-              ],
-            ),
-            border: Border.all(
-              color: avatarColor.withValues(alpha: 0.33),
-              width: 1.5,
-            ),
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: [
-              BoxShadow(
-                color: avatarColor.withValues(alpha: 0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: const Icon(Icons.water_drop, color: Colors.white, size: 22),
-        ),
+        AvatarBubble(spec: _avatarSpec(friend.avatarUrl), size: 48),
         // Level badge (placeholder - no level in backend model)
         Positioned(
           bottom: -2,
@@ -1729,38 +1691,9 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
   }
 
   Widget _buildRequestAvatar(FriendRequest request) {
-    final avatarColor = _getAvatarColor(
-      request.fromUser.avatarUrl,
-      request.fromUser.id,
-    );
     return Stack(
       children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: const Alignment(-0.7, -0.7),
-              colors: [
-                avatarColor.withValues(alpha: 0.93),
-                avatarColor.withValues(alpha: 0.53),
-              ],
-            ),
-            border: Border.all(
-              color: avatarColor.withValues(alpha: 0.33),
-              width: 1.5,
-            ),
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: [
-              BoxShadow(
-                color: avatarColor.withValues(alpha: 0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: const Icon(Icons.water_drop, color: Colors.white, size: 20),
-        ),
+        AvatarBubble(spec: _avatarSpec(request.fromUser.avatarUrl), size: 44),
         Positioned(
           bottom: -2,
           right: -2,
@@ -1787,7 +1720,6 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
   }
 
   Widget _buildSuggestedFriend(SuggestedFriend suggestion) {
-    final avatar = _getAvatarColor(suggestion.avatarUrl, suggestion.id);
     final requested = _requestedUsers.contains(suggestion.id);
     final mutualText = suggestion.mutualFriends > 0
         ? '${suggestion.mutualFriends} bạn chung'
@@ -1802,32 +1734,7 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
       ),
       child: Row(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: const Alignment(-0.7, -0.7),
-                colors: [
-                  avatar.withValues(alpha: 0.93),
-                  avatar.withValues(alpha: 0.53),
-                ],
-              ),
-              border: Border.all(
-                color: avatar.withValues(alpha: 0.33),
-                width: 1.5,
-              ),
-              borderRadius: BorderRadius.circular(999),
-              boxShadow: [
-                BoxShadow(
-                  color: avatar.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Icon(Icons.water_drop, color: Colors.white, size: 16),
-          ),
+          AvatarBubble(spec: _avatarSpec(suggestion.avatarUrl), size: 36),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
