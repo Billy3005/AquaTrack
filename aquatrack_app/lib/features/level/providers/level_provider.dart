@@ -5,7 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../shared/storage/hive_storage_service.dart';
 import '../../../core/repositories/level_repository.dart';
 import '../../../core/repositories/user_repository.dart';
-import '../../../core/providers/auth_state_provider.dart';
+import '../../../features/auth/presentation/providers/auth_providers.dart';
 import '../../../core/sync/level_sync_repository.dart';
 import '../widgets/achievement_badges_grid.dart';
 import '../widgets/avatar_collection_showcase.dart';

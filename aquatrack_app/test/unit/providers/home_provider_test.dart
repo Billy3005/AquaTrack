@@ -1,10 +1,34 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive/hive.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:aquatrack_app/features/home/providers/home_provider.dart';
 import 'package:aquatrack_app/shared/models/daily_summary.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late Directory tempDir;
+
+  // The home providers transitively touch the auth stack (Hive-backed token
+  // storage + SharedPreferences). Init once for the whole file and keep the
+  // box open: per-test teardown must not delete the dir while a fire-and-forget
+  // auth init from a previous test is still opening the box.
+  setUpAll(() async {
+    tempDir = await Directory.systemTemp.createTemp('aquatrack_home_test');
+    Hive.init(tempDir.path);
+    await Hive.openBox('auth_storage');
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  tearDownAll(() async {
+    await Hive.close();
+    if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+  });
+
   group('HomeProvider Tests', () {
     test('goalMetToday provider handles loading state', () {
       final container = ProviderContainer();
