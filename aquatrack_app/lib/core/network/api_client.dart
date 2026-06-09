@@ -79,7 +79,11 @@ class ApiClientImpl implements ApiClient {
     required network.NetworkClient networkClient,
     required TokenStorage tokenStorage,
   }) : _networkClient = networkClient,
-       _tokenStorage = tokenStorage;
+       _tokenStorage = tokenStorage {
+    // Auto-inject the access token per request from storage so this client is
+    // authenticated even if setAuthToken/initialize were never called.
+    _networkClient.setAuthTokenProvider(_tokenStorage.getAccessToken);
+  }
 
   @override
   Future<void> initialize() async {

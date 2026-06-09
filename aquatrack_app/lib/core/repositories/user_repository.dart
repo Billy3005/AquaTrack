@@ -1,15 +1,16 @@
 import '../models/user.dart';
-import '../services/api_service.dart';
+import '../network/api_client.dart';
+import '../network/default_api_client.dart';
 import '../utils/logger.dart';
 
 /// Repository for user profile management
 class UserRepository {
   static const String _tag = 'UserRepository';
 
-  final ApiService _apiService;
+  final ApiClient _apiService;
 
-  UserRepository({ApiService? apiService})
-      : _apiService = apiService ?? ApiService();
+  UserRepository({ApiClient? apiClient})
+      : _apiService = apiClient ?? defaultApiClient;
 
   /// Get current user profile
   Future<User> getProfile() async {

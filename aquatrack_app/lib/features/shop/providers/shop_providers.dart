@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/services/api_service.dart';
+import '../../../core/di/app_providers.dart';
 
 /// Whether the user currently owns a Streak Freeze, plus its Coin price.
 /// Mirrors `GET /shop/streak-freeze` (ADR 0004).
@@ -17,7 +17,7 @@ class StreakFreezeStatus {
 /// invalidated right after a purchase for an immediate update.
 final streakFreezeStatusProvider =
     FutureProvider.autoDispose<StreakFreezeStatus>((ref) async {
-  final api = ApiService();
+  final api = ref.watch(apiClientProvider);
   final res = await api.get('/shop/streak-freeze');
   final data = res.data;
   if (res.statusCode == 200 && data is Map) {
