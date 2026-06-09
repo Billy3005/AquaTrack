@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/providers/session.dart';
 import '../../core/repositories/auth_repository.dart';
 import '../../shared/widgets/coin_badge.dart';
 import '../avatars/avatar_collection_screen.dart';
@@ -890,6 +891,10 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
 
         // Perform logout
         await AuthRepository().logout();
+
+        // Drop every cached user-scoped provider so the next account that logs
+        // in on this device starts from a clean slate (no leaked data).
+        resetUserSession(ref);
 
         if (mounted) {
           // Clear snackbar and navigate to login

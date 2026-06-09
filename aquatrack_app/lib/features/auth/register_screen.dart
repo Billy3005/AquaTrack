@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/providers/session.dart';
 import '../../core/repositories/auth_repository.dart';
 import '../../core/utils/logger.dart';
 
@@ -79,6 +80,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
         'Register',
         'Registration successful: ${authResponse.user.email}',
       );
+
+      // A brand-new account must start clean: clear any cached data left from a
+      // previously logged-in account in this session (level, achievements,
+      // friends, stats…), otherwise the new user sees the old user's data.
+      resetUserSession(ref);
 
       // Navigate to onboarding for new users
       print('🚀 Attempting navigation to /onboarding');

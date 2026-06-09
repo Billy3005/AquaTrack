@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/providers/session.dart';
 import '../../core/repositories/auth_repository.dart';
 import '../../core/utils/logger.dart';
 
@@ -77,6 +78,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       );
 
       AppLogger.info('Login', 'Login successful: ${authResponse.user.email}');
+
+      // Clear any cached data from a previous account so this session never
+      // shows the prior user's level, achievements, friends, stats, etc.
+      resetUserSession(ref);
 
       // Navigate to home
       if (mounted) {
