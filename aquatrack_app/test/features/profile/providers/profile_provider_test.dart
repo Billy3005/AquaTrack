@@ -1,11 +1,34 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive/hive.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aquatrack_app/features/profile/providers/profile_provider.dart';
 
 /// Test ProfileProvider backend integration behavior
 /// Focus: Testing behavior - does provider support real user data loading?
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late Directory tempDir;
+
+  // The provider transitively hits the network/auth stack which reads the
+  // Hive-backed token store. Provide Hive + SharedPreferences so background
+  // fetches degrade gracefully instead of throwing into the test zone.
+  setUpAll(() async {
+    tempDir = await Directory.systemTemp.createTemp('aquatrack_profile_test');
+    Hive.init(tempDir.path);
+    await Hive.openBox('auth_storage');
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  tearDownAll(() async {
+    await Hive.close();
+    if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+  });
+
   group('ProfileProvider Backend Integration', () {
     test('loads user data from backend when available', () {
       // Arrange: Create provider container

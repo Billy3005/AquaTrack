@@ -1,6 +1,7 @@
 import 'dart:math';
 
-import '../services/api_service.dart';
+import '../network/api_client.dart';
+import '../network/default_api_client.dart';
 import '../services/auth_service.dart';
 import '../utils/logger.dart';
 import '../sync/coach_conversation_sync_repository.dart';
@@ -13,16 +14,16 @@ class CoachRepository {
   static const String _tag = 'CoachRepository';
   static int _sessionNonce = 0;
 
-  final ApiService _apiService;
+  final ApiClient _apiService;
   final CoachConversationSyncRepository? _syncRepository;
   final SyncService? _syncService;
   final AuthService _authService = AuthService();
 
   CoachRepository({
-    ApiService? apiService,
+    ApiClient? apiClient,
     SyncService? syncService,
     ConflictResolver? conflictResolver,
-  })  : _apiService = apiService ?? ApiService(),
+  })  : _apiService = apiClient ?? defaultApiClient,
         _syncService = syncService,
         _syncRepository = syncService != null && conflictResolver != null
             ? CoachConversationSyncRepository(

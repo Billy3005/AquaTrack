@@ -1,14 +1,15 @@
-import '../services/api_service.dart';
+import '../network/api_client.dart';
+import '../network/default_api_client.dart';
 import '../utils/logger.dart';
 
 /// Repository for body map and hydration API calls
 class BodyMapRepository {
   static const String _tag = 'BodyMapRepository';
 
-  final ApiService _apiService;
+  final ApiClient _apiService;
 
-  BodyMapRepository({ApiService? apiService})
-      : _apiService = apiService ?? ApiService();
+  BodyMapRepository({ApiClient? apiClient})
+      : _apiService = apiClient ?? defaultApiClient;
 
   /// Get current hydration status for body map
   Future<BodyMapApiResponse<HydrationStatus>> getHydrationStatus() async {

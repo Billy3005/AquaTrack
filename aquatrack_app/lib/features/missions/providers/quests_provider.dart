@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/services/api_service.dart';
+import '../../../core/di/app_providers.dart';
+import '../../../core/network/api_client.dart';
 import '../models/quest.dart';
 
 /// State for the missions screen.
@@ -37,7 +38,7 @@ class QuestsState {
 class QuestsNotifier extends StateNotifier<QuestsState> {
   QuestsNotifier(this._api) : super(const QuestsState());
 
-  final ApiService _api;
+  final ApiClient _api;
 
   Future<void> load() async {
     state = state.copyWith(isLoading: true, clearError: true);
@@ -78,5 +79,5 @@ class QuestsNotifier extends StateNotifier<QuestsState> {
 
 final questsProvider =
     StateNotifierProvider<QuestsNotifier, QuestsState>((ref) {
-  return QuestsNotifier(ApiService());
+  return QuestsNotifier(ref.watch(apiClientProvider));
 });

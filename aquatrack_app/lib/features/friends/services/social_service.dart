@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import '../../../core/services/api_service.dart';
+import '../../../core/network/api_client.dart';
 import '../models/friend_model.dart';
 import '../models/notification_models.dart';
 import '../models/social_failure.dart';
@@ -8,7 +8,7 @@ import '../models/suggested_friend.dart';
 
 /// Social service for friend management and social features
 class SocialService {
-  final ApiService _apiService;
+  final ApiClient _apiService;
 
   SocialService(this._apiService);
 

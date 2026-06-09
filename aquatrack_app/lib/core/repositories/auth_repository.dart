@@ -1,6 +1,7 @@
 import '../models/auth.dart';
 import '../models/user.dart';
-import '../services/api_service.dart';
+import '../network/api_client.dart';
+import '../network/default_api_client.dart';
 import '../services/auth_service.dart';
 import '../utils/logger.dart';
 
@@ -8,11 +9,11 @@ import '../utils/logger.dart';
 class AuthRepository {
   static const String _tag = 'AuthRepository';
 
-  final ApiService _apiService;
+  final ApiClient _apiService;
   final AuthService _authService;
 
-  AuthRepository({ApiService? apiService, AuthService? authService})
-      : _apiService = apiService ?? ApiService(),
+  AuthRepository({ApiClient? apiClient, AuthService? authService})
+      : _apiService = apiClient ?? defaultApiClient,
         _authService = authService ?? AuthService();
 
   /// Login with email and password

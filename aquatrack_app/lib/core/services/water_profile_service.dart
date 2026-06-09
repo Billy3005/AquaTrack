@@ -1,9 +1,10 @@
 import '../models/water_profile.dart';
-import 'api_service.dart';
+import '../network/api_client.dart';
+import '../network/default_api_client.dart';
 
 /// Service để quản lý water profile và calculation
 class WaterProfileService {
-  final ApiService _apiService = ApiService();
+  final ApiClient _apiService = defaultApiClient;
 
   /// Lấy enum options cho dropdown UI
   Future<WaterProfileEnums> getEnums() async {

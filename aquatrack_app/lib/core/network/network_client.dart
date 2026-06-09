@@ -19,6 +19,18 @@ class NetworkClient {
   /// whether [initialize] was called explicitly (DI order-independent).
   late final Dio _dio = _buildDio();
   Future<String?> Function()? _tokenRefreshCallback;
+  Future<String?> Function()? _authTokenProvider;
+
+  /// Endpoints that must never carry an Authorization header.
+  static const _publicEndpoints = [
+    '/ping',
+    '/auth/login',
+    '/auth/register',
+    '/auth/refresh',
+  ];
+
+  bool _isPublicEndpoint(String path) =>
+      _publicEndpoints.any((p) => path.contains(p));
 
   NetworkClient({
     required this.baseUrl,
@@ -58,6 +70,24 @@ class NetworkClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          // Inject auth token per-request (mirrors legacy ApiService) when not
+          // already set explicitly and the endpoint is not public. Lets any
+          // ApiClient instance authenticate from shared token storage.
+          // Token lookup failures (e.g. storage not initialized) must never
+          // break the request — proceed unauthenticated in that case.
+          if (_authTokenProvider != null &&
+              options.headers['Authorization'] == null &&
+              !_isPublicEndpoint(options.path)) {
+            try {
+              final token = await _authTokenProvider!();
+              if (token != null && token.isNotEmpty) {
+                options.headers['Authorization'] = 'Bearer $token';
+              }
+            } catch (e) {
+              AppLogger.warning(_tag, 'Auth token lookup failed: $e');
+            }
+          }
+
           // Log request nếu enabled
           if (enableLogging) {
             AppLogger.network(options.method, options.uri.toString());
@@ -246,6 +276,11 @@ class NetworkClient {
   /// Set callback for token refresh
   void setTokenRefreshCallback(Future<String?> Function() callback) {
     _tokenRefreshCallback = callback;
+  }
+
+  /// Set provider that supplies the current access token per request.
+  void setAuthTokenProvider(Future<String?> Function() provider) {
+    _authTokenProvider = provider;
   }
 
   /// Dispose Dio resources

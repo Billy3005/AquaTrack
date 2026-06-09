@@ -1,16 +1,17 @@
 import '../models/intake_log.dart';
 import '../models/intake_log_with_achievements.dart';
-import '../services/api_service.dart';
+import '../network/api_client.dart';
+import '../network/default_api_client.dart';
 import '../utils/logger.dart';
 
 /// Repository for intake logging API calls
 class IntakeRepository {
   static const String _tag = 'IntakeRepository';
 
-  final ApiService _apiService;
+  final ApiClient _apiService;
 
-  IntakeRepository({ApiService? apiService})
-      : _apiService = apiService ?? ApiService();
+  IntakeRepository({ApiClient? apiClient})
+      : _apiService = apiClient ?? defaultApiClient;
 
   /// Create new intake log entry with achievements
   Future<IntakeLogWithAchievements> createIntakeLog({
