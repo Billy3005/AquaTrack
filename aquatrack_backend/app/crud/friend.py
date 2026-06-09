@@ -214,7 +214,9 @@ class CRUDFriend(CRUDBase[Friend, dict, dict]):
                     "id": user.id,
                     "username": user.username,
                     "display_name": user.full_name or user.username,
-                    "avatar_url": None,
+                    "avatar_url": (
+                        f"/avatars/{user.avatar_id}" if user.avatar_id else None
+                    ),
                     "hydration_level": 0.0,
                     "daily_progress": 0.0,
                     "current_streak": user.current_streak or 0,
@@ -300,7 +302,9 @@ class CRUDFriend(CRUDBase[Friend, dict, dict]):
                     "id": user.id,
                     "username": user.username,
                     "display_name": user.full_name or user.username,
-                    "avatar_url": None,
+                    "avatar_url": (
+                        f"/avatars/{user.avatar_id}" if user.avatar_id else None
+                    ),
                     "current_streak": user.current_streak or 0,
                     "mutual_friends": mutual_by_id.get(candidate_id, 0),
                 }
