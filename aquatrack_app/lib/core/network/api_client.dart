@@ -75,14 +75,21 @@ class ApiClientImpl implements ApiClient {
 
   String? _currentToken;
 
+  // Single-flight guard: concurrent 401s share one refresh instead of each
+  // firing /auth/refresh.
+  Future<String?>? _refreshInFlight;
+
   ApiClientImpl({
     required network.NetworkClient networkClient,
     required TokenStorage tokenStorage,
   }) : _networkClient = networkClient,
        _tokenStorage = tokenStorage {
     // Auto-inject the access token per request from storage so this client is
-    // authenticated even if setAuthToken/initialize were never called.
+    // authenticated even if setAuthToken/initialize were never called, and wire
+    // 401 refresh here (not only in initialize) so it works even when
+    // initialize() is skipped.
     _networkClient.setAuthTokenProvider(_tokenStorage.getAccessToken);
+    _networkClient.setTokenRefreshCallback(_handleTokenRefresh);
   }
 
   @override
@@ -229,14 +236,24 @@ class ApiClientImpl implements ApiClient {
     _networkClient.dispose();
   }
 
-  /// Handle token refresh when 401 is received
-  Future<String?> _handleTokenRefresh() async {
+  /// Handle token refresh when 401 is received. Single-flight: concurrent 401s
+  /// await the same refresh instead of each hitting /auth/refresh.
+  Future<String?> _handleTokenRefresh() {
+    return _refreshInFlight ??=
+        _doRefresh().whenComplete(() => _refreshInFlight = null);
+  }
+
+  Future<String?> _doRefresh() async {
     final refreshToken = await _tokenStorage.getRefreshToken();
-    if (refreshToken == null) return null;
+    if (refreshToken == null) {
+      // No way to recover — clear any stale token so requests stop retrying.
+      await _tokenStorage.clearTokens();
+      return null;
+    }
 
     try {
-      // Call refresh endpoint without auth header
-      _networkClient.clearAuthHeader();
+      // /auth/refresh is a public endpoint, so the per-request injector skips
+      // it; no need to mutate the shared auth header.
       final response = await _networkClient.post('/auth/refresh', data: {
         'refresh_token': refreshToken,
       });
@@ -248,11 +265,12 @@ class ApiClientImpl implements ApiClient {
           return newToken;
         }
       }
-    } catch (e) {
-      // Refresh failed, clear all tokens
-      await _tokenStorage.clearTokens();
+    } catch (_) {
+      // fall through to clear below
     }
 
+    // Refresh failed → clear tokens so the app stops retrying and routes to login.
+    await _tokenStorage.clearTokens();
     return null;
   }
 

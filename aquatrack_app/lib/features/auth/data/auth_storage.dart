@@ -121,7 +121,10 @@ class AuthStorageImpl implements AuthStorage {
   @override
   Future<User?> getStoredUser() async {
     try {
-      final userJson = await _storageService.getString(_userDataKey);
+      // user_data lives in the Hive 'auth_storage' box (via SecureStorage) so
+      // it shares a single source of truth with the legacy AuthService, which
+      // reads the same box+key for getCurrentUserId(). See [[auth-architecture-migration]].
+      final userJson = await _secureStorage.getString(_userDataKey);
       if (userJson == null) {
         AppLogger.debug(_tag, 'No stored user data found');
         return null;
@@ -148,7 +151,9 @@ class AuthStorageImpl implements AuthStorage {
       final userModel = UserModel.fromDomainEntity(user);
       final userJson = _jsonToString(userModel.toJson());
 
-      await _storageService.setString(_userDataKey, userJson);
+      // Persist to the shared Hive 'auth_storage' box so legacy
+      // AuthService.getCurrentUserId() (and all Hive-scoped storage) sees it.
+      await _secureStorage.setString(_userDataKey, userJson);
       AppLogger.debug(_tag, 'User data saved: ${user.username}');
     } catch (e) {
       AppLogger.error(_tag, 'Error saving user data', e);
@@ -159,7 +164,7 @@ class AuthStorageImpl implements AuthStorage {
   @override
   Future<void> clearUserData() async {
     try {
-      await _storageService.remove(_userDataKey);
+      await _secureStorage.remove(_userDataKey);
       AppLogger.debug(_tag, 'User data cleared');
     } catch (e) {
       AppLogger.error(_tag, 'Error clearing user data', e);

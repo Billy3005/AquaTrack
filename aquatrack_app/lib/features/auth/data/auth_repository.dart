@@ -55,7 +55,6 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
 
   // Cache keys
   static const String _currentUserCacheKey = 'current_user';
-  static const String _authStateCacheKey = 'auth_state';
 
   AuthRepositoryImpl({
     required AuthAPI authAPI,
@@ -247,18 +246,9 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
   @override
   Future<bool> isAuthenticated() async {
     try {
-      // Check cache first
-      final cachedState = await loadFromCache<bool>(
-        key: _authStateCacheKey,
-        deserializer: (data) => data.toLowerCase() == 'true',
-        cacheTtl: const Duration(minutes: 1), // Short TTL for auth state
-      );
-
-      if (cachedState != null) {
-        return cachedState;
-      }
-
-      // Check storage
+      // Read storage directly — no caching. A cached `true` could outlive a
+      // server-side revoke/logout-elsewhere and let guarded screens fire
+      // requests that 401.
       final isAuth = await _authStorage.isAuthenticated();
 
       // Check token expiry
@@ -274,13 +264,6 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
           }
         }
       }
-
-      // Cache result
-      await saveToCache(
-        key: _authStateCacheKey,
-        data: isAuth,
-        serializer: (data) => data.toString(),
-      );
 
       return isAuth;
     } catch (e) {
