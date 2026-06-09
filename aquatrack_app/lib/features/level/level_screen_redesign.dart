@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/user_stats_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/coin_badge.dart';
+import '../../shared/widgets/xp_reward_popup.dart';
 import '../avatars/avatar_collection_screen.dart';
 import '../avatars/data/avatar_catalog.dart';
 import '../avatars/widgets/aqua_avatar.dart' show AvatarBubble;
@@ -67,16 +69,13 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
     if (!mounted) return;
     setState(() => _claiming.remove(a.id));
 
-    final messenger = ScaffoldMessenger.of(context);
     if (res.isSuccess) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('Đã nhận +${a.rewardXp} XP · ${a.title}'),
-          backgroundColor: AppColors.purpleXP,
-        ),
-      );
+      // Same celebratory feedback as quick-logging water — a floating "+XP"
+      // that rises and fades, instead of the purple snackbar.
+      HapticFeedback.lightImpact();
+      XpRewardPopup.show(context, amount: a.rewardXp, label: a.title);
     } else {
-      messenger.showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(res.error ?? 'Không nhận được phần thưởng'),
           backgroundColor: AppColors.error,
