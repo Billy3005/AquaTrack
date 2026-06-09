@@ -9,7 +9,7 @@ import '../../../core/models/intake_log_with_achievements.dart';
 import '../../../core/sync/stats_sync_repository.dart';
 import '../../../core/sync/sync_service.dart';
 import '../../../core/providers/user_stats_provider.dart';
-import '../../../core/providers/auth_state_provider.dart';
+import '../../../features/auth/presentation/providers/auth_providers.dart';
 import '../../../shared/models/daily_summary.dart';
 import '../../../shared/models/intake_log.dart';
 import '../../../shared/storage/hive_storage_service.dart';

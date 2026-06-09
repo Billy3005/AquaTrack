@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'core/di/app_providers.dart';
 import 'core/error/error_handler.dart';
 import 'shared/storage/hive_storage_service.dart';
 import 'core/theme/app_theme.dart';
@@ -26,17 +27,30 @@ Future<void> main() async {
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(AppTheme.systemUiOverlayStyle);
 
+  // Shared container so eager init warms the same providers the app uses.
+  final container = ProviderContainer();
+
   try {
     // Initialize Hive storage (existing)
     await HiveStorageService.initialize();
 
-    // Initialize app services for authentication
+    // Initialize app services for authentication (legacy stack)
     await AppService().initialize();
+
+    // Initialize new DI stack (network/storage/apiClient). Best-effort:
+    // components also self-initialize lazily, so a failure here is non-fatal.
+    await container.read(appInitializationProvider.future);
+
     debugPrint('App services initialized - Authentication enabled');
   } catch (error, stack) {
     AppErrorHandler.handleProviderError('App Initialization', error, stack);
     // Continue with app launch even if some services fail
   }
 
-  runApp(const ProviderScope(child: AquaTrackApp()));
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: const AquaTrackApp(),
+    ),
+  );
 }

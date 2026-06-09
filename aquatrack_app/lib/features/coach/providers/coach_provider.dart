@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/repositories/coach_repository.dart';
-import '../../../core/providers/auth_state_provider.dart';
+import '../../../features/auth/presentation/providers/auth_providers.dart';
 import '../../../shared/storage/hive_storage_service.dart';
 import '../../home/providers/home_provider.dart';
 import '../../level/providers/level_provider.dart';
@@ -70,7 +70,7 @@ class CoachNotifier extends _$CoachNotifier {
 
     // Listen to auth state changes để reset conversation khi user switch
     ref.listen<AuthState>(authStateProvider, (previous, current) {
-      if (previous?.userId != current.userId) {
+      if (previous?.currentUser?.id != current.currentUser?.id) {
         // User changed - reset conversation for new user
         _resetForNewUser();
       }
@@ -342,7 +342,7 @@ class CoachNotifier extends _$CoachNotifier {
 
   String? _getCurrentUserId() {
     final authState = ref.read(authStateProvider);
-    final userId = authState.userId?.trim();
+    final userId = authState.currentUser?.id.trim();
     if (userId == null || userId.isEmpty) {
       return null;
     }

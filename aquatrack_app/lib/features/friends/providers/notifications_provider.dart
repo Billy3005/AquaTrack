@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/providers/auth_state_provider.dart';
+import '../../../features/auth/presentation/providers/auth_providers.dart';
 import '../../../shared/storage/hive_storage_service.dart';
 import '../models/notification_models.dart';
 import 'friends_provider.dart';
@@ -26,7 +26,7 @@ final challengesProvider =
 /// Last time the user opened the inbox. Seeded from Hive (per current user),
 /// bumped to now() when the dropdown opens — drives the unread badge.
 final notificationsSeenAtProvider = StateProvider<DateTime?>((ref) {
-  final userId = ref.watch(authStateProvider).userId;
+  final userId = ref.watch(authStateProvider).currentUser?.id;
   return HiveStorageService.instance.loadNotificationsSeenAt(userId);
 });
 
@@ -49,7 +49,7 @@ final unreadNotificationsCountProvider = Provider<int>((ref) {
 /// Takes [WidgetRef] so it can be called from screens/widgets.
 Future<void> markNotificationsSeen(WidgetRef ref) async {
   final now = DateTime.now();
-  final userId = ref.read(authStateProvider).userId;
+  final userId = ref.read(authStateProvider).currentUser?.id;
   await HiveStorageService.instance.cacheNotificationsSeenAt(now, userId);
   ref.read(notificationsSeenAtProvider.notifier).state = now;
 }
