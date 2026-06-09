@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:aquatrack_app/core/services/auth_service.dart' as legacy;
 import 'package:aquatrack_app/core/storage/secure_storage.dart';
 import 'package:aquatrack_app/core/storage/storage_service.dart';
 import 'package:aquatrack_app/features/auth/data/auth_storage.dart';
@@ -99,5 +100,29 @@ void main() {
     expect(await fresh.getAccessToken(), isNull);
     expect(await fresh.getStoredUser(), isNull);
     expect(await fresh.isAuthenticated(), false);
+  });
+
+  // Regression for the cross-stack user_data split: the new auth stack must
+  // write user_data where the legacy AuthService reads it, so getCurrentUserId()
+  // (used by HiveStorageService scoping, coach sessions, etc.) is correct right
+  // after a new-stack login — not null until Profile incidentally back-fills it.
+  test('legacy AuthService.getCurrentUserId sees new-stack saveUser', () async {
+    await newStorage().saveUser(testUser);
+
+    final legacyAuth = legacy.AuthService();
+    await legacyAuth.initialize();
+
+    expect(await legacyAuth.getCurrentUserId(), 'user-1');
+  });
+
+  test('clearUserData hides the user from legacy AuthService too', () async {
+    final storage = newStorage();
+    await storage.saveUser(testUser);
+    await storage.clearUserData();
+
+    final legacyAuth = legacy.AuthService();
+    await legacyAuth.initialize();
+
+    expect(await legacyAuth.getCurrentUserId(), isNull);
   });
 }
