@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 from typing import List, Optional
 
 from sqlalchemy import and_, desc, func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
 from app.models.friend import Friend

@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -360,7 +360,7 @@ async def get_level_rewards():
     ]
 
     for reward in level_rewards_data:
-        xp_needed = _calculate_xp_for_level(reward["level"])
+        _calculate_xp_for_level(reward["level"])
         rewards.append(
             LevelReward(
                 level=reward["level"],

@@ -1,5 +1,4 @@
-from datetime import date, datetime, timedelta
-from typing import List, Optional
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, func
@@ -7,10 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user_id
-from app.crud.daily_summary import daily_summary_crud
 from app.crud.intake_log import intake_log_crud
 from app.crud.user import user_crud
-from app.models.daily_summary import DailySummary
 from app.models.intake_log import IntakeLog
 
 router = APIRouter()

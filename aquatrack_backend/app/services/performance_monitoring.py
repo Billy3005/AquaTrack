@@ -5,15 +5,10 @@ Real-time performance tracking, health checks, resource monitoring và analytics
 """
 
 import asyncio
-import gc
-import json
-import os
-import threading
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 
 import psutil
 from fastapi import Request, Response
@@ -265,7 +260,7 @@ class PerformanceMonitor:
         """Generate comprehensive performance summary"""
         current_time = time.time()
         one_hour_ago = current_time - 3600
-        five_minutes_ago = current_time - 300
+        current_time - 300
 
         # Endpoint performance analysis
         endpoint_stats = {}

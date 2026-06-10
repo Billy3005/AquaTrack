@@ -8,7 +8,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud.scan_history import scan_history_crud
 from app.schemas.vision import (ScanHistoryResponse, ScanHistoryUpdate,
-                                VisionEstimateRequest, VisionEstimateResponse)
+                                VisionEstimateResponse)
 from app.services.vision_service import vision_service
 
 router = APIRouter()
@@ -66,7 +66,7 @@ async def estimate_volume(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Image processing error: {str(e)}",
         )
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error during image processing",

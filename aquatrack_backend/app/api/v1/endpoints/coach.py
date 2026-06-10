@@ -12,14 +12,12 @@ from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud.conversation import conversation_crud, conversation_session_crud
 from app.crud.intake_log import intake_log_crud
-from app.crud.user import user_crud
 from app.schemas.conversation import (ChatMessageRequest, ChatMessageResponse,
                                       ContextUpdateRequest,
                                       ConversationHistoryResponse,
-                                      ConversationSessionCreate,
                                       ConversationSessionListResponse,
-                                      MessageCreate, MessageResponse,
-                                      QuickReplyActionRequest,
+                                      MessageCreate,
+                                      MessageResponse, QuickReplyActionRequest,
                                       QuickReplySchema)
 from app.services.ai_coach_service import ai_coach_service
 
@@ -65,9 +63,7 @@ async def chat_with_coach(
     context = chat_request.context or {}
 
     # Get user's recent data for context
-    today = date.today()
-    current_user_id = "test-user-123"  # Temporary for testing
-    db = None  # Bypass database for testing
+    # TODO: Replace with real auth (current_user_id, db) when re-enabling auth
     # today_stats = intake_log_crud.get_daily_stats(db, current_user_id, today)
 
     # Analyze user's current state
@@ -88,7 +84,7 @@ async def chat_with_coach(
         user_id=None,  # Bypass user lookup for testing
         db=None,  # Bypass database for testing
     )
-    print(f"[ENDPOINT DEBUG] ai_coach_service returned response successfully")
+    print("[ENDPOINT DEBUG] ai_coach_service returned response successfully")
 
     return response
 
@@ -395,8 +391,8 @@ async def send_conversation_message(
         user_message_id = str(uuid.uuid4())
         ai_message_id = str(uuid.uuid4())
 
-        # Get conversation context for AI generation
-        recent_context = conversation_crud.get_conversation_context(
+        # Get conversation context for AI generation (prefetch for future use)
+        conversation_crud.get_conversation_context(
             db, user_id=current_user_id, session_id=session.session_id, limit=10
         )
 
@@ -642,7 +638,7 @@ async def handle_quick_reply_action(
         context_data={"quick_reply_id": request.quick_reply_id},
     )
 
-    ai_message_db = conversation_crud.create_message(
+    conversation_crud.create_message(
         db,
         user_id=current_user_id,
         session_id=request.session_id,

@@ -9,7 +9,7 @@ from app.core.database import get_db
 from app.core.security import (create_access_token, create_refresh_token,
                                get_current_user_id)
 from app.crud import user_crud
-from app.schemas.auth import RefreshToken, Token, TokenRefreshResponse
+from app.schemas.auth import RefreshToken, TokenRefreshResponse
 from app.schemas.user import UserCreate, UserLogin, UserResponse
 
 router = APIRouter()
@@ -23,7 +23,7 @@ async def register_user(user_create: UserCreate, db: Session = Depends(get_db)):
     """
     try:
         # Debug: Log registration data received
-        print(f"[DEBUG] REGISTRATION DEBUG:")
+        print("[DEBUG] REGISTRATION DEBUG:")
         print(f"  [EMAIL] Email: {user_create.email}")
         print(f"  [USER] Username: {user_create.username}")
         print(f"  [NAME] Full Name: {user_create.full_name}")

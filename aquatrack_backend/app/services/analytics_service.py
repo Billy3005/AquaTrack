@@ -5,10 +5,9 @@ Analyzes user patterns, behavior, and preferences for enhanced coaching
 
 import statistics
 from collections import Counter, defaultdict
-from datetime import date, datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from datetime import date, timedelta
+from typing import Dict, List
 
-from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
 from app.crud.intake_log import intake_log_crud

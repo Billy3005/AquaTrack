@@ -2,7 +2,7 @@ import base64
 import os
 import random
 from io import BytesIO
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 
 import anthropic
 from PIL import Image
@@ -79,7 +79,7 @@ class VisionService:
         """
         try:
             # Validate and preprocess image
-            image = self._preprocess_image(image_data)
+            self._preprocess_image(image_data)
 
             # Run ML inference using Claude Vision API
             container_class, fill_level, liquid_type, confidence = (
