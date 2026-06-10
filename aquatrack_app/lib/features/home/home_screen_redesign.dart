@@ -205,8 +205,13 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
     final percent = ((current / goal) * 100.0).clamp(0.0, 100.0);
     final remainingMl = (goal - current).clamp(0, goal).round();
 
-    // Real signals for the AQUA card / states.
-    final streak = levelState?.currentStreak ?? summary?.streakDays ?? 0;
+    // Real signals for the AQUA card / states. Streak's single source of truth is
+    // the backend canonical value exposed via userStatsProvider (refreshed after
+    // every log), so prefer it; level/summary are only stale fallbacks.
+    final streak = userStats?.currentStreak ??
+        levelState?.currentStreak ??
+        summary?.streakDays ??
+        0;
     final lastDrinkType =
         todayLogs.isNotEmpty ? todayLogs.first.liquidType : null;
     final temperatureC = _weatherTempC; // set by weather provider (#3)
@@ -400,7 +405,10 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
           children: [
             CoinBadge(amount: userStats?.coins ?? 0),
             const SizedBox(width: 6),
-            _buildStreakBadge(levelState?.currentStreak ?? 0),
+            // Canonical streak from userStatsProvider (single source of truth);
+            // level state is only a fallback before stats load.
+            _buildStreakBadge(
+                userStats?.currentStreak ?? levelState?.currentStreak ?? 0),
           ],
         ),
       ],

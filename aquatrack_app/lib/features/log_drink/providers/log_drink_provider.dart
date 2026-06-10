@@ -2,7 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/providers/user_stats_provider.dart';
 import '../../../core/repositories/intake_repository.dart';
+import '../../home/providers/home_provider.dart';
 
 part 'log_drink_provider.g.dart';
 
@@ -84,6 +86,12 @@ class LogDrinkNotifier extends _$LogDrinkNotifier {
 
       // Reset form sau khi log thành công
       state = const LogDrinkState();
+
+      // Refresh the server-driven providers so Home (summary + streak) and the
+      // canonical user stats (read by Nhiệm vụ / Profile / Level) reflect this
+      // log immediately — single source of truth, no local recomputation.
+      ref.invalidate(homeNotifierProvider);
+      ref.invalidate(userStatsProvider);
     } catch (e) {
       state = state.copyWith(isLoading: false);
       rethrow;

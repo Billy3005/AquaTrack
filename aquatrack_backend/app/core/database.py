@@ -40,11 +40,11 @@ def init_db() -> None:
     """
     # Import all models here to ensure they're registered
 
-    from app.models import (  # noqa: F401
-        Achievement, Challenge, CoinGift, Conversation, ConversationSession,
-        DailySummary, Friend, FriendRequest, IntakeLog, LeaderboardEntry,
-        QuestClaim, ReminderLog, ScanHistory, User, UserInsight,
-    )
+    from app.models import (Achievement, Challenge, CoinGift,  # noqa: F401
+                            Conversation, ConversationSession, DailySummary,
+                            Friend, FriendRequest, IntakeLog, LeaderboardEntry,
+                            QuestClaim, ReminderLog, ScanHistory, User,
+                            UserInsight)
 
     Base.metadata.create_all(bind=engine)
     _ensure_user_columns()
