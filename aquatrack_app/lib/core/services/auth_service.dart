@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../config/app_config.dart';
 import '../utils/logger.dart';
-import '../providers/auth_state_provider.dart';
 
 /// Authentication service for managing JWT tokens and user sessions
+///
+/// @deprecated This singleton AuthService will be replaced with the new
+/// dependency-injected AuthService in features/auth/domain/auth_service.dart
+/// TODO: Migrate all usages to use new AuthService via Riverpod providers
 class AuthService {
   static const String _tag = 'AuthService';
 
@@ -68,9 +71,8 @@ class AuthService {
       await _authBox.put(AppConfig.userDataKey, jsonEncode(userData));
       final userId = userData['id'] as String?;
       if (userId != null && userId.isNotEmpty) {
-        try {
-          globalAuthStateNotifier.onLogin(userId);
-        } catch (_) {}
+        // TODO: Remove when migrating to new auth architecture
+        // globalAuthStateNotifier.onLogin(userId); // Removed - use new auth providers
       }
       AppLogger.debug(_tag, 'User data stored');
     } catch (e) {
@@ -120,9 +122,8 @@ class AuthService {
   Future<void> logout() async {
     try {
       await _authBox.clear();
-      try {
-        globalAuthStateNotifier.onLogout();
-      } catch (_) {}
+      // TODO: Remove when migrating to new auth architecture
+      // globalAuthStateNotifier.onLogout(); // Removed - use new auth providers
       AppLogger.info(_tag, 'User logged out, auth data cleared');
     } catch (e) {
       AppLogger.error(_tag, 'Failed to logout', e);

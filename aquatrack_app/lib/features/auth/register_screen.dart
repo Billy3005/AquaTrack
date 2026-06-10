@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers/session.dart';
-import '../../core/repositories/auth_repository.dart';
 import '../../core/utils/logger.dart';
+import 'auth.dart';
 
 /// Register screen with email/password/name registration
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -21,7 +21,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
-  final _authRepository = AuthRepository();
+  // Auth repository now injected via Riverpod - removed singleton
 
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -47,7 +47,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     super.dispose();
   }
 
-  /// Handle registration
+  /// Handle registration using new auth architecture
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -65,32 +65,39 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       // Generate username from email (user@domain.com -> user)
       final username = email.split('@').first;
 
-      // Call register API
+      // Use new auth state notifier
       print('📡 Calling register API...');
-      final authResponse = await _authRepository.register(
+      final authNotifier = ref.read(authStateProvider.notifier);
+      await authNotifier.register(
         email: email,
         password: password,
         username: username,
         fullName: fullName.isEmpty ? null : fullName,
       );
 
-      print('✅ Registration API success: ${authResponse.user.email}');
+      // Check if registration was successful
+      final authState = ref.read(authStateProvider);
+      if (authState.isAuthenticated && authState.currentUser != null) {
+        print('✅ Registration API success: ${authState.currentUser!.email}');
 
-      AppLogger.info(
-        'Register',
-        'Registration successful: ${authResponse.user.email}',
-      );
+        AppLogger.info(
+          'Register',
+          'Registration successful: ${authState.currentUser!.email}',
+        );
 
-      // A brand-new account must start clean: clear any cached data left from a
-      // previously logged-in account in this session (level, achievements,
-      // friends, stats…), otherwise the new user sees the old user's data.
-      resetUserSession(ref);
+        // Clear any cached data from previous sessions
+        resetUserSession(ref);
 
-      // Navigate to onboarding for new users
-      print('🚀 Attempting navigation to /onboarding');
-      if (mounted) {
-        context.go('/onboarding');
-        print('✅ Navigation called successfully');
+        // Navigate to onboarding for new users
+        print('🚀 Attempting navigation to /onboarding');
+        if (mounted) {
+          context.go('/onboarding');
+          print('✅ Navigation called successfully');
+        }
+      } else {
+        // Registration failed - auth state will have error
+        print('❌ Registration failed: ${authState.error}');
+        AppLogger.error('Register', 'Registration failed: ${authState.error}', null);
       }
     } catch (e) {
       print('❌ Registration failed: $e');

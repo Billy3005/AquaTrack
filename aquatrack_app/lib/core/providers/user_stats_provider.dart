@@ -1,8 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../repositories/user_repository.dart';
-import '../models/user.dart';
-import 'auth_state_provider.dart';
+import '../../features/auth/presentation/providers/auth_providers.dart';
 
 /// Provider for refreshing user stats - increment to refresh
 final userStatsRefreshProvider = StateProvider<int>((ref) => 0);

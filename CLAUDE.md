@@ -89,14 +89,14 @@ Language    : Tiếng Việt (UI) + English (code/comment)
 | **TDD** | `.claude/skills/engineering/tdd.md` | Trước khi code feature mới · unit/widget testing |
 | **Grill-Me** | `.claude/skills/productivity/grill-me.md` | Trước implementation lớn · design review |
 | **Diagnose** | `.claude/skills/engineering/diagnose.md` | Debug issues phức tạp · performance problems |
-| **Improve Architecture** | `.claude/skills/engineering/improve-architecture.md` | Code review · refactoring · tech debt cleanup |
+| **Improve AquaTrack Architecture** | `.claude/skills/engineering/improve-aquatrack-architecture.md` | Architecture review sau features · Flutter/FastAPI refactoring · coupling analysis |
 
 ### Workflow với Skills:
 ```
 1. Planning → /grill-me trước khi start
 2. Development → /tdd cho mỗi component
 3. Debugging → /diagnose cho issues
-4. Review → /improve-architecture sau features
+4. Review → /improve-aquatrack-architecture sau features
 ```
 
 ## Rules — luôn áp dụng

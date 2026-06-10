@@ -3,7 +3,6 @@ import '../models/user.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../utils/logger.dart';
-import '../providers/auth_state_provider.dart';
 
 /// Repository for authentication-related API calls
 class AuthRepository {
@@ -40,13 +39,8 @@ class AuthRepository {
         );
         await _authService.storeUserData(response.data!.user.toJson());
 
-        // Notify auth state change
-        try {
-          globalAuthStateNotifier.onLogin(response.data!.user.id);
-        } catch (e) {
-          // Ignore if global notifier not initialized yet
-          AppLogger.debug(_tag, 'Auth state notifier not ready: $e');
-        }
+        // Auth state changes now handled by new AuthStateNotifier via Riverpod
+        // (features/auth/presentation/providers/auth_providers.dart)
 
         AppLogger.info(
           _tag,
@@ -93,13 +87,8 @@ class AuthRepository {
         );
         await _authService.storeUserData(response.data!.user.toJson());
 
-        // Notify auth state change
-        try {
-          globalAuthStateNotifier.onLogin(response.data!.user.id);
-        } catch (e) {
-          // Ignore if global notifier not initialized yet
-          AppLogger.debug(_tag, 'Auth state notifier not ready: $e');
-        }
+        // Auth state changes now handled by new AuthStateNotifier via Riverpod
+        // (features/auth/presentation/providers/auth_providers.dart)
 
         AppLogger.info(
           _tag,
@@ -172,13 +161,8 @@ class AuthRepository {
       // Clear local auth data
       await _authService.logout();
 
-      // Notify auth state change
-      try {
-        globalAuthStateNotifier.onLogout();
-      } catch (e) {
-        // Ignore if global notifier not initialized yet
-        AppLogger.debug(_tag, 'Auth state notifier not ready: $e');
-      }
+      // Auth state changes now handled by new AuthStateNotifier via Riverpod
+      // (features/auth/presentation/providers/auth_providers.dart)
 
       AppLogger.info(_tag, 'Logout completed');
     } catch (e) {

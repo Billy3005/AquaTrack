@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers/session.dart';
-import '../../core/repositories/auth_repository.dart';
 import '../../core/utils/logger.dart';
+import 'auth.dart';
 
 /// Login screen with email/password authentication
 class LoginScreen extends ConsumerStatefulWidget {
@@ -19,7 +19,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authRepository = AuthRepository();
+  // Auth repository now injected via Riverpod - removed singleton
 
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -58,7 +58,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     super.dispose();
   }
 
-  /// Handle login
+  /// Handle login using new auth architecture
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -71,21 +71,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     });
 
     try {
-      // Call login API
-      final authResponse = await _authRepository.login(
-        email: email,
-        password: password,
-      );
+      // Use new auth state notifier
+      final authNotifier = ref.read(authStateProvider.notifier);
+      await authNotifier.login(email: email, password: password);
 
-      AppLogger.info('Login', 'Login successful: ${authResponse.user.email}');
+      // Check if login was successful
+      final authState = ref.read(authStateProvider);
+      if (authState.isAuthenticated && authState.currentUser != null) {
+        AppLogger.info('Login', 'Login successful: ${authState.currentUser!.email}');
 
-      // Clear any cached data from a previous account so this session never
-      // shows the prior user's level, achievements, friends, stats, etc.
-      resetUserSession(ref);
+        // Clear any cached data from a previous account
+        resetUserSession(ref);
 
-      // Navigate to home
-      if (mounted) {
-        context.go('/');
+        // Navigate based on onboarding status
+        if (mounted) {
+          if (authState.needsOnboarding) {
+            context.go('/onboarding');
+          } else {
+            context.go('/');
+          }
+        }
+      } else {
+        // Login failed - auth state will have error
+        setState(() {
+          _errorMessage = authState.error ?? 'Đăng nhập thất bại';
+        });
       }
     } catch (e) {
       setState(() {

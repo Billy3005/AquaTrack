@@ -4,6 +4,10 @@ import '../utils/logger.dart';
 import 'auth_service.dart';
 
 /// Core API service for AquaTrack backend communication
+///
+/// @deprecated This singleton ApiService will be replaced with the new
+/// dependency-injected ApiClient in core/network/api_client.dart
+/// TODO: Migrate all usages to use ApiClient via Riverpod providers
 class ApiService {
   static const String _tag = 'ApiService';
 
