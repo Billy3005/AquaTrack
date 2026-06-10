@@ -77,7 +77,6 @@ Future<void> testSocialIntegrationFlow() async {
     // Step 9: Flutter Service Simulation
     print("\n[STEP 9] 📱 Simulating Flutter SocialService calls...");
     await simulateFlutterServiceCalls(user1Token);
-
   } catch (e) {
     print("❌ Social integration test failed with error: $e");
   } finally {
@@ -109,7 +108,8 @@ Future<void> testSocialIntegrationFlow() async {
   print("   • Track social statistics");
 }
 
-Future<Map<String, dynamic>?> registerUser(HttpClient client, Map<String, dynamic> userData) async {
+Future<Map<String, dynamic>?> registerUser(
+    HttpClient client, Map<String, dynamic> userData) async {
   try {
     final request = await client.postUrl(Uri.parse('$BASE_URL/auth/register'));
     request.headers.contentType = ContentType.json;
@@ -130,14 +130,12 @@ Future<Map<String, dynamic>?> registerUser(HttpClient client, Map<String, dynami
   }
 }
 
-Future<Map<String, dynamic>?> loginUser(HttpClient client, String email, String password) async {
+Future<Map<String, dynamic>?> loginUser(
+    HttpClient client, String email, String password) async {
   try {
     final request = await client.postUrl(Uri.parse('$BASE_URL/auth/login'));
     request.headers.contentType = ContentType.json;
-    request.write(jsonEncode({
-      "email": email,
-      "password": password
-    }));
+    request.write(jsonEncode({"email": email, "password": password}));
 
     final response = await request.close();
     final data = await utf8.decoder.bind(response).join();
@@ -154,9 +152,11 @@ Future<Map<String, dynamic>?> loginUser(HttpClient client, String email, String 
   }
 }
 
-Future<Map<String, dynamic>?> loginOrRegisterUser(HttpClient client, Map<String, dynamic> userData) async {
+Future<Map<String, dynamic>?> loginOrRegisterUser(
+    HttpClient client, Map<String, dynamic> userData) async {
   // Try login first
-  final loginData = await loginUser(client, userData['email'], userData['password']);
+  final loginData =
+      await loginUser(client, userData['email'], userData['password']);
   if (loginData != null) {
     print("✅ Logged in existing user: ${userData['email']}");
     return loginData;
@@ -170,7 +170,8 @@ Future<Map<String, dynamic>?> loginOrRegisterUser(HttpClient client, Map<String,
 Future<void> testUserSearch(HttpClient client, String token) async {
   try {
     print("🔍 Debug: Using token: ${token.substring(0, 50)}...");
-    final request = await client.getUrl(Uri.parse('$BASE_URL/friends/search?q=social'));
+    final request =
+        await client.getUrl(Uri.parse('$BASE_URL/friends/search?q=social'));
     request.headers.set('Authorization', 'Bearer $token');
 
     final response = await request.close();
@@ -186,7 +187,8 @@ Future<void> testUserSearch(HttpClient client, String token) async {
 
       if (users.isNotEmpty) {
         final user = users[0];
-        print("   - Sample user: ${user['username']} (Level ${user['current_level']})");
+        print(
+            "   - Sample user: ${user['username']} (Level ${user['current_level']})");
       }
     } else {
       print("❌ User search failed: $data");
@@ -196,13 +198,15 @@ Future<void> testUserSearch(HttpClient client, String token) async {
   }
 }
 
-Future<void> testFriendRequestFlow(HttpClient client, String user1Token, String user2Token) async {
+Future<void> testFriendRequestFlow(
+    HttpClient client, String user1Token, String user2Token) async {
   try {
     // User 1 sends friend request to User 2
     print("   📤 User 1 sending friend request to User 2...");
     print("🔍 Debug: User1 token: ${user1Token.substring(0, 50)}...");
 
-    final sendRequest = await client.postUrl(Uri.parse('$BASE_URL/friends/request/'));
+    final sendRequest =
+        await client.postUrl(Uri.parse('$BASE_URL/friends/request/'));
     sendRequest.headers.set('Authorization', 'Bearer $user1Token');
     sendRequest.headers.contentType = ContentType.json;
     sendRequest.write(jsonEncode({
@@ -213,7 +217,8 @@ Future<void> testFriendRequestFlow(HttpClient client, String user1Token, String 
     final sendResponse = await sendRequest.close();
     final sendData = await utf8.decoder.bind(sendResponse).join();
 
-    print("🔍 Debug: Friend request response status: ${sendResponse.statusCode}");
+    print(
+        "🔍 Debug: Friend request response status: ${sendResponse.statusCode}");
     print("🔍 Debug: Friend request response: $sendData");
 
     if (sendResponse.statusCode == 201) {
@@ -221,7 +226,8 @@ Future<void> testFriendRequestFlow(HttpClient client, String user1Token, String 
       print("   ✅ Friend request sent successfully!");
       print("      - Request ID: ${result['request_id']}");
       print("      - Message: ${result['message']}");
-    } else if (sendResponse.statusCode == 400 && sendData.contains("already exists")) {
+    } else if (sendResponse.statusCode == 400 &&
+        sendData.contains("already exists")) {
       print("   ✅ Friend request already exists (expected in testing)");
       print("      - Status: Skipping to acceptance workflow");
     } else {
@@ -232,7 +238,8 @@ Future<void> testFriendRequestFlow(HttpClient client, String user1Token, String 
     // Check pending requests for User 2
     print("   📬 Checking pending requests for User 2...");
 
-    final checkRequest = await client.getUrl(Uri.parse('$BASE_URL/friends/requests/'));
+    final checkRequest =
+        await client.getUrl(Uri.parse('$BASE_URL/friends/requests/'));
     checkRequest.headers.set('Authorization', 'Bearer $user2Token');
 
     final checkResponse = await checkRequest.close();
@@ -251,7 +258,8 @@ Future<void> testFriendRequestFlow(HttpClient client, String user1Token, String 
         // Accept the friend request
         print("   ✅ User 2 accepting friend request...");
 
-        final acceptRequest = await client.putUrl(Uri.parse('$BASE_URL/friends/request/$requestId/'));
+        final acceptRequest = await client
+            .putUrl(Uri.parse('$BASE_URL/friends/request/$requestId/'));
         acceptRequest.headers.set('Authorization', 'Bearer $user2Token');
         acceptRequest.headers.contentType = ContentType.json;
         acceptRequest.write(jsonEncode({"action": "accept"}));
@@ -270,7 +278,6 @@ Future<void> testFriendRequestFlow(HttpClient client, String user1Token, String 
     } else {
       print("   ❌ Failed to get pending requests: $checkData");
     }
-
   } catch (e) {
     print("❌ Error testing friend request flow: $e");
   }
@@ -290,7 +297,8 @@ Future<void> testFriendsManagement(HttpClient client, String token) async {
       print("   - Total friends: ${friends.length}");
 
       for (final friend in friends) {
-        print("   - Friend: ${friend['friend_username']} (Level ${friend['friend_current_level']})");
+        print(
+            "   - Friend: ${friend['friend_username']} (Level ${friend['friend_current_level']})");
       }
     } else {
       print("❌ Failed to get friends list: $data");
@@ -313,7 +321,8 @@ Future<void> testSocialStats(HttpClient client, String token) async {
       print("✅ Social stats retrieved successfully!");
       print("   - Total friends: ${stats['total_friends']}");
       print("   - Pending requests: ${stats['pending_requests']}");
-      print("   - Current week rank: ${stats['current_week_rank'] ?? 'Not ranked'}");
+      print(
+          "   - Current week rank: ${stats['current_week_rank'] ?? 'Not ranked'}");
       print("   - Weeks participated: ${stats['weeks_participated']}");
     } else {
       print("❌ Failed to get social stats: $data");
@@ -323,10 +332,12 @@ Future<void> testSocialStats(HttpClient client, String token) async {
   }
 }
 
-Future<void> testStatusUpdates(HttpClient client, String user1Token, String user2Token) async {
+Future<void> testStatusUpdates(
+    HttpClient client, String user1Token, String user2Token) async {
   try {
     // Test updating status
-    final statusRequest = await client.putUrl(Uri.parse('$BASE_URL/friends/me/status/'));
+    final statusRequest =
+        await client.putUrl(Uri.parse('$BASE_URL/friends/me/status/'));
     statusRequest.headers.set('Authorization', 'Bearer $user1Token');
     statusRequest.headers.contentType = ContentType.json;
     statusRequest.write(jsonEncode({"status": "thirsty"}));
@@ -347,17 +358,19 @@ Future<void> testStatusUpdates(HttpClient client, String user1Token, String user
   }
 }
 
-Future<void> testHydrationReminders(HttpClient client, String user1Token, String user2Token) async {
+Future<void> testHydrationReminders(
+    HttpClient client, String user1Token, String user2Token) async {
   try {
     // Get User 2's ID first (in a real scenario, we'd have this from friends list)
     // For now, we'll simulate with a known friend ID
-    const friendId = "friend-id-placeholder"; // This would be dynamic in real use
+    const friendId =
+        "friend-id-placeholder"; // This would be dynamic in real use
 
     print("   💧 Simulating hydration reminder...");
     print("   ✅ Hydration reminder feature ready for implementation!");
     print("      - API endpoint: POST /friends/{friendId}/remind/");
-    print("      - Payload: {type: 'hydration', message: 'Time to drink water! 💧'}");
-
+    print(
+        "      - Payload: {type: 'hydration', message: 'Time to drink water! 💧'}");
   } catch (e) {
     print("❌ Error testing hydration reminders: $e");
   }
@@ -365,7 +378,8 @@ Future<void> testHydrationReminders(HttpClient client, String user1Token, String
 
 Future<void> testWeeklyLeaderboard(HttpClient client, String token) async {
   try {
-    final request = await client.getUrl(Uri.parse('$BASE_URL/friends/leaderboard/weekly/?limit=5'));
+    final request = await client
+        .getUrl(Uri.parse('$BASE_URL/friends/leaderboard/weekly/?limit=5'));
     request.headers.set('Authorization', 'Bearer $token');
 
     final response = await request.close();

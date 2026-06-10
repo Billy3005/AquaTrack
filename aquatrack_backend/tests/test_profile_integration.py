@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 
-import requests
 import json
 import random
 import string
 
+import requests
+
 BASE_URL = "http://localhost:8000/api/v1"
+
 
 def test_create_user_and_profile():
     """Create new user, complete onboarding, then test profile API"""
 
     # Generate random user
-    random_suffix = ''.join(random.choices(string.ascii_lowercase, k=3))
+    random_suffix = "".join(random.choices(string.ascii_lowercase, k=3))
     email = f"test{random_suffix}@aquatrack.com"
     password = "123456"
     username = f"test{random_suffix}"
@@ -20,11 +22,7 @@ def test_create_user_and_profile():
 
     # Step 1: Register new user
     print("\n1. Registering new user...")
-    register_data = {
-        "email": email,
-        "password": password,
-        "username": username
-    }
+    register_data = {"email": email, "password": password, "username": username}
 
     try:
         response = requests.post(f"{BASE_URL}/auth/register", json=register_data)
@@ -33,7 +31,9 @@ def test_create_user_and_profile():
         if response.status_code == 200:
             auth_data = response.json()
             access_token = auth_data.get("access_token")
-            print(f"   User registered and logged in: {auth_data.get('user', {}).get('email')}")
+            print(
+                f"   User registered and logged in: {auth_data.get('user', {}).get('email')}"
+            )
         else:
             print(f"   Registration failed: {response.text}")
             return
@@ -55,11 +55,13 @@ def test_create_user_and_profile():
         "health_conditions": ["none"],
         "veggie_intake": "mid",
         "coffee_cups_per_day": 2,
-        "alcohol_units_per_day": 1
+        "alcohol_units_per_day": 1,
     }
 
     try:
-        response = requests.put(f"{BASE_URL}/users/profile", json=onboarding_data, headers=headers)
+        response = requests.put(
+            f"{BASE_URL}/users/profile", json=onboarding_data, headers=headers
+        )
         print(f"   Onboarding status: {response.status_code}")
 
         if response.status_code == 200:
@@ -82,7 +84,9 @@ def test_create_user_and_profile():
         if response.status_code == 200:
             profile_data = response.json()
             print(f"\n   ✅ Profile API Response:")
-            print(f"   Full JSON: {json.dumps(profile_data, indent=2, ensure_ascii=False)}")
+            print(
+                f"   Full JSON: {json.dumps(profile_data, indent=2, ensure_ascii=False)}"
+            )
 
             # Check body fields specifically
             print(f"\n   📊 Body Data Check:")
@@ -90,16 +94,33 @@ def test_create_user_and_profile():
             print(f"   - age: {profile_data.get('age', 'MISSING')}")
             print(f"   - height: {profile_data.get('height', 'MISSING')}")
             print(f"   - weight: {profile_data.get('weight', 'MISSING')}")
-            print(f"   - activity_level: {profile_data.get('activity_level', 'MISSING')}")
+            print(
+                f"   - activity_level: {profile_data.get('activity_level', 'MISSING')}"
+            )
             print(f"   - job_type: {profile_data.get('job_type', 'MISSING')}")
-            print(f"   - health_conditions: {profile_data.get('health_conditions', 'MISSING')}")
-            print(f"   - coffee_cups_per_day: {profile_data.get('coffee_cups_per_day', 'MISSING')}")
-            print(f"   - alcohol_units_per_day: {profile_data.get('alcohol_units_per_day', 'MISSING')}")
+            print(
+                f"   - health_conditions: {profile_data.get('health_conditions', 'MISSING')}"
+            )
+            print(
+                f"   - coffee_cups_per_day: {profile_data.get('coffee_cups_per_day', 'MISSING')}"
+            )
+            print(
+                f"   - alcohol_units_per_day: {profile_data.get('alcohol_units_per_day', 'MISSING')}"
+            )
 
             # Test null values
             print(f"\n   🔍 Null Check:")
             null_fields = []
-            for field in ['gender', 'age', 'height', 'weight', 'activity_level', 'job_type', 'coffee_cups_per_day', 'alcohol_units_per_day']:
+            for field in [
+                "gender",
+                "age",
+                "height",
+                "weight",
+                "activity_level",
+                "job_type",
+                "coffee_cups_per_day",
+                "alcohol_units_per_day",
+            ]:
                 if profile_data.get(field) is None:
                     null_fields.append(field)
 
@@ -114,6 +135,7 @@ def test_create_user_and_profile():
 
     except Exception as e:
         print(f"   ❌ Profile API error: {e}")
+
 
 if __name__ == "__main__":
     test_create_user_and_profile()

@@ -64,7 +64,6 @@ Future<void> testProductionReadinessFeatures() async {
     // Step 10: Load & Stress Testing
     print("\n[STEP 10] 🔥 Load and stress testing...");
     await testLoadAndStress(httpClient, userToken);
-
   } catch (e) {
     print("❌ Production readiness testing failed with error: $e");
   } finally {
@@ -80,10 +79,8 @@ Future<String?> loginTestUser(HttpClient client) async {
   try {
     final request = await client.postUrl(Uri.parse('$BASE_URL/auth/login'));
     request.headers.contentType = ContentType.json;
-    request.write(jsonEncode({
-      "email": "social_user1@example.com",
-      "password": "testpass123"
-    }));
+    request.write(jsonEncode(
+        {"email": "social_user1@example.com", "password": "testpass123"}));
 
     final response = await request.close();
     final data = await utf8.decoder.bind(response).join();
@@ -108,10 +105,7 @@ Future<void> testRateLimiting(HttpClient client, String token) async {
   print("   📝 Test 1: Normal usage (within limits)...");
   for (int i = 0; i < 5; i++) {
     final response = await makeRequest(client,
-      method: "GET",
-      path: "/users/me",
-      token: token
-    );
+        method: "GET", path: "/users/me", token: token);
 
     if (response['status'] == 200) {
       final headers = response['headers'] as Map<String, List<String>>;
@@ -119,7 +113,8 @@ Future<void> testRateLimiting(HttpClient client, String token) async {
       final remaining = headers['x-ratelimit-remaining']?[0];
 
       if (i == 0) {
-        print("      ✅ Rate limit headers present: limit=$rateLimit, remaining=$remaining");
+        print(
+            "      ✅ Rate limit headers present: limit=$rateLimit, remaining=$remaining");
       }
     }
 
@@ -132,11 +127,10 @@ Future<void> testRateLimiting(HttpClient client, String token) async {
 
   for (int i = 0; i < 25; i++) {
     final response = await makeRequest(client,
-      method: "POST",
-      path: "/coach/chat",
-      token: token,
-      body: {"message": "Test rate limiting $i"}
-    );
+        method: "POST",
+        path: "/coach/chat",
+        token: token,
+        body: {"message": "Test rate limiting $i"});
 
     if (response['status'] == 429) {
       print("      ✅ Rate limiting triggered at request ${i + 1}");
@@ -158,18 +152,25 @@ Future<void> testRateLimiting(HttpClient client, String token) async {
   print("   📝 Test 3: Testing different endpoint rate limits...");
 
   final endpoints = [
-    {"path": "/auth/login", "method": "POST", "body": {"email": "test@test.com", "password": "test"}},
-    {"path": "/coach/chat", "method": "POST", "body": {"message": "Test"}},
+    {
+      "path": "/auth/login",
+      "method": "POST",
+      "body": {"email": "test@test.com", "password": "test"}
+    },
+    {
+      "path": "/coach/chat",
+      "method": "POST",
+      "body": {"message": "Test"}
+    },
     {"path": "/stats", "method": "GET", "body": null},
   ];
 
   for (final endpoint in endpoints) {
     final response = await makeRequest(client,
-      method: endpoint['method'] as String,
-      path: endpoint['path'] as String,
-      token: (endpoint['path'] as String).startsWith('/auth') ? null : token,
-      body: endpoint['body'] as Map<String, dynamic>?
-    );
+        method: endpoint['method'] as String,
+        path: endpoint['path'] as String,
+        token: (endpoint['path'] as String).startsWith('/auth') ? null : token,
+        body: endpoint['body'] as Map<String, dynamic>?);
 
     final headers = response['headers'] as Map<String, List<String>>;
     final limit = headers['x-ratelimit-limit']?[0];
@@ -192,11 +193,10 @@ Future<void> testSecurityMiddleware(HttpClient client, String token) async {
 
   for (int i = 0; i < sqlInjectionPayloads.length; i++) {
     final response = await makeRequest(client,
-      method: "POST",
-      path: "/coach/chat",
-      token: token,
-      body: sqlInjectionPayloads[i]
-    );
+        method: "POST",
+        path: "/coach/chat",
+        token: token,
+        body: sqlInjectionPayloads[i]);
 
     if (response['status'] == 400) {
       print("      ✅ SQL injection blocked: payload ${i + 1}");
@@ -216,11 +216,10 @@ Future<void> testSecurityMiddleware(HttpClient client, String token) async {
 
   for (int i = 0; i < xssPayloads.length; i++) {
     final response = await makeRequest(client,
-      method: "POST",
-      path: "/coach/chat",
-      token: token,
-      body: xssPayloads[i]
-    );
+        method: "POST",
+        path: "/coach/chat",
+        token: token,
+        body: xssPayloads[i]);
 
     if (response['status'] == 400) {
       print("      ✅ XSS attack blocked: payload ${i + 1}");
@@ -240,10 +239,7 @@ Future<void> testSecurityMiddleware(HttpClient client, String token) async {
 
   for (int i = 0; i < pathTraversalTests.length; i++) {
     final response = await makeRequest(client,
-      method: "GET",
-      path: "/users/${pathTraversalTests[i]}",
-      token: token
-    );
+        method: "GET", path: "/users/${pathTraversalTests[i]}", token: token);
 
     if (response['status'] == 400 || response['status'] == 404) {
       print("      ✅ Path traversal blocked: payload ${i + 1}");
@@ -275,11 +271,8 @@ Future<void> testSecurityMiddleware(HttpClient client, String token) async {
   // Test 5: Security headers verification
   print("   📝 Test 5: Security headers validation...");
 
-  final response = await makeRequest(client,
-    method: "GET",
-    path: "/users/me",
-    token: token
-  );
+  final response =
+      await makeRequest(client, method: "GET", path: "/users/me", token: token);
 
   final headers = response['headers'] as Map<String, List<String>>;
   final securityHeaders = [
@@ -296,7 +289,8 @@ Future<void> testSecurityMiddleware(HttpClient client, String token) async {
     }
   }
 
-  print("      ✅ Security headers found: $securityHeadersFound/${securityHeaders.length}");
+  print(
+      "      ✅ Security headers found: $securityHeadersFound/${securityHeaders.length}");
 }
 
 Future<void> testPerformanceMonitoring(HttpClient client, String token) async {
@@ -307,11 +301,8 @@ Future<void> testPerformanceMonitoring(HttpClient client, String token) async {
 
   final startTime = DateTime.now().millisecondsSinceEpoch;
 
-  final response = await makeRequest(client,
-    method: "GET",
-    path: "/users/me",
-    token: token
-  );
+  final response =
+      await makeRequest(client, method: "GET", path: "/users/me", token: token);
 
   final endTime = DateTime.now().millisecondsSinceEpoch;
   final actualDuration = endTime - startTime;
@@ -348,7 +339,8 @@ Future<void> testPerformanceMonitoring(HttpClient client, String token) async {
     }
   }
 
-  print("      ✅ Performance headers found: $perfHeadersFound/${performanceHeaders.length}");
+  print(
+      "      ✅ Performance headers found: $perfHeadersFound/${performanceHeaders.length}");
 }
 
 Future<void> testErrorHandling(HttpClient client, String token) async {
@@ -358,10 +350,7 @@ Future<void> testErrorHandling(HttpClient client, String token) async {
   print("   📝 Test 1: Graceful error response format...");
 
   final response = await makeRequest(client,
-    method: "GET",
-    path: "/nonexistent-endpoint",
-    token: token
-  );
+      method: "GET", path: "/nonexistent-endpoint", token: token);
 
   if (response['status'] == 404) {
     final body = jsonDecode(response['body']);
@@ -374,20 +363,22 @@ Future<void> testErrorHandling(HttpClient client, String token) async {
       }
     }
 
-    print("      ✅ Error response format: $fieldsFound/${expectedFields.length} fields present");
+    print(
+        "      ✅ Error response format: $fieldsFound/${expectedFields.length} fields present");
   }
 
   // Test 2: Validation error handling
   print("   📝 Test 2: Validation error handling...");
 
   final validationResponse = await makeRequest(client,
-    method: "POST",
-    path: "/coach/chat",
-    token: token,
-    body: {"invalid_field": "test"} // Missing required 'message' field
-  );
+      method: "POST",
+      path: "/coach/chat",
+      token: token,
+      body: {"invalid_field": "test"} // Missing required 'message' field
+      );
 
-  if (validationResponse['status'] == 422 || validationResponse['status'] == 400) {
+  if (validationResponse['status'] == 422 ||
+      validationResponse['status'] == 400) {
     print("      ✅ Validation error handled correctly");
   } else {
     print("      ⚠️ Validation error not handled properly");
@@ -425,11 +416,10 @@ Future<void> testErrorHandling(HttpClient client, String token) async {
   int consecutiveFailures = 0;
   for (int i = 0; i < 10; i++) {
     final response = await makeRequest(client,
-      method: "POST",
-      path: "/coach/chat",
-      token: token,
-      body: {"message": "Trigger potential circuit breaker"}
-    );
+        method: "POST",
+        path: "/coach/chat",
+        token: token,
+        body: {"message": "Trigger potential circuit breaker"});
 
     if (response['status'] >= 500) {
       consecutiveFailures++;
@@ -455,14 +445,13 @@ Future<void> testBackgroundTasks(HttpClient client, String token) async {
   print("   📝 Test 1: AI Coach background task submission...");
 
   final response = await makeRequest(client,
-    method: "POST",
-    path: "/coach/chat",
-    token: token,
-    body: {
-      "message": "Test background processing với complex analysis",
-      "context": {"mood": "focused", "activity_level": "moderate"}
-    }
-  );
+      method: "POST",
+      path: "/coach/chat",
+      token: token,
+      body: {
+        "message": "Test background processing với complex analysis",
+        "context": {"mood": "focused", "activity_level": "moderate"}
+      });
 
   if (response['status'] == 200) {
     final body = jsonDecode(response['body']);
@@ -476,14 +465,14 @@ Future<void> testBackgroundTasks(HttpClient client, String token) async {
 
   // Since we don't have actual vision endpoint yet, simulate with heavy computation
   final heavyTaskResponse = await makeRequest(client,
-    method: "POST",
-    path: "/coach/chat",
-    token: token,
-    body: {
-      "message": "Generate detailed analytics and insights for my hydration patterns over the last month",
-      "context": {"request_type": "analytics", "complexity": "high"}
-    }
-  );
+      method: "POST",
+      path: "/coach/chat",
+      token: token,
+      body: {
+        "message":
+            "Generate detailed analytics and insights for my hydration patterns over the last month",
+        "context": {"request_type": "analytics", "complexity": "high"}
+      });
 
   if (heavyTaskResponse['status'] == 200) {
     print("      ✅ Heavy computation task handled");
@@ -495,11 +484,10 @@ Future<void> testBackgroundTasks(HttpClient client, String token) async {
   final futures = <Future>[];
   for (int i = 0; i < 5; i++) {
     final future = makeRequest(client,
-      method: "POST",
-      path: "/coach/chat",
-      token: token,
-      body: {"message": "Concurrent task $i"}
-    );
+        method: "POST",
+        path: "/coach/chat",
+        token: token,
+        body: {"message": "Concurrent task $i"});
     futures.add(future);
   }
 
@@ -516,17 +504,17 @@ Future<void> testLoggingSystem(HttpClient client, String token) async {
   print("   📝 Test 1: Request/response logging...");
 
   final response = await makeRequest(client,
-    method: "POST",
-    path: "/coach/chat",
-    token: token,
-    body: {"message": "Test logging functionality"}
-  );
+      method: "POST",
+      path: "/coach/chat",
+      token: token,
+      body: {"message": "Test logging functionality"});
 
   final headers = response['headers'] as Map<String, List<String>>;
   final requestId = headers['x-request-id']?[0];
 
   if (requestId != null) {
-    print("      ✅ Request logging active (Request ID: ${requestId.substring(0, 8)}...)");
+    print(
+        "      ✅ Request logging active (Request ID: ${requestId.substring(0, 8)}...)");
   } else {
     print("      ⚠️ Request logging may not be working");
   }
@@ -535,13 +523,11 @@ Future<void> testLoggingSystem(HttpClient client, String token) async {
   print("   📝 Test 2: Error logging...");
 
   final errorResponse = await makeRequest(client,
-    method: "GET",
-    path: "/trigger-logging-test",
-    token: token
-  );
+      method: "GET", path: "/trigger-logging-test", token: token);
 
   // Any response indicates logging is handling the request
-  print("      ✅ Error logging system active (Status: ${errorResponse['status']})");
+  print(
+      "      ✅ Error logging system active (Status: ${errorResponse['status']})");
 
   // Test 3: Performance logging
   print("   📝 Test 3: Performance metrics logging...");
@@ -561,10 +547,10 @@ Future<void> testHealthChecks(HttpClient client, String token) async {
   print("   📝 Test 1: Basic health endpoint...");
 
   final response = await makeRequest(client,
-    method: "GET",
-    path: "/health",
-    token: null // Health checks shouldn't require auth
-  );
+      method: "GET",
+      path: "/health",
+      token: null // Health checks shouldn't require auth
+      );
 
   if (response['status'] == 200) {
     final body = jsonDecode(response['body']);
@@ -582,10 +568,9 @@ Future<void> testHealthChecks(HttpClient client, String token) async {
 
   // Try to access more detailed health info
   final detailedResponse = await makeRequest(client,
-    method: "GET",
-    path: "/admin/health", // May require admin access
-    token: token
-  );
+      method: "GET",
+      path: "/admin/health", // May require admin access
+      token: token);
 
   if (detailedResponse['status'] == 200) {
     print("      ✅ Detailed health checks available");
@@ -603,12 +588,10 @@ Future<void> testAdminDashboard(HttpClient client, String token) async {
   print("   📝 Test 1: Rate limiting analytics...");
 
   final rateLimitResponse = await makeRequest(client,
-    method: "GET",
-    path: "/admin/rate-limit-stats",
-    token: token
-  );
+      method: "GET", path: "/admin/rate-limit-stats", token: token);
 
-  if (rateLimitResponse['status'] == 200 || rateLimitResponse['status'] == 403) {
+  if (rateLimitResponse['status'] == 200 ||
+      rateLimitResponse['status'] == 403) {
     print("      ✅ Rate limiting analytics endpoint exists");
   }
 
@@ -616,10 +599,7 @@ Future<void> testAdminDashboard(HttpClient client, String token) async {
   print("   📝 Test 2: Security analytics...");
 
   final securityResponse = await makeRequest(client,
-    method: "GET",
-    path: "/admin/security-stats",
-    token: token
-  );
+      method: "GET", path: "/admin/security-stats", token: token);
 
   if (securityResponse['status'] == 200 || securityResponse['status'] == 403) {
     print("      ✅ Security analytics endpoint exists");
@@ -629,10 +609,7 @@ Future<void> testAdminDashboard(HttpClient client, String token) async {
   print("   📝 Test 3: Performance dashboard...");
 
   final perfResponse = await makeRequest(client,
-    method: "GET",
-    path: "/admin/performance",
-    token: token
-  );
+      method: "GET", path: "/admin/performance", token: token);
 
   if (perfResponse['status'] == 200 || perfResponse['status'] == 403) {
     print("      ✅ Performance dashboard endpoint exists");
@@ -642,10 +619,7 @@ Future<void> testAdminDashboard(HttpClient client, String token) async {
   print("   📝 Test 4: Error analytics...");
 
   final errorResponse = await makeRequest(client,
-    method: "GET",
-    path: "/admin/errors",
-    token: token
-  );
+      method: "GET", path: "/admin/errors", token: token);
 
   if (errorResponse['status'] == 200 || errorResponse['status'] == 403) {
     print("      ✅ Error analytics endpoint exists");
@@ -664,11 +638,8 @@ Future<void> testLoadAndStress(HttpClient client, String token) async {
   final startTime = DateTime.now().millisecondsSinceEpoch;
 
   for (int i = 0; i < concurrentRequests; i++) {
-    final future = makeRequest(client,
-      method: "GET",
-      path: "/users/me",
-      token: token
-    );
+    final future =
+        makeRequest(client, method: "GET", path: "/users/me", token: token);
     futures.add(future);
   }
 
@@ -679,7 +650,8 @@ Future<void> testLoadAndStress(HttpClient client, String token) async {
   final totalTime = endTime - startTime;
   final avgTime = totalTime / concurrentRequests;
 
-  print("      ✅ Concurrent load test: $successful/$concurrentRequests successful");
+  print(
+      "      ✅ Concurrent load test: $successful/$concurrentRequests successful");
   print("      - Total time: ${totalTime}ms");
   print("      - Average time per request: ${avgTime.round()}ms");
 
@@ -693,30 +665,29 @@ Future<void> testLoadAndStress(HttpClient client, String token) async {
     final requestStart = DateTime.now().millisecondsSinceEpoch;
 
     final response = await makeRequest(client,
-      method: "POST",
-      path: "/coach/chat",
-      token: token,
-      body: {"message": "Sustained load test request $i"}
-    );
+        method: "POST",
+        path: "/coach/chat",
+        token: token,
+        body: {"message": "Sustained load test request $i"});
 
     final requestEnd = DateTime.now().millisecondsSinceEpoch;
 
-    sustainedResults.add({
-      'status': response['status'],
-      'duration': requestEnd - requestStart
-    });
+    sustainedResults.add(
+        {'status': response['status'], 'duration': requestEnd - requestStart});
 
     // Small delay to prevent overwhelming
     await Future.delayed(Duration(milliseconds: 100));
   }
 
   final sustainedEndTime = DateTime.now().millisecondsSinceEpoch;
-  final sustainedSuccessful = sustainedResults.where((r) => r['status'] == 200).length;
+  final sustainedSuccessful =
+      sustainedResults.where((r) => r['status'] == 200).length;
   final sustainedTotalTime = sustainedEndTime - sustainedStartTime;
   final avgDuration = sustainedResults
-      .where((r) => r['status'] == 200)
-      .map((r) => r['duration'] as int)
-      .fold(0, (a, b) => a + b) / sustainedSuccessful;
+          .where((r) => r['status'] == 200)
+          .map((r) => r['duration'] as int)
+          .fold(0, (a, b) => a + b) /
+      sustainedSuccessful;
 
   print("      ✅ Sustained load test: $sustainedSuccessful/30 successful");
   print("      - Total test time: ${sustainedTotalTime}ms");
@@ -731,17 +702,17 @@ Future<void> testLoadAndStress(HttpClient client, String token) async {
   final memoryTestResults = <int>[];
   for (int i = 0; i < 10; i++) {
     final response = await makeRequest(client,
-      method: "POST",
-      path: "/coach/chat",
-      token: token,
-      body: {"message": largePayload}
-    );
+        method: "POST",
+        path: "/coach/chat",
+        token: token,
+        body: {"message": largePayload});
 
     memoryTestResults.add(response['status'] as int);
     await Future.delayed(Duration(milliseconds: 200));
   }
 
-  final memoryTestSuccessful = memoryTestResults.where((status) => status == 200).length;
+  final memoryTestSuccessful =
+      memoryTestResults.where((status) => status == 200).length;
 
   print("      ✅ Memory pressure test: $memoryTestSuccessful/10 successful");
 

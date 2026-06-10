@@ -66,7 +66,8 @@ class AuthStorageImpl implements AuthStorage {
   Future<String?> getAccessToken() async {
     try {
       final token = await _secureStorage.getAccessToken();
-      AppLogger.debug(_tag, 'Retrieved access token: ${token != null ? 'exists' : 'not found'}');
+      AppLogger.debug(_tag,
+          'Retrieved access token: ${token != null ? 'exists' : 'not found'}');
       return token;
     } catch (e) {
       AppLogger.error(_tag, 'Error getting access token', e);
@@ -78,7 +79,8 @@ class AuthStorageImpl implements AuthStorage {
   Future<String?> getRefreshToken() async {
     try {
       final token = await _secureStorage.getRefreshToken();
-      AppLogger.debug(_tag, 'Retrieved refresh token: ${token != null ? 'exists' : 'not found'}');
+      AppLogger.debug(_tag,
+          'Retrieved refresh token: ${token != null ? 'exists' : 'not found'}');
       return token;
     } catch (e) {
       AppLogger.error(_tag, 'Error getting refresh token', e);
@@ -218,7 +220,8 @@ class AuthStorageImpl implements AuthStorage {
       final accessToken = await getAccessToken();
       final user = await getStoredUser();
 
-      final isAuth = accessToken != null && accessToken.isNotEmpty && user != null;
+      final isAuth =
+          accessToken != null && accessToken.isNotEmpty && user != null;
       AppLogger.debug(_tag, 'Authentication state: $isAuth');
       return isAuth;
     } catch (e) {
@@ -261,7 +264,8 @@ class AuthStorageImpl implements AuthStorage {
   @override
   Future<void> setTokenExpiry(DateTime expiry) async {
     try {
-      await _storageService.setString(_tokenExpiryKey, expiry.toIso8601String());
+      await _storageService.setString(
+          _tokenExpiryKey, expiry.toIso8601String());
       AppLogger.debug(_tag, 'Token expiry set: $expiry');
     } catch (e) {
       AppLogger.error(_tag, 'Error setting token expiry', e);

@@ -78,7 +78,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       // Check if login was successful
       final authState = ref.read(authStateProvider);
       if (authState.isAuthenticated && authState.currentUser != null) {
-        AppLogger.info('Login', 'Login successful: ${authState.currentUser!.email}');
+        AppLogger.info(
+            'Login', 'Login successful: ${authState.currentUser!.email}');
 
         // Clear any cached data from a previous account
         resetUserSession(ref);

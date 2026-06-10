@@ -20,7 +20,8 @@ Future<void> testFullIntegrationFlow() async {
   try {
     // Step 1: Register new test user
     print("\n[STEP 1] 📝 Registering test user...");
-    final registerRequest = await httpClient.postUrl(Uri.parse('$BASE_URL/auth/register'));
+    final registerRequest =
+        await httpClient.postUrl(Uri.parse('$BASE_URL/auth/register'));
     registerRequest.headers.contentType = ContentType.json;
 
     final registerBody = {
@@ -36,7 +37,8 @@ Future<void> testFullIntegrationFlow() async {
     if (registerResponse.statusCode == 200) {
       final authData = jsonDecode(registerData);
       accessToken = authData["access_token"];
-      print("✅ Registration successful! Token: ${accessToken!.substring(0, 20)}...");
+      print(
+          "✅ Registration successful! Token: ${accessToken!.substring(0, 20)}...");
     } else {
       print("❌ Registration failed: $registerData");
       return;
@@ -44,7 +46,8 @@ Future<void> testFullIntegrationFlow() async {
 
     // Step 2: Test enum endpoint (public)
     print("\n[STEP 2] 📋 Testing enums endpoint...");
-    final enumsRequest = await httpClient.getUrl(Uri.parse('$BASE_URL/water-profile/enums'));
+    final enumsRequest =
+        await httpClient.getUrl(Uri.parse('$BASE_URL/water-profile/enums'));
     enumsRequest.headers.contentType = ContentType.json;
 
     final enumsResponse = await enumsRequest.close();
@@ -56,7 +59,8 @@ Future<void> testFullIntegrationFlow() async {
       print("   - Genders: ${enums['genders'].keys.length}");
       print("   - Activity levels: ${enums['activity_levels'].keys.length}");
       print("   - Job types: ${enums['job_types'].keys.length}");
-      print("   - Health conditions: ${enums['health_conditions'].keys.length}");
+      print(
+          "   - Health conditions: ${enums['health_conditions'].keys.length}");
       print("   - Veggie intakes: ${enums['veggie_intakes'].keys.length}");
     } else {
       print("❌ Enums test failed: $enumsData");
@@ -64,7 +68,8 @@ Future<void> testFullIntegrationFlow() async {
 
     // Step 3: Get current profile (empty initially)
     print("\n[STEP 3] 👤 Testing get profile endpoint...");
-    final getProfileRequest = await httpClient.getUrl(Uri.parse('$BASE_URL/water-profile/'));
+    final getProfileRequest =
+        await httpClient.getUrl(Uri.parse('$BASE_URL/water-profile/'));
     getProfileRequest.headers.set('Authorization', 'Bearer $accessToken');
     getProfileRequest.headers.contentType = ContentType.json;
 
@@ -75,14 +80,16 @@ Future<void> testFullIntegrationFlow() async {
       final profile = jsonDecode(getProfileData);
       print("✅ Get profile successful!");
       print("   - Profile complete: ${profile['profile_complete']}");
-      print("   - Calculated goal: ${profile['calculated_daily_goal_ml'] ?? 'None'}ml");
+      print(
+          "   - Calculated goal: ${profile['calculated_daily_goal_ml'] ?? 'None'}ml");
     } else {
       print("❌ Get profile failed: $getProfileData");
     }
 
     // Step 4: Update profile with test data
     print("\n[STEP 4] 📝 Testing update profile endpoint...");
-    final updateProfileRequest = await httpClient.putUrl(Uri.parse('$BASE_URL/water-profile/'));
+    final updateProfileRequest =
+        await httpClient.putUrl(Uri.parse('$BASE_URL/water-profile/'));
     updateProfileRequest.headers.set('Authorization', 'Bearer $accessToken');
     updateProfileRequest.headers.contentType = ContentType.json;
 
@@ -101,16 +108,19 @@ Future<void> testFullIntegrationFlow() async {
 
     updateProfileRequest.write(jsonEncode(updateBody));
     final updateProfileResponse = await updateProfileRequest.close();
-    final updateProfileData = await utf8.decoder.bind(updateProfileResponse).join();
+    final updateProfileData =
+        await utf8.decoder.bind(updateProfileResponse).join();
 
     if (updateProfileResponse.statusCode == 200) {
       final updatedProfile = jsonDecode(updateProfileData);
       print("✅ Update profile successful!");
       print("   - Profile complete: ${updatedProfile['profile_complete']}");
-      print("   - Calculated goal: ${updatedProfile['calculated_daily_goal_ml']}ml");
+      print(
+          "   - Calculated goal: ${updatedProfile['calculated_daily_goal_ml']}ml");
 
       if (updatedProfile['profile_complete'] == true) {
-        print("   - Formula last updated: ${updatedProfile['formula_last_updated']}");
+        print(
+            "   - Formula last updated: ${updatedProfile['formula_last_updated']}");
       }
     } else {
       print("❌ Update profile failed: $updateProfileData");
@@ -118,7 +128,8 @@ Future<void> testFullIntegrationFlow() async {
 
     // Step 5: Manual calculation test
     print("\n[STEP 5] 🧮 Testing manual calculation endpoint...");
-    final calcRequest = await httpClient.postUrl(Uri.parse('$BASE_URL/water-profile/calculate'));
+    final calcRequest = await httpClient
+        .postUrl(Uri.parse('$BASE_URL/water-profile/calculate'));
     calcRequest.headers.set('Authorization', 'Bearer $accessToken');
     calcRequest.headers.contentType = ContentType.json;
 
@@ -152,7 +163,8 @@ Future<void> testFullIntegrationFlow() async {
 
     // Step 6: User summary test
     print("\n[STEP 6] 📋 Testing user summary endpoint...");
-    final summaryRequest = await httpClient.getUrl(Uri.parse('$BASE_URL/water-profile/summary'));
+    final summaryRequest =
+        await httpClient.getUrl(Uri.parse('$BASE_URL/water-profile/summary'));
     summaryRequest.headers.set('Authorization', 'Bearer $accessToken');
     summaryRequest.headers.contentType = ContentType.json;
 
@@ -173,7 +185,6 @@ Future<void> testFullIntegrationFlow() async {
     // Step 7: Flutter Service Simulation Test
     print("\n[STEP 7] 📱 Simulating Flutter Service calls...");
     await simulateFlutterServiceCalls(accessToken);
-
   } catch (e) {
     print("❌ Integration test failed with error: $e");
   } finally {

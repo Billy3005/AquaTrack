@@ -67,7 +67,8 @@ class StorageServiceImpl implements StorageService {
   Future<String?> getString(String key) async {
     try {
       final value = (await _prefsAsync()).getString(key);
-      AppLogger.debug(_tag, 'Retrieved string for key: $key (exists: ${value != null})');
+      AppLogger.debug(
+          _tag, 'Retrieved string for key: $key (exists: ${value != null})');
       return value;
     } catch (e) {
       AppLogger.error(_tag, 'getString error for key $key', e);
@@ -94,7 +95,8 @@ class StorageServiceImpl implements StorageService {
   Future<int?> getInt(String key) async {
     try {
       final value = (await _prefsAsync()).getInt(key);
-      AppLogger.debug(_tag, 'Retrieved int for key: $key (exists: ${value != null})');
+      AppLogger.debug(
+          _tag, 'Retrieved int for key: $key (exists: ${value != null})');
       return value;
     } catch (e) {
       AppLogger.error(_tag, 'getInt error for key $key', e);
@@ -121,7 +123,8 @@ class StorageServiceImpl implements StorageService {
   Future<bool?> getBool(String key) async {
     try {
       final value = (await _prefsAsync()).getBool(key);
-      AppLogger.debug(_tag, 'Retrieved bool for key: $key (exists: ${value != null})');
+      AppLogger.debug(
+          _tag, 'Retrieved bool for key: $key (exists: ${value != null})');
       return value;
     } catch (e) {
       AppLogger.error(_tag, 'getBool error for key $key', e);
@@ -148,7 +151,8 @@ class StorageServiceImpl implements StorageService {
   Future<double?> getDouble(String key) async {
     try {
       final value = (await _prefsAsync()).getDouble(key);
-      AppLogger.debug(_tag, 'Retrieved double for key: $key (exists: ${value != null})');
+      AppLogger.debug(
+          _tag, 'Retrieved double for key: $key (exists: ${value != null})');
       return value;
     } catch (e) {
       AppLogger.error(_tag, 'getDouble error for key $key', e);
@@ -175,7 +179,8 @@ class StorageServiceImpl implements StorageService {
   Future<List<String>?> getStringList(String key) async {
     try {
       final value = (await _prefsAsync()).getStringList(key);
-      AppLogger.debug(_tag, 'Retrieved string list for key: $key (exists: ${value != null})');
+      AppLogger.debug(_tag,
+          'Retrieved string list for key: $key (exists: ${value != null})');
       return value;
     } catch (e) {
       AppLogger.error(_tag, 'getStringList error for key $key', e);

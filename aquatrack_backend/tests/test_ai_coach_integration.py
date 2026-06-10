@@ -2,10 +2,12 @@
 """Test script for AI Coach enhanced functionality"""
 
 import json
-import requests
 import sys
 
+import requests
+
 BASE_URL = "http://127.0.0.1:8000"
+
 
 def test_ai_coach_chat():
     """Test AI Coach chat functionality"""
@@ -17,38 +19,35 @@ def test_ai_coach_chat():
         {
             "name": "Greeting Morning",
             "message": "Chào buổi sáng",
-            "context": {"current_hour": 8}
+            "context": {"current_hour": 8},
         },
         {
             "name": "Progress Check",
             "message": "Tiến độ của tôi thế nào?",
-            "context": {"total_today": 1200}
+            "context": {"total_today": 1200},
         },
         {
             "name": "Motivation Request",
             "message": "Tôi cần động lực",
-            "context": {"total_today": 800}
+            "context": {"total_today": 800},
         },
         {
             "name": "Energy Question",
             "message": "Tôi cảm thấy mệt",
-            "context": {"total_today": 500}
+            "context": {"total_today": 500},
         },
         {
             "name": "Evening Greeting",
             "message": "Chào buổi tối",
-            "context": {"current_hour": 20, "total_today": 1800}
-        }
+            "context": {"current_hour": 20, "total_today": 1800},
+        },
     ]
 
     for test_case in test_cases:
         print(f"\n--- {test_case['name']} ---")
 
         # Prepare request
-        chat_data = {
-            "message": test_case["message"],
-            "context": test_case["context"]
-        }
+        chat_data = {"message": test_case["message"], "context": test_case["context"]}
 
         try:
             # Send request to AI Coach
@@ -56,7 +55,7 @@ def test_ai_coach_chat():
                 f"{BASE_URL}/api/v1/coach/chat",
                 json=chat_data,
                 headers={"Content-Type": "application/json"},
-                timeout=10
+                timeout=10,
             )
 
             if response.status_code == 200:
@@ -65,10 +64,10 @@ def test_ai_coach_chat():
                 print(f"   Coaching Type: {result.get('coaching_type', 'N/A')}")
                 print(f"   Motivation Level: {result.get('motivation_level', 'N/A')}")
 
-                if result.get('suggestions'):
+                if result.get("suggestions"):
                     print(f"   Suggestions: {result.get('suggestions')}")
 
-                if result.get('action_items'):
+                if result.get("action_items"):
                     print(f"   Action Items: {result.get('action_items')}")
 
             else:
@@ -79,16 +78,14 @@ def test_ai_coach_chat():
 
         print("-" * 50)
 
+
 def test_proactive_suggestions():
     """Test proactive suggestions endpoint"""
 
     print("\n=== TESTING PROACTIVE SUGGESTIONS ===")
 
     try:
-        response = requests.get(
-            f"{BASE_URL}/api/v1/coach/suggestions",
-            timeout=10
-        )
+        response = requests.get(f"{BASE_URL}/api/v1/coach/suggestions", timeout=10)
 
         if response.status_code == 200:
             suggestions = response.json()
@@ -105,20 +102,18 @@ def test_proactive_suggestions():
     except Exception as e:
         print(f"[ERROR] Request failed: {str(e)}")
 
+
 def test_smart_nudges():
     """Test smart nudges endpoint"""
 
     print("\n=== TESTING SMART NUDGES ===")
 
     try:
-        response = requests.get(
-            f"{BASE_URL}/api/v1/coach/nudges",
-            timeout=10
-        )
+        response = requests.get(f"{BASE_URL}/api/v1/coach/nudges", timeout=10)
 
         if response.status_code == 200:
             result = response.json()
-            nudges = result.get('nudges', [])
+            nudges = result.get("nudges", [])
             print("[OK] Smart Nudges:")
             for nudge in nudges:
                 print(f"- {nudge.get('title', 'No title')}")
@@ -131,6 +126,7 @@ def test_smart_nudges():
 
     except Exception as e:
         print(f"[ERROR] Request failed: {str(e)}")
+
 
 if __name__ == "__main__":
     print("AquaTrack AI Coach Test Suite")

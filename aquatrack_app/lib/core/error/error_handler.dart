@@ -164,12 +164,14 @@ class ErrorHandler {
 
       case DioExceptionType.badResponse:
         final exception = _handleBadResponseError(error);
-        return exception is NetworkException ? exception : NetworkException(
-          exception.message,
-          statusCode: error.response?.statusCode,
-          code: exception.code,
-          originalError: error,
-        );
+        return exception is NetworkException
+            ? exception
+            : NetworkException(
+                exception.message,
+                statusCode: error.response?.statusCode,
+                code: exception.code,
+                originalError: error,
+              );
 
       case DioExceptionType.cancel:
         message = 'Yêu cầu đã bị hủy.';
@@ -252,7 +254,8 @@ class ErrorHandler {
         break;
 
       default:
-        message = _extractErrorMessage(responseData) ?? 'Lỗi máy chủ ($statusCode).';
+        message =
+            _extractErrorMessage(responseData) ?? 'Lỗi máy chủ ($statusCode).';
         code = 'HTTP_ERROR_$statusCode';
         break;
     }
@@ -375,7 +378,7 @@ class ErrorHandler {
   static bool isAuthError(AppException exception) {
     return exception is AuthException ||
         (exception is NetworkException &&
-         (exception.statusCode == 401 || exception.statusCode == 403));
+            (exception.statusCode == 401 || exception.statusCode == 403));
   }
 
   /// Check if error is retryable
@@ -383,8 +386,8 @@ class ErrorHandler {
     if (exception is NetworkException) {
       final statusCode = exception.statusCode;
       return statusCode == null || // Connection errors
-             statusCode >= 500 || // Server errors
-             statusCode == 429; // Rate limit
+          statusCode >= 500 || // Server errors
+          statusCode == 429; // Rate limit
     }
     return exception is StorageException || exception is UnknownException;
   }
