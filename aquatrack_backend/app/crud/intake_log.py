@@ -1,6 +1,5 @@
-import asyncio
 from datetime import date, datetime
-from typing import List, Optional
+from typing import List
 
 from sqlalchemy import and_, func
 from sqlalchemy.orm import Session

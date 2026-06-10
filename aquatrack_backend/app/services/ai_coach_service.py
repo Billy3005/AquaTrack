@@ -505,7 +505,7 @@ Hãy response như AQUA AI coach thông minh với deep understanding về user.
             rec_context = ""
             if recommendations:
                 rec_list = [f"- {rec['message']}" for rec in recommendations]
-                rec_context = f"\n📋 LỜI KHUYÊN ƯU TIÊN:\n" + "\n".join(rec_list)
+                rec_context = "\n📋 LỜI KHUYÊN ƯU TIÊN:\n" + "\n".join(rec_list)
 
             # Risk factors
             risks = profile.get("risk_factors", [])

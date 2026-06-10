@@ -77,13 +77,9 @@ class WaterProfileBase(BaseModel):
 class WaterProfileCreate(WaterProfileBase):
     """Schema for creating water profile"""
 
-    pass
-
 
 class WaterProfileUpdate(WaterProfileBase):
     """Schema for updating water profile"""
-
-    pass
 
 
 class WaterCalculationBreakdown(BaseModel):

@@ -4,7 +4,6 @@ Enhanced Logging và Monitoring Middleware cho AquaTrack Production
 Structured logging, performance monitoring, error tracking và analytics collection
 """
 
-import asyncio
 import json
 import logging
 import time
@@ -14,7 +13,7 @@ from collections import defaultdict, deque
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Dict
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse

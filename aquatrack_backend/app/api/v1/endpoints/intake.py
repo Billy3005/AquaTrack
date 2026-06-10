@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -45,7 +45,6 @@ async def create_intake_log_debug(
     """
     Debug endpoint for intake log creation - simple response
     """
-    from app.crud.user import user_crud
 
     try:
         # Create simple intake log

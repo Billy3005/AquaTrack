@@ -5,7 +5,6 @@ Calculates consecutive days where user achieved their daily hydration goal.
 """
 
 from datetime import date, datetime, timedelta
-from typing import Optional
 
 from sqlalchemy import and_, func, update
 from sqlalchemy.orm import Session

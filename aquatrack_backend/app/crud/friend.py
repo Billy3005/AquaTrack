@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import datetime
 from typing import List, Optional, Tuple
 
 from sqlalchemy import and_, desc, func, or_
@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session, aliased, joinedload
 from app.crud.base import CRUDBase
 from app.models.friend import Friend
 from app.models.friend_request import FriendRequest, FriendRequestStatus
-from app.models.leaderboard import LeaderboardEntry
 from app.models.user import User
 from app.schemas.social import FriendRequestCreate, FriendRequestUpdate
 
@@ -462,11 +461,9 @@ class CRUDFriendRequest(
         if request_type == "received":
             filter_condition = FriendRequest.receiver_id == user_id
             other_user_attr = "sender"
-            other_user_id_attr = "sender_id"
         else:  # sent
             filter_condition = FriendRequest.sender_id == user_id
             other_user_attr = "receiver"
-            other_user_id_attr = "receiver_id"
 
         requests = (
             db.query(FriendRequest)
@@ -488,7 +485,7 @@ class CRUDFriendRequest(
 
         result = []
         for request in requests:
-            other_user = getattr(request, other_user_attr)
+            getattr(request, other_user_attr)
 
             result.append(
                 {

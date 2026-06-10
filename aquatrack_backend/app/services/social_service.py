@@ -14,7 +14,6 @@ class SocialService:
 
     def __init__(self):
         """Initialize the social service"""
-        pass
 
     async def send_friend_request(
         self,

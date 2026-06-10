@@ -5,17 +5,15 @@ Asynchronous task processing với queue system, retry mechanisms và monitoring
 """
 
 import asyncio
-import json
-import threading
 import time
 import traceback
 import uuid
 from collections import defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional
 
 from ..middleware.logging import structured_logger
 
@@ -522,7 +520,7 @@ class BackgroundTaskManager:
 
     def get_statistics(self) -> Dict[str, Any]:
         """Get comprehensive task manager statistics"""
-        current_time = time.time()
+        time.time()
 
         # Calculate averages
         avg_completion_time = (
@@ -612,7 +610,6 @@ class BackgroundTaskManager:
         self, user_id: str, calculation_type: str, date_range: Dict
     ):
         """Calculate analytics in background"""
-        from ..services.analytics_service import analytics_service
 
         # Simulate analytics calculation
         await asyncio.sleep(1)
