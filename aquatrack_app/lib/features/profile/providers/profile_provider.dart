@@ -3,7 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../shared/storage/hive_storage_service.dart';
 import '../../../core/services/auth_service.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/di/app_providers.dart';
 import '../../../core/models/user.dart';
 import '../../home/providers/home_provider.dart';
 import '../../level/providers/level_provider.dart';
@@ -310,8 +310,8 @@ class ProfileNotifier extends _$ProfileNotifier {
   /// Fetch fresh user data from backend API
   Future<Map<String, dynamic>?> _fetchUserDataFromBackend() async {
     try {
-      // Use existing ApiService to call /users/profile for complete user data
-      final apiService = ApiService();
+      // Call /users/profile for complete user data via the shared ApiClient
+      final apiService = ref.read(apiClientProvider);
       debugPrint('🌐 ProfileProvider: Calling API endpoint...');
       final response = await apiService.get('/users/profile');
       debugPrint(
@@ -553,7 +553,7 @@ class ProfileNotifier extends _$ProfileNotifier {
     await _saveProfile();
 
     try {
-      final apiService = ApiService();
+      final apiService = ref.read(apiClientProvider);
       final response = await apiService.put(
         '/users/profile',
         data: {'avatar_id': avatarId},
@@ -572,7 +572,7 @@ class ProfileNotifier extends _$ProfileNotifier {
   /// Buy a coin-unlock avatar. On success the backend returns the new coin
   /// balance and ownership list, which we apply locally.
   Future<void> purchaseAvatar(String avatarId) async {
-    final apiService = ApiService();
+    final apiService = ref.read(apiClientProvider);
     final response = await apiService.post('/avatars/$avatarId/purchase');
 
     final data = response.data;
@@ -594,7 +594,7 @@ class ProfileNotifier extends _$ProfileNotifier {
   /// the new balance, which we apply locally. Throws on failure (already owned
   /// or insufficient coins) so the caller can surface the message.
   Future<void> purchaseStreakFreeze() async {
-    final apiService = ApiService();
+    final apiService = ref.read(apiClientProvider);
     final response = await apiService.post('/shop/streak-freeze/purchase');
 
     final data = response.data;
@@ -675,7 +675,7 @@ class ProfileNotifier extends _$ProfileNotifier {
       debugPrint('📤 ProfileNotifier: Sending body update: $updateData');
 
       // Call API to update profile
-      final apiService = ApiService();
+      final apiService = ref.read(apiClientProvider);
       final response = await apiService.put('/users/profile', data: updateData);
 
       if (response.statusCode == 200 && response.data != null) {

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/di/app_providers.dart';
 import '../../../shared/storage/hive_storage_service.dart';
 import '../models/friend_model.dart';
 import '../services/social_service.dart';
@@ -11,7 +11,7 @@ part 'friends_provider.g.dart';
 /// Provider for Social Service dependency injection
 @riverpod
 SocialService socialService(Ref ref) {
-  return SocialService(ApiService());
+  return SocialService(ref.watch(apiClientProvider));
 }
 
 /// Friends state for social hydration tracking

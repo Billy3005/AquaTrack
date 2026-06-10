@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/network/api_client.dart';
 
 part 'social_failure.freezed.dart';
 

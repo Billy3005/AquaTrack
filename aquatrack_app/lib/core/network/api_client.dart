@@ -73,26 +73,29 @@ class ApiClientImpl implements ApiClient {
   final network.NetworkClient _networkClient;
   final TokenStorage _tokenStorage;
 
-  String? _currentToken;
+  // Single-flight guard: concurrent 401s share one refresh instead of each
+  // firing /auth/refresh.
+  Future<String?>? _refreshInFlight;
 
   ApiClientImpl({
     required network.NetworkClient networkClient,
     required TokenStorage tokenStorage,
   }) : _networkClient = networkClient,
-       _tokenStorage = tokenStorage;
+       _tokenStorage = tokenStorage {
+    // Auto-inject the access token per request from storage so this client is
+    // authenticated even if setAuthToken/initialize were never called, and wire
+    // 401 refresh here (not only in initialize) so it works even when
+    // initialize() is skipped.
+    _networkClient.setAuthTokenProvider(_tokenStorage.getAccessToken);
+    _networkClient.setTokenRefreshCallback(_handleTokenRefresh);
+  }
 
   @override
   Future<void> initialize() async {
     await _networkClient.initialize();
-
-    // Load existing token if available
-    _currentToken = await _tokenStorage.getAccessToken();
-    if (_currentToken != null) {
-      _networkClient.setAuthHeader('Bearer $_currentToken');
-    }
-
-    // Setup token refresh interceptor
-    _networkClient.setTokenRefreshCallback(_handleTokenRefresh);
+    // No token pre-loading: the constructor-wired per-request injector reads
+    // the current token from storage on every request, so there is no sticky
+    // Dio header to go stale. The refresh callback is also wired in the ctor.
   }
 
   @override
@@ -207,12 +210,12 @@ class ApiClientImpl implements ApiClient {
 
   @override
   void setAuthToken(String? token) {
-    _currentToken = token;
+    // Persist only. The per-request injector reads the token from storage each
+    // request, so we never set a sticky Dio default header that could go stale
+    // (across token rotation, logout, or a second ApiClient instance).
     if (token != null) {
-      _networkClient.setAuthHeader('Bearer $token');
       _tokenStorage.saveAccessToken(token);
     } else {
-      _networkClient.clearAuthHeader();
       _tokenStorage.clearTokens();
     }
   }
@@ -225,14 +228,24 @@ class ApiClientImpl implements ApiClient {
     _networkClient.dispose();
   }
 
-  /// Handle token refresh when 401 is received
-  Future<String?> _handleTokenRefresh() async {
+  /// Handle token refresh when 401 is received. Single-flight: concurrent 401s
+  /// await the same refresh instead of each hitting /auth/refresh.
+  Future<String?> _handleTokenRefresh() {
+    return _refreshInFlight ??=
+        _doRefresh().whenComplete(() => _refreshInFlight = null);
+  }
+
+  Future<String?> _doRefresh() async {
     final refreshToken = await _tokenStorage.getRefreshToken();
-    if (refreshToken == null) return null;
+    if (refreshToken == null) {
+      // No way to recover — clear any stale token so requests stop retrying.
+      await _tokenStorage.clearTokens();
+      return null;
+    }
 
     try {
-      // Call refresh endpoint without auth header
-      _networkClient.clearAuthHeader();
+      // /auth/refresh is a public endpoint, so the per-request injector skips
+      // it; no need to mutate the shared auth header.
       final response = await _networkClient.post('/auth/refresh', data: {
         'refresh_token': refreshToken,
       });
@@ -244,11 +257,12 @@ class ApiClientImpl implements ApiClient {
           return newToken;
         }
       }
-    } catch (e) {
-      // Refresh failed, clear all tokens
-      await _tokenStorage.clearTokens();
+    } catch (_) {
+      // fall through to clear below
     }
 
+    // Refresh failed → clear tokens so the app stops retrying and routes to login.
+    await _tokenStorage.clearTokens();
     return null;
   }
 

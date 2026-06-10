@@ -1,14 +1,15 @@
-import '../services/api_service.dart';
+import '../network/api_client.dart';
+import '../network/default_api_client.dart';
 import '../utils/logger.dart';
 
 /// Repository for stats API calls
 class StatsRepository {
   static const String _tag = 'StatsRepository';
 
-  final ApiService _apiService;
+  final ApiClient _apiService;
 
-  StatsRepository({ApiService? apiService})
-      : _apiService = apiService ?? ApiService();
+  StatsRepository({ApiClient? apiClient})
+      : _apiService = apiClient ?? defaultApiClient;
 
   /// Get daily trends data for charts
   Future<StatsApiResponse<DailyTrendsResponse>> getDailyTrends({

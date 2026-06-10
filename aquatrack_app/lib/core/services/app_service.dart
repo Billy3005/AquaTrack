@@ -1,7 +1,8 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import '../config/app_config.dart';
+import '../network/api_client.dart';
+import '../network/default_api_client.dart';
 import '../utils/logger.dart';
-import 'api_service.dart';
 import 'auth_service.dart';
 
 /// Main application service for initialization and coordination
@@ -14,7 +15,7 @@ class AppService {
   AppService._internal();
 
   // Service dependencies
-  late final ApiService _apiService;
+  late final ApiClient _apiService;
   late final AuthService _authService;
 
   bool _isInitialized = false;
@@ -34,7 +35,7 @@ class AppService {
 
       // Initialize services in order
       await _initializeAuthService();
-      _initializeApiService();
+      await _initializeApiService();
 
       // Test API connection
       final isConnected = await _testApiConnection();
@@ -75,14 +76,14 @@ class AppService {
     AppLogger.debug(_tag, 'AuthService initialized');
   }
 
-  /// Initialize API service
-  void _initializeApiService() {
-    AppLogger.debug(_tag, 'Initializing ApiService...');
+  /// Initialize API client
+  Future<void> _initializeApiService() async {
+    AppLogger.debug(_tag, 'Initializing ApiClient...');
 
-    _apiService = ApiService();
-    _apiService.initialize();
+    _apiService = defaultApiClient;
+    await _apiService.initialize();
 
-    AppLogger.debug(_tag, 'ApiService initialized');
+    AppLogger.debug(_tag, 'ApiClient initialized');
   }
 
   /// Test API connection
@@ -95,8 +96,8 @@ class AppService {
     }
   }
 
-  /// Get API service instance
-  ApiService get apiService {
+  /// Get API client instance
+  ApiClient get apiService {
     _ensureInitialized();
     return _apiService;
   }
