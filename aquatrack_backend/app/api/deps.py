@@ -2,7 +2,6 @@
 API Dependencies - Authentication and common dependencies
 """
 
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
