@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
-import requests
 import json
 
+import requests
+
 BASE_URL = "http://localhost:8000/api/v1"
+
 
 def test_profile_api_for_user():
     """Test /users/profile API endpoint for user dcd@gmail.com"""
@@ -12,10 +14,7 @@ def test_profile_api_for_user():
 
     # Step 1: Login to get access token
     print("\n1. Login to get access token...")
-    login_data = {
-        "email": "lkj@gmail.com",
-        "password": "123456"
-    }
+    login_data = {"email": "lkj@gmail.com", "password": "123456"}
 
     try:
         response = requests.post(f"{BASE_URL}/auth/login", json=login_data)
@@ -44,7 +43,9 @@ def test_profile_api_for_user():
         if response.status_code == 200:
             profile_data = response.json()
             print(f"\n   ✅ Profile API Response:")
-            print(f"   Full JSON: {json.dumps(profile_data, indent=2, ensure_ascii=False)}")
+            print(
+                f"   Full JSON: {json.dumps(profile_data, indent=2, ensure_ascii=False)}"
+            )
 
             # Check body fields specifically
             print(f"\n   📊 Body Data Check:")
@@ -52,11 +53,19 @@ def test_profile_api_for_user():
             print(f"   - age: {profile_data.get('age', 'MISSING')}")
             print(f"   - height: {profile_data.get('height', 'MISSING')}")
             print(f"   - weight: {profile_data.get('weight', 'MISSING')}")
-            print(f"   - activity_level: {profile_data.get('activity_level', 'MISSING')}")
+            print(
+                f"   - activity_level: {profile_data.get('activity_level', 'MISSING')}"
+            )
             print(f"   - job_type: {profile_data.get('job_type', 'MISSING')}")
-            print(f"   - health_conditions: {profile_data.get('health_conditions', 'MISSING')}")
-            print(f"   - coffee_cups_per_day: {profile_data.get('coffee_cups_per_day', 'MISSING')}")
-            print(f"   - alcohol_units_per_day: {profile_data.get('alcohol_units_per_day', 'MISSING')}")
+            print(
+                f"   - health_conditions: {profile_data.get('health_conditions', 'MISSING')}"
+            )
+            print(
+                f"   - coffee_cups_per_day: {profile_data.get('coffee_cups_per_day', 'MISSING')}"
+            )
+            print(
+                f"   - alcohol_units_per_day: {profile_data.get('alcohol_units_per_day', 'MISSING')}"
+            )
 
         else:
             print(f"   ❌ Profile API failed: {response.status_code}")
@@ -64,6 +73,7 @@ def test_profile_api_for_user():
 
     except Exception as e:
         print(f"   ❌ Profile API error: {e}")
+
 
 if __name__ == "__main__":
     test_profile_api_for_user()

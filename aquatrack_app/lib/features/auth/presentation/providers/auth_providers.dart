@@ -62,7 +62,8 @@ final authServiceProvider = Provider<AuthService>((ref) {
 // ═══════════════════════════════════════════════════════════════════════════════════
 
 /// Authentication state provider
-final authStateProvider = StateNotifierProvider<AuthStateNotifier, AuthState>((ref) {
+final authStateProvider =
+    StateNotifierProvider<AuthStateNotifier, AuthState>((ref) {
   final authService = ref.watch(authServiceProvider);
   return AuthStateNotifier(authService: authService);
 });

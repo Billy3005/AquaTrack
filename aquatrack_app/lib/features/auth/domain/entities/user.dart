@@ -126,7 +126,8 @@ class User {
       currentLevel: currentLevel ?? this.currentLevel,
       totalXp: totalXp ?? this.totalXp,
       dailyGoalMl: dailyGoalMl ?? this.dailyGoalMl,
-      calculatedDailyGoalMl: calculatedDailyGoalMl ?? this.calculatedDailyGoalMl,
+      calculatedDailyGoalMl:
+          calculatedDailyGoalMl ?? this.calculatedDailyGoalMl,
       currentStreak: currentStreak ?? this.currentStreak,
       longestStreak: longestStreak ?? this.longestStreak,
       totalLogsCount: totalLogsCount ?? this.totalLogsCount,
@@ -155,12 +156,12 @@ class User {
   /// Check if user has completed profile setup
   bool get hasCompletedProfile {
     return fullName != null &&
-           fullName!.isNotEmpty &&
-           gender != null &&
-           age != null &&
-           height != null &&
-           weight != null &&
-           activityLevel != null;
+        fullName!.isNotEmpty &&
+        gender != null &&
+        age != null &&
+        height != null &&
+        weight != null &&
+        activityLevel != null;
   }
 
   /// Get display name (full name fallback to username)

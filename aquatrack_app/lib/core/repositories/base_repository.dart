@@ -57,7 +57,8 @@ abstract class BaseRepository implements Repository {
     try {
       // Clear cache keys related to this repository
       final keys = await storageService.getKeys();
-      final repositoryKeys = keys.where((key) => key.startsWith(_cacheKeyPrefix));
+      final repositoryKeys =
+          keys.where((key) => key.startsWith(_cacheKeyPrefix));
 
       for (final key in repositoryKeys) {
         await storageService.remove(key);
@@ -110,12 +111,14 @@ abstract class BaseRepository implements Repository {
 
       await Future.wait([
         storageService.setString(cacheKey, serializer(data)),
-        storageService.setString(timestampKey, DateTime.now().toIso8601String()),
+        storageService.setString(
+            timestampKey, DateTime.now().toIso8601String()),
       ]);
 
       AppLogger.debug('$repositoryName$_tag', 'Data cached for key: $key');
     } catch (e) {
-      AppLogger.error('$repositoryName$_tag', 'Error caching data for key: $key', e);
+      AppLogger.error(
+          '$repositoryName$_tag', 'Error caching data for key: $key', e);
     }
   }
 
@@ -143,7 +146,8 @@ abstract class BaseRepository implements Repository {
       final ttl = cacheTtl ?? defaultCacheTtl;
 
       if (!isFresh(timestamp, ttl)) {
-        AppLogger.debug('$repositoryName$_tag', 'Cached data stale for key: $key');
+        AppLogger.debug(
+            '$repositoryName$_tag', 'Cached data stale for key: $key');
         await Future.wait([
           storageService.remove(cacheKey),
           storageService.remove(timestampKey),
@@ -152,10 +156,12 @@ abstract class BaseRepository implements Repository {
       }
 
       final data = deserializer(cachedData);
-      AppLogger.debug('$repositoryName$_tag', 'Loaded fresh data from cache for key: $key');
+      AppLogger.debug(
+          '$repositoryName$_tag', 'Loaded fresh data from cache for key: $key');
       return data;
     } catch (e) {
-      AppLogger.error('$repositoryName$_tag', 'Error loading cached data for key: $key', e);
+      AppLogger.error(
+          '$repositoryName$_tag', 'Error loading cached data for key: $key', e);
       return null;
     }
   }
@@ -171,9 +177,11 @@ abstract class BaseRepository implements Repository {
         storageService.remove(timestampKey),
       ]);
 
-      AppLogger.debug('$repositoryName$_tag', 'Removed cached data for key: $key');
+      AppLogger.debug(
+          '$repositoryName$_tag', 'Removed cached data for key: $key');
     } catch (e) {
-      AppLogger.error('$repositoryName$_tag', 'Error removing cached data for key: $key', e);
+      AppLogger.error('$repositoryName$_tag',
+          'Error removing cached data for key: $key', e);
     }
   }
 

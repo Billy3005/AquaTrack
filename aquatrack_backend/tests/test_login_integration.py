@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
-import requests
 import json
 
+import requests
+
 BASE_URL = "http://localhost:8000/api/v1"
+
 
 def test_login():
     """Test login API with existing users"""
@@ -36,17 +38,19 @@ def test_login():
 
     return False
 
+
 def test_register():
     """Test registration API"""
     print(f"\n=== Testing registration ===")
 
     # Generate unique username
     import random
+
     random_suffix = random.randint(1000, 9999)
     register_data = {
         "email": f"debug{random_suffix}@test.com",
         "password": "123456",
-        "username": f"debug{random_suffix}"
+        "username": f"debug{random_suffix}",
     }
 
     try:
@@ -65,6 +69,7 @@ def test_register():
         print(f"[FAIL] Error: {e}")
 
     return False
+
 
 if __name__ == "__main__":
     print("Testing AquaTrack Authentication...")

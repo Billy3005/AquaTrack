@@ -80,8 +80,8 @@ class ApiClientImpl implements ApiClient {
   ApiClientImpl({
     required network.NetworkClient networkClient,
     required TokenStorage tokenStorage,
-  }) : _networkClient = networkClient,
-       _tokenStorage = tokenStorage {
+  })  : _networkClient = networkClient,
+        _tokenStorage = tokenStorage {
     // Auto-inject the access token per request from storage so this client is
     // authenticated even if setAuthToken/initialize were never called, and wire
     // 401 refresh here (not only in initialize) so it works even when
@@ -322,7 +322,8 @@ class ApiClientImpl implements ApiClient {
 
       switch (error.type) {
         case DioExceptionType.connectionTimeout:
-          message = 'Connection timeout. Please check your internet connection.';
+          message =
+              'Connection timeout. Please check your internet connection.';
           break;
         case DioExceptionType.sendTimeout:
           message = 'Request timeout. Please try again.';

@@ -115,7 +115,8 @@ class FileException extends AppException {
   });
 
   @override
-  String toString() => 'FileException($code): $message${filePath != null ? ' (File: $filePath)' : ''}';
+  String toString() =>
+      'FileException($code): $message${filePath != null ? ' (File: $filePath)' : ''}';
 }
 
 /// Permission-related exceptions
@@ -130,7 +131,8 @@ class PermissionException extends AppException {
   });
 
   @override
-  String toString() => 'PermissionException($code): $message (Permission: $permissionType)';
+  String toString() =>
+      'PermissionException($code): $message (Permission: $permissionType)';
 }
 
 /// Unknown/Unexpected exceptions wrapper

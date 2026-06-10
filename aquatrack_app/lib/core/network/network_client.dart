@@ -110,7 +110,8 @@ class NetworkClient {
         },
         onError: (error, handler) async {
           // Handle token expiration với refresh logic
-          if (error.response?.statusCode == 401 && _tokenRefreshCallback != null) {
+          if (error.response?.statusCode == 401 &&
+              _tokenRefreshCallback != null) {
             AppLogger.warning(_tag, 'Token expired, attempting refresh');
 
             try {

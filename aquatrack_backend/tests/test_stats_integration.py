@@ -3,14 +3,17 @@
 Test Stats Screen Integration End-to-End
 Tests: Backend API -> Frontend Provider -> Intelligence Layer -> UI
 """
-import requests
+
 import json
 from datetime import datetime
+
+import requests
 
 # Configuration
 BACKEND_URL = "http://127.0.0.1:8000"
 TEST_USER_EMAIL = "test_integration@example.com"
 TEST_USER_PASSWORD = "test123456"
+
 
 def test_backend_health():
     """Test if backend is running"""
@@ -20,19 +23,15 @@ def test_backend_health():
     except:
         return False
 
+
 def test_auth_flow():
     """Test authentication and get access token"""
     try:
         # Try to login
-        login_data = {
-            "email": TEST_USER_EMAIL,
-            "password": TEST_USER_PASSWORD
-        }
+        login_data = {"email": TEST_USER_EMAIL, "password": TEST_USER_PASSWORD}
 
         response = requests.post(
-            f"{BACKEND_URL}/api/v1/auth/login",
-            json=login_data,
-            timeout=5
+            f"{BACKEND_URL}/api/v1/auth/login", json=login_data, timeout=5
         )
 
         if response.status_code == 200:
@@ -45,6 +44,7 @@ def test_auth_flow():
         print(f"[FAIL] Auth error: {e}")
         return None
 
+
 def test_stats_api(token):
     """Test stats API endpoints"""
     headers = {"Authorization": f"Bearer {token}"}
@@ -52,14 +52,14 @@ def test_stats_api(token):
     try:
         # Test dashboard stats
         dashboard_response = requests.get(
-            f"{BACKEND_URL}/api/v1/stats/dashboard",
-            headers=headers,
-            timeout=5
+            f"{BACKEND_URL}/api/v1/stats/dashboard", headers=headers, timeout=5
         )
 
         if dashboard_response.status_code == 200:
             dashboard_data = dashboard_response.json()
-            print(f"[PASS] Dashboard API: {dashboard_data['today']['total_effective_ml']}ml today")
+            print(
+                f"[PASS] Dashboard API: {dashboard_data['today']['total_effective_ml']}ml today"
+            )
             return dashboard_data
         else:
             print(f"[FAIL] Dashboard API failed: {dashboard_response.status_code}")
@@ -69,6 +69,7 @@ def test_stats_api(token):
         print(f"[FAIL] Stats API error: {e}")
         return None
 
+
 def test_intelligence_layer():
     """Test InsightEngine logic (mock data)"""
     try:
@@ -77,25 +78,29 @@ def test_intelligence_layer():
             "weather": {"temperature": 32, "condition": "hot"},
             "stats": {"weeklyAverage": 1850, "todayProgress": 0.75},
             "time": {"hour": 14, "timeOfDay": "afternoon"},
-            "user": {"dailyGoalMl": 2000, "age": 25, "activityLevel": "moderate"}
+            "user": {"dailyGoalMl": 2000, "age": 25, "activityLevel": "moderate"},
         }
 
         # Simple intelligence simulation (real logic is in Flutter/Dart)
         insights = []
 
         if mock_context["weather"]["temperature"] > 30:
-            insights.append({
-                "type": "weather",
-                "title": "Hot weather - increase goal",
-                "message": f"Temperature {mock_context['weather']['temperature']}C"
-            })
+            insights.append(
+                {
+                    "type": "weather",
+                    "title": "Hot weather - increase goal",
+                    "message": f"Temperature {mock_context['weather']['temperature']}C",
+                }
+            )
 
         if mock_context["time"]["timeOfDay"] == "afternoon":
-            insights.append({
-                "type": "timing",
-                "title": "Afternoon needs hydration",
-                "message": "This is when dehydration commonly occurs"
-            })
+            insights.append(
+                {
+                    "type": "timing",
+                    "title": "Afternoon needs hydration",
+                    "message": "This is when dehydration commonly occurs",
+                }
+            )
 
         print(f"[PASS] Intelligence Layer: Generated {len(insights)} insights")
         for insight in insights:
@@ -106,6 +111,7 @@ def test_intelligence_layer():
     except Exception as e:
         print(f"[FAIL] Intelligence Layer error: {e}")
         return None
+
 
 def main():
     """Run full integration test"""
@@ -153,6 +159,7 @@ def main():
     print("   -> Fetch real stats data")
     print("   -> Generate dynamic insights")
     print("   -> Display in stats screen")
+
 
 if __name__ == "__main__":
     main()
