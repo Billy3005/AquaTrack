@@ -37,12 +37,12 @@ def test_claim_flow_credits_then_conflicts(client, db, user):
         db.add(
             ScanHistory(
                 user_id=user.id,
-                container_type="glass_small",
+                container_label="Ly thủy tinh",
+                container_capacity_ml=200,
                 fill_level_percent=1.0,
                 liquid_type="water",
                 confidence_score=0.9,
                 estimated_volume_ml=200,
-                effective_volume_ml=200,
                 created_at=datetime.utcnow(),
             )
         )

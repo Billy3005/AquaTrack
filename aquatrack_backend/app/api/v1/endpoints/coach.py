@@ -16,8 +16,8 @@ from app.schemas.conversation import (ChatMessageRequest, ChatMessageResponse,
                                       ContextUpdateRequest,
                                       ConversationHistoryResponse,
                                       ConversationSessionListResponse,
-                                      MessageCreate,
-                                      MessageResponse, QuickReplyActionRequest,
+                                      MessageCreate, MessageResponse,
+                                      QuickReplyActionRequest,
                                       QuickReplySchema)
 from app.services.ai_coach_service import ai_coach_service
 
