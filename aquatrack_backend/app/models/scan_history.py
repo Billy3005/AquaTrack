@@ -22,15 +22,15 @@ class ScanHistory(Base):
     # Image information
     image_path = Column(String, nullable=True)  # Path to stored image file
 
-    # AI Detection Results
-    container_type = Column(String, nullable=False)  # glass_small, bottle_500, etc.
+    # AI Detection Results (ADR-0005: continuous capacity, no container classes)
+    container_label = Column(String, nullable=False)  # display label, e.g. "Chai nhựa"
+    container_capacity_ml = Column(Integer, nullable=False)  # full capacity estimate
     fill_level_percent = Column(Float, nullable=False)  # 0.0 - 1.0
     liquid_type = Column(String, nullable=False)  # water, tea, coffee, juice, smoothie
     confidence_score = Column(Float, nullable=False)  # 0.0 - 1.0 AI confidence
 
-    # Volume Calculations
-    estimated_volume_ml = Column(Integer, nullable=False)  # Raw volume estimate
-    effective_volume_ml = Column(Integer, nullable=False)  # With hydration coefficient
+    # Physical volume only — hydration coefficient is applied at the log step
+    estimated_volume_ml = Column(Integer, nullable=False)
 
     # Validation and Correction
     is_validated = Column(Boolean, default=False)  # User confirmed accuracy
@@ -48,7 +48,7 @@ class ScanHistory(Base):
     def __repr__(self):
         return (
             f"<ScanHistory(id={self.id}, user_id={self.user_id}, "
-            f"container={self.container_type}, volume={self.estimated_volume_ml}ml, "
+            f"container={self.container_label}, volume={self.estimated_volume_ml}ml, "
             f"confidence={self.confidence_score:.2f})>"
         )
 

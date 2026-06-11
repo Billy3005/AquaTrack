@@ -99,6 +99,24 @@ last_updated: 2026-05-30
 
 **Streak Freeze** (Đóng băng chuỗi) — A one-time consumable bought with Coins that bridges a single fully-missed day so the user's Streak does not reset. Inventory is binary — a user owns at most one Freeze at a time; protecting a missed day consumes it (back to zero, must re-buy). A bridged day preserves continuity but does **not** add to streak length (the user did not hit goal that day). Consumed at log time, not on read; while owned, a single missed day is treated as provisionally protected so reads never show a false break. Multiple consecutive missed days break the streak — one Freeze covers one day only.
 
+## Smart Scan
+
+**Smart Scan** — Tính năng chụp ảnh vật chứa đồ uống để ước lượng lượng nước, thay cho nhập tay. Kết quả scan luôn đi qua bước người dùng xác nhận trước khi trở thành một log; Smart Scan không bao giờ tự log.
+
+**Container Capacity** — Dung tích ước lượng của vật chứa, là một giá trị liên tục tính bằng ml (ví dụ 650ml), không phải một lớp phân loại rời rạc. Loại vật chứa (chai/ly/cốc) chỉ dùng để hiển thị, không tham gia tính thể tích.
+
+**Fill Level** — Tỷ lệ đầy của vật chứa (0.0–1.0) tại thời điểm chụp.
+
+**Estimated Volume** — Thể tích vật lý của chất lỏng trong vật chứa: Container Capacity × Fill Level. Đây là con số người dùng xác nhận hoặc chỉnh sửa, vì nó là thứ họ nhìn thấy được.
+
+**Effective Volume** — Lượng hydration thực tính: Estimated Volume × Hydration Coefficient của loại đồ uống. Luôn được suy ra ở **một nơi duy nhất** (bước log), không bao giờ tính trước rồi truyền đi — tránh áp hệ số hai lần.
+
+**Hydration Coefficient** — Hệ số quy đổi theo loại đồ uống (nước 1.0, trà 0.9, cà phê 0.8, …) phản ánh mức đóng góp hydration thực.
+
+**Scan Confidence** — Độ tin cậy của một lần scan (0.0–1.0). Từ **0.85** trở lên kết quả được tự động điền và xác nhận là hành động chính; dưới ngưỡng này kết quả vẫn hiện như một gợi ý kèm cảnh báo, việc chỉnh sửa được làm nổi bật. Confidence thấp không bao giờ ép người dùng chụp lại — chụp lại chỉ là lựa chọn phụ.
+
+**Correction** — Hành động người dùng sửa Estimated Volume mà scan đề xuất trước khi log. **Correction Rate** (tỷ lệ scan bị sửa, mục tiêu <25%) và **sai số thể tích trung bình** (mục tiêu <15%) là hai KPI chất lượng của Smart Scan. Mỗi Correction đồng thời là một điểm dữ liệu huấn luyện cho giai đoạn hybrid sau này.
+
 ## Hydration Reminders
 
 **Hydration Schedule** (Lịch nhắc nhở) — A user's personal set of daily local notifications nudging *themselves* to drink water. Distinct from a **Reminder (Friend Nudge)**. Stored on-device only (Hive); notifications fire locally via `flutter_local_notifications`, with no backend involvement.

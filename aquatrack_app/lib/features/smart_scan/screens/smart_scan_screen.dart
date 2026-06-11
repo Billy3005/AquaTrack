@@ -5,17 +5,22 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:camera/camera.dart';
 
+import '../../../core/models/vision_result.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/repositories/vision_repository.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/services/vision_service.dart';
 import '../../log_drink/screens/log_drink_screen.dart';
 import '../../log_drink/providers/log_drink_provider.dart';
-import '../providers/scan_history_provider.dart';
 import '../widgets/scan_overlay.dart';
 import '../widgets/scan_controls.dart';
 import '../widgets/scan_result_sheet.dart';
 
-/// Smart Scan screen for automatic volume detection
+/// Smart Scan screen for automatic volume detection.
+///
+/// Backend is the single source of truth (ADR-0005): the image goes to
+/// /vision/estimate-volume, the scan is persisted server-side, and the
+/// user's confirmation/correction is sent back as training data.
 class SmartScanScreen extends ConsumerStatefulWidget {
   const SmartScanScreen({super.key});
 
@@ -25,12 +30,13 @@ class SmartScanScreen extends ConsumerStatefulWidget {
 
 class _SmartScanScreenState extends ConsumerState<SmartScanScreen>
     with WidgetsBindingObserver {
+  final VisionRepository _visionRepository = VisionRepository();
+
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
   bool _isInitialized = false;
   bool _isScanning = false;
   String? _errorMessage;
-  String? _currentScanId; // Track current scan for history
 
   @override
   void initState() {
@@ -97,7 +103,6 @@ class _SmartScanScreenState extends ConsumerState<SmartScanScreen>
 
       final XFile image = await _controller!.takePicture();
 
-      // TODO: Process image with VisionService
       await _processImage(File(image.path));
     } catch (e) {
       debugPrint('Lỗi chụp ảnh: $e');
@@ -112,34 +117,20 @@ class _SmartScanScreenState extends ConsumerState<SmartScanScreen>
 
   Future<void> _processImage(File imageFile) async {
     try {
-      // Process image with VisionService
-      final visionService = VisionService();
-      final result = await visionService.estimateVolume(imageFile);
+      final result = await _visionRepository.estimateVolume(imageFile.path);
 
-      debugPrint('Vision result: $result');
-
-      // Record scan in history
-      final scanHistoryNotifier = ref.read(
-        scanHistoryNotifierProvider.notifier,
-      );
-      await scanHistoryNotifier.addScanRecord(
-        imagePath: imageFile.path,
-        aiResult: result,
-      );
-
-      // Get the most recent scan ID for tracking user confirmation
-      final historyState = ref.read(scanHistoryNotifierProvider);
-      historyState.whenData((records) {
-        if (records.isNotEmpty) {
-          _currentScanId = records.first.id;
-        }
-      });
-
-      // Show result bottom sheet
+      if (!mounted) return;
       _showResultSheet(result);
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể phân tích ảnh: ${e.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } catch (e) {
-      debugPrint('Error processing image: $e');
-      // Show error message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -159,33 +150,30 @@ class _SmartScanScreenState extends ConsumerState<SmartScanScreen>
       builder: (context) => ScanResultSheet(result: result),
     ).then((confirmedVolume) {
       if (confirmedVolume != null && mounted) {
-        // Navigate to Log Drink screen with pre-filled volume
-        _navigateToLogDrink(confirmedVolume, result.liquidType);
+        _navigateToLogDrink(result, confirmedVolume);
       }
     });
   }
 
-  /// Navigate to Log Drink screen with pre-filled volume and liquid type
-  void _navigateToLogDrink(int volumeMl, String liquidType) async {
-    // Record user confirmation in scan history
-    if (_currentScanId != null) {
-      final scanHistoryNotifier = ref.read(
-        scanHistoryNotifierProvider.notifier,
-      );
-      await scanHistoryNotifier.updateScanRecord(
-        recordId: _currentScanId!,
-        userConfirmedVolume: volumeMl,
-        userFeedback: 'confirmed',
+  /// Record the user's decision on the backend (training data for the
+  /// hybrid phase), then continue to Log Drink with the physical volume.
+  void _navigateToLogDrink(VisionResult result, int confirmedVolumeMl) {
+    if (result.scanId != null) {
+      final isCorrection = confirmedVolumeMl != result.estimatedVolumeMl;
+      // Fire-and-forget: validation must never block the log flow
+      _visionRepository.submitValidation(
+        scanId: result.scanId!,
+        correctedVolumeMl: isCorrection ? confirmedVolumeMl : null,
       );
     }
 
-    if (!mounted) return;
+    // Pre-set the PHYSICAL amount; Log Drink applies the hydration
+    // coefficient exactly once
+    ref.read(logDrinkNotifierProvider.notifier).setAmount(confirmedVolumeMl);
+    ref
+        .read(logDrinkNotifierProvider.notifier)
+        .selectDrinkType(result.liquidType);
 
-    // Pre-set the amount and liquid type in the provider
-    ref.read(logDrinkNotifierProvider.notifier).setAmount(volumeMl);
-    ref.read(logDrinkNotifierProvider.notifier).selectDrinkType(liquidType);
-
-    // Navigate to Log Drink screen
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (context) => const LogDrinkScreen()))
         .then((_) {

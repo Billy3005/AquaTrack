@@ -10,7 +10,7 @@ from .social import (FriendReminderRequest, FriendReminderResponse,
                      UserSearchResult, WeeklyLeaderboardResponse)
 from .user import UserCreate, UserLogin, UserResponse, UserUpdate
 from .vision import (ScanHistoryCreate, ScanHistoryResponse, ScanHistoryUpdate,
-                     VisionEstimateRequest, VisionEstimateResponse)
+                     VisionEstimateResponse)
 
 __all__ = [
     "UserCreate",
@@ -25,7 +25,6 @@ __all__ = [
     "IntakeLogUpdate",
     "DailySummaryResponse",
     "AchievementResponse",
-    "VisionEstimateRequest",
     "VisionEstimateResponse",
     "ScanHistoryCreate",
     "ScanHistoryResponse",

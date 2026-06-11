@@ -58,6 +58,13 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
 
+    # Smart Scan Vision Settings (ADR-0005)
+    # Model is env-configurable so a retired model is a config change, not a deploy
+    # Eval 2026-06-11 (n=10): Sonnet ~= Haiku accuracy at 3x cost -> Haiku.
+    # 1568px: clear-water fill detection needs all the resolution it can get.
+    VISION_MODEL: str = "claude-haiku-4-5"
+    VISION_MAX_IMAGE_DIMENSION: int = 1568
+
     # Email Settings (SMTP)
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587

@@ -1,65 +1,40 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants/app_constants.dart';
+import '../../../core/models/vision_result.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/services/vision_service.dart';
 
-/// Bottom sheet showing scan results with confirmation
-class ScanResultSheet extends ConsumerStatefulWidget {
+/// Bottom sheet showing scan results with confirmation.
+///
+/// Pops the user-approved PHYSICAL volume (ml). The hydration coefficient is
+/// applied once at the log step — the preview line here is display-only.
+/// Low confidence never blocks: the result stays editable as a suggestion.
+class ScanResultSheet extends StatefulWidget {
   final VisionResult result;
 
   const ScanResultSheet({super.key, required this.result});
 
   @override
-  ConsumerState<ScanResultSheet> createState() => _ScanResultSheetState();
+  State<ScanResultSheet> createState() => _ScanResultSheetState();
 }
 
-class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
+class _ScanResultSheetState extends State<ScanResultSheet> {
   late double _adjustedVolume;
-  late int _finalVolume;
+
+  bool get _isHighConfidence => widget.result.isHighConfidence;
 
   @override
   void initState() {
     super.initState();
-    _adjustedVolume = widget.result.estimatedVolumeMl.toDouble();
-    _finalVolume = widget.result.effectiveVolumeMl;
+    _adjustedVolume =
+        widget.result.estimatedVolumeMl.clamp(50, 2000).toDouble();
   }
 
-  void _updateVolume(double newVolume) {
-    setState(() {
-      _adjustedVolume = newVolume;
-      // Recalculate effective volume with hydration coefficient
-      final hydrationCoeff = _getHydrationCoeff(widget.result.liquidType);
-      _finalVolume = (newVolume * hydrationCoeff).round();
-    });
-  }
-
-  double _getHydrationCoeff(String liquidType) {
-    const coeffMap = {
-      'water': 1.00,
-      'tea': 0.90,
-      'coffee': 0.80,
-      'juice': 0.85,
-      'smoothie': 0.90,
-    };
-    return coeffMap[liquidType] ?? 1.0;
-  }
-
-  String _getContainerDisplayName(String containerClass) {
-    const nameMap = {
-      'glass_small': 'Cốc thủy tinh nhỏ',
-      'glass_large': 'Cốc thủy tinh lớn',
-      'cup_plastic': 'Ly nhựa',
-      'bottle_500': 'Chai 500ml',
-      'bottle_750': 'Chai 750ml',
-      'bottle_1000': 'Chai 1L',
-      'bottle_1500': 'Chai 1.5L',
-      'mug': 'Cốc/Ca',
-      'can_330': 'Lon 330ml',
-      'other': 'Khác',
-    };
-    return nameMap[containerClass] ?? containerClass;
+  /// Display-only hydration preview (Log Drink owns the real calculation)
+  int get _effectivePreviewMl {
+    final coeff = AppConstants.hydrationCoeff[widget.result.liquidType] ?? 1.0;
+    return (_adjustedVolume * coeff).round();
   }
 
   String _getLiquidDisplayName(String liquidType) {
@@ -73,24 +48,22 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
     return nameMap[liquidType] ?? liquidType;
   }
 
-  Color _getConfidenceColor(double confidence) {
-    if (confidence >= 0.80) return Colors.green;
-    if (confidence >= 0.60) return Colors.orange;
+  Color get _confidenceColor {
+    if (_isHighConfidence) return Colors.green;
+    if (widget.result.confidence >= 0.60) return Colors.orange;
     return Colors.red;
   }
 
-  String _getConfidenceText(double confidence) {
-    if (confidence >= 0.80) return 'Độ tin cậy cao';
-    if (confidence >= 0.60) return 'Độ tin cậy trung bình';
-    return 'Độ tin cậy thấp - Vui lòng điều chỉnh';
+  String get _confidenceText {
+    if (_isHighConfidence) return 'Độ tin cậy cao';
+    if (widget.result.confidence >= 0.60) {
+      return 'Kiểm tra lại kết quả giúp mình nhé';
+    }
+    return 'Độ tin cậy thấp — hãy chỉnh lại thể tích';
   }
 
   @override
   Widget build(BuildContext context) {
-    final confidenceCategory = VisionService().getConfidenceCategory(
-      widget.result.confidence,
-    );
-
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
       decoration: const BoxDecoration(
@@ -150,33 +123,26 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: _getConfidenceColor(
-                        widget.result.confidence,
-                      ).withValues(alpha: 0.1),
+                      color: _confidenceColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: _getConfidenceColor(widget.result.confidence),
-                        width: 1,
-                      ),
+                      border: Border.all(color: _confidenceColor, width: 1),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          confidenceCategory == 'high'
+                          _isHighConfidence
                               ? Icons.check_circle
-                              : confidenceCategory == 'medium'
-                                  ? Icons.warning
-                                  : Icons.error,
-                          color: _getConfidenceColor(widget.result.confidence),
+                              : Icons.warning,
+                          color: _confidenceColor,
                           size: 16,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          _getConfidenceText(widget.result.confidence),
-                          style: AppTextStyles.labelMedium.copyWith(
-                            color: _getConfidenceColor(
-                              widget.result.confidence,
+                        Flexible(
+                          child: Text(
+                            _confidenceText,
+                            style: AppTextStyles.labelMedium.copyWith(
+                              color: _confidenceColor,
                             ),
                           ),
                         ),
@@ -189,10 +155,8 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
                   // Detection results
                   _buildResultCard(
                     icon: Icons.local_drink,
-                    title: 'Loại thùng chứa',
-                    value: _getContainerDisplayName(
-                      widget.result.containerClass,
-                    ),
+                    title: 'Vật chứa',
+                    value: widget.result.containerLabel,
                   ),
 
                   const SizedBox(height: 16),
@@ -201,7 +165,8 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
                     icon: Icons.opacity,
                     title: 'Mức độ đầy',
                     value:
-                        '${(widget.result.fillLevelPercent * 100).toStringAsFixed(1)}%',
+                        '${(widget.result.fillLevelPercent * 100).toStringAsFixed(0)}% '
+                        'của ~${widget.result.containerCapacityMl}ml',
                   ),
 
                   const SizedBox(height: 16),
@@ -216,7 +181,9 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
 
                   // Volume adjustment
                   Text(
-                    'Điều chỉnh thể tích',
+                    _isHighConfidence
+                        ? 'Thể tích ước lượng'
+                        : 'Điều chỉnh thể tích',
                     style: AppTextStyles.titleMedium.copyWith(
                       color: AppColors.textPrimary,
                     ),
@@ -246,7 +213,7 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Hiệu quả hydration: ${_finalVolume}ml',
+                          '≈ ${_effectivePreviewMl}ml hydration',
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -257,19 +224,19 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
 
                   const SizedBox(height: 16),
 
-                  // Volume slider (show for medium/low confidence)
-                  if (confidenceCategory != 'high') ...[
-                    Slider(
-                      value: _adjustedVolume,
-                      min: 50,
-                      max: 2000,
-                      divisions: 195,
-                      activeColor: AppColors.cyanAccent,
-                      inactiveColor: AppColors.textSecondary,
-                      onChanged: _updateVolume,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+                  // Slider is always available; below the auto-fill threshold
+                  // it is the focal point of the sheet
+                  Slider(
+                    value: _adjustedVolume,
+                    min: 50,
+                    max: 2000,
+                    divisions: 195,
+                    activeColor: AppColors.cyanAccent,
+                    inactiveColor: AppColors.textSecondary,
+                    onChanged: (value) {
+                      setState(() => _adjustedVolume = value);
+                    },
+                  ),
 
                   const SizedBox(height: 80), // Space for buttons
                 ],
@@ -277,7 +244,7 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
             ),
           ),
 
-          // Action buttons
+          // Action buttons — retake is always secondary, never forced
           Container(
             padding: const EdgeInsets.all(24),
             decoration: const BoxDecoration(
@@ -308,15 +275,16 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
                   flex: 2,
                   child: ElevatedButton(
                     onPressed: () {
-                      // TODO: Log drink with final volume
-                      Navigator.of(context).pop(_finalVolume);
+                      // Pop the PHYSICAL volume; Log Drink applies the
+                      // hydration coefficient exactly once
+                      Navigator.of(context).pop(_adjustedVolume.round());
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.cyanAccent,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: Text(
-                      'Xác nhận ${_finalVolume}ml',
+                      'Xác nhận ${_adjustedVolume.round()}ml',
                       style: AppTextStyles.labelLarge.copyWith(
                         color: Colors.white,
                       ),
