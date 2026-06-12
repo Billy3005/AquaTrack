@@ -19,12 +19,12 @@ class CRUDScanHistory(CRUDBase[ScanHistory, ScanHistoryCreate, ScanHistoryUpdate
         db_obj = ScanHistory(
             user_id=user_id,
             image_path=obj_in.image_path,
-            container_type=obj_in.container_type,
+            container_label=obj_in.container_label,
+            container_capacity_ml=obj_in.container_capacity_ml,
             fill_level_percent=obj_in.fill_level_percent,
             liquid_type=obj_in.liquid_type,
             confidence_score=obj_in.confidence_score,
             estimated_volume_ml=obj_in.estimated_volume_ml,
-            effective_volume_ml=obj_in.effective_volume_ml,
         )
 
         db.add(db_obj)

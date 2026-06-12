@@ -276,7 +276,9 @@ class AuthService {
     } else if (username.length < 3) {
       errors['username'] = ['Tên người dùng phải có ít nhất 3 ký tự'];
     } else if (!_isValidUsername(username)) {
-      errors['username'] = ['Tên người dùng chỉ được chứa chữ cái, số và dấu gạch dưới'];
+      errors['username'] = [
+        'Tên người dùng chỉ được chứa chữ cái, số và dấu gạch dưới'
+      ];
     }
 
     // Full name validation (optional)
@@ -289,7 +291,9 @@ class AuthService {
     // Daily goal validation (optional)
     if (dailyGoalMl != null) {
       if (dailyGoalMl < 500 || dailyGoalMl > 5000) {
-        errors['dailyGoalMl'] = ['Mục tiêu nước hàng ngày phải từ 500ml đến 5000ml'];
+        errors['dailyGoalMl'] = [
+          'Mục tiêu nước hàng ngày phải từ 500ml đến 5000ml'
+        ];
       }
     }
 
@@ -320,7 +324,9 @@ class AuthService {
         if (username.length < 3) {
           errors['username'] = ['Tên người dùng phải có ít nhất 3 ký tự'];
         } else if (!_isValidUsername(username)) {
-          errors['username'] = ['Tên người dùng chỉ được chứa chữ cái, số và dấu gạch dưới'];
+          errors['username'] = [
+            'Tên người dùng chỉ được chứa chữ cái, số và dấu gạch dưới'
+          ];
         }
       }
     }
@@ -360,7 +366,13 @@ class AuthService {
     final errors = <String, List<String>>{};
 
     // Required fields for onboarding
-    final requiredFields = ['gender', 'age', 'height', 'weight', 'activityLevel'];
+    final requiredFields = [
+      'gender',
+      'age',
+      'height',
+      'weight',
+      'activityLevel'
+    ];
 
     for (final field in requiredFields) {
       if (!bodyInfo.containsKey(field) || bodyInfo[field] == null) {

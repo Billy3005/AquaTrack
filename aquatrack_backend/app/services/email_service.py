@@ -9,10 +9,9 @@ import smtplib
 from datetime import datetime, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from jinja2 import Environment, FileSystemLoader
-from pydantic import EmailStr
 from sqlalchemy.orm import Session
 
 from app.core.config import settings

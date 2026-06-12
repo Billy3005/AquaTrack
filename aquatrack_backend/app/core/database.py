@@ -39,7 +39,9 @@ def init_db() -> None:
     This should be called when the application starts.
     """
     # Import all models here to ensure they're registered
-    from app.models import (Achievement, Challenge, CoinGift, Conversation,
+
+    from app.models import CoinGift  # noqa: F401
+    from app.models import (Achievement, Challenge, Conversation,
                             ConversationSession, DailySummary, Friend,
                             FriendRequest, IntakeLog, LeaderboardEntry,
                             QuestClaim, ReminderLog, ScanHistory, User,

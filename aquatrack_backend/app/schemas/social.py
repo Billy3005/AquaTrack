@@ -54,8 +54,6 @@ class FriendRequestResponse(FriendRequestBase):
 class FriendBase(BaseModel):
     """Base friend schema"""
 
-    pass
-
 
 class FriendResponse(FriendBase):
     """Schema for friend response"""
@@ -124,8 +122,6 @@ class SuggestedUser(BaseModel):
 # Leaderboard schemas
 class LeaderboardEntryBase(BaseModel):
     """Base leaderboard entry schema"""
-
-    pass
 
 
 class LeaderboardEntryResponse(LeaderboardEntryBase):

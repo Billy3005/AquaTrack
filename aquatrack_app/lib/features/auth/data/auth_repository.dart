@@ -84,7 +84,8 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
       AppLogger.info(_tag, 'Login attempt for email: $email');
 
       // Call API directly (not using executeApiCall wrapper since AuthAPI handles ApiResponse internally)
-      final authResponse = await _authAPI.login(email: email, password: password);
+      final authResponse =
+          await _authAPI.login(email: email, password: password);
 
       // Save tokens
       await _authStorage.saveTokens(
@@ -93,7 +94,8 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
       );
 
       // Calculate token expiry
-      final expiry = DateTime.now().add(Duration(seconds: authResponse.expiresIn));
+      final expiry =
+          DateTime.now().add(Duration(seconds: authResponse.expiresIn));
       await _authStorage.setTokenExpiry(expiry);
 
       // Save user data
@@ -107,7 +109,8 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
       await saveToCache(
         key: _currentUserCacheKey,
         data: user,
-        serializer: (user) => jsonEncode(UserModel.fromDomainEntity(user).toJson()),
+        serializer: (user) =>
+            jsonEncode(UserModel.fromDomainEntity(user).toJson()),
       );
 
       AppLogger.info(_tag, 'Login successful for user: ${user.username}');
@@ -146,7 +149,8 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
       );
 
       // Calculate token expiry
-      final expiry = DateTime.now().add(Duration(seconds: authResponse.expiresIn));
+      final expiry =
+          DateTime.now().add(Duration(seconds: authResponse.expiresIn));
       await _authStorage.setTokenExpiry(expiry);
 
       // Save user data
@@ -160,10 +164,12 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
       await saveToCache(
         key: _currentUserCacheKey,
         data: user,
-        serializer: (user) => jsonEncode(UserModel.fromDomainEntity(user).toJson()),
+        serializer: (user) =>
+            jsonEncode(UserModel.fromDomainEntity(user).toJson()),
       );
 
-      AppLogger.info(_tag, 'Registration successful for user: ${user.username}');
+      AppLogger.info(
+          _tag, 'Registration successful for user: ${user.username}');
       return user;
     } catch (e) {
       AppLogger.error(_tag, 'Registration failed for email: $email', e);
@@ -181,7 +187,8 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
       try {
         await _authAPI.logout();
       } catch (e) {
-        AppLogger.warning(_tag, 'API logout failed (continuing with local logout)', e);
+        AppLogger.warning(
+            _tag, 'API logout failed (continuing with local logout)', e);
       }
 
       // Clear local data
@@ -218,7 +225,8 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
       }
 
       // Call refresh API directly
-      final tokenResponse = await _authAPI.refreshToken(refreshToken: refreshToken);
+      final tokenResponse =
+          await _authAPI.refreshToken(refreshToken: refreshToken);
 
       // Save new tokens
       await _authStorage.saveTokens(
@@ -227,7 +235,8 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
       );
 
       // Update token expiry
-      final expiry = DateTime.now().add(Duration(seconds: tokenResponse.expiresIn));
+      final expiry =
+          DateTime.now().add(Duration(seconds: tokenResponse.expiresIn));
       await _authStorage.setTokenExpiry(expiry);
 
       // Update API client
@@ -259,7 +268,8 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
           try {
             await refreshToken();
           } catch (e) {
-            AppLogger.warning(_tag, 'Token refresh failed during auth check', e);
+            AppLogger.warning(
+                _tag, 'Token refresh failed during auth check', e);
             return false;
           }
         }
@@ -299,7 +309,8 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
         );
 
         if (cachedUser != null) {
-          AppLogger.debug(_tag, 'Retrieved user from cache: ${cachedUser.username}');
+          AppLogger.debug(
+              _tag, 'Retrieved user from cache: ${cachedUser.username}');
           return cachedUser;
         }
       }
@@ -311,9 +322,11 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
         await saveToCache(
           key: _currentUserCacheKey,
           data: storedUser,
-          serializer: (user) => jsonEncode(UserModel.fromDomainEntity(user).toJson()),
+          serializer: (user) =>
+              jsonEncode(UserModel.fromDomainEntity(user).toJson()),
         );
-        AppLogger.debug(_tag, 'Retrieved user from storage: ${storedUser.username}');
+        AppLogger.debug(
+            _tag, 'Retrieved user from storage: ${storedUser.username}');
         return storedUser;
       }
 
@@ -329,7 +342,8 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
           saveToCache(
             key: _currentUserCacheKey,
             data: user,
-            serializer: (user) => jsonEncode(UserModel.fromDomainEntity(user).toJson()),
+            serializer: (user) =>
+                jsonEncode(UserModel.fromDomainEntity(user).toJson()),
           ),
         ]);
 
@@ -356,7 +370,8 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
         );
       }
 
-      AppLogger.info(_tag, 'Updating profile for user: ${currentUser.username}');
+      AppLogger.info(
+          _tag, 'Updating profile for user: ${currentUser.username}');
 
       // Call API directly
       final userModel = await _authAPI.updateProfile(
@@ -372,7 +387,8 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
         saveToCache(
           key: _currentUserCacheKey,
           data: updatedUser,
-          serializer: (user) => jsonEncode(UserModel.fromDomainEntity(user).toJson()),
+          serializer: (user) =>
+              jsonEncode(UserModel.fromDomainEntity(user).toJson()),
         ),
       ]);
 

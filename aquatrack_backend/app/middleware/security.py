@@ -4,19 +4,16 @@ Security Middleware cho AquaTrack Production
 Comprehensive security protection: input validation, XSS, injection prevention, security headers
 """
 
-import hashlib
 import json
 import re
-import secrets
 import time
 from collections import defaultdict, deque
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set, Tuple
+from datetime import datetime
+from typing import Any, Dict, Tuple
 from urllib.parse import unquote
 
-from fastapi import HTTPException, Request, Response, status
+from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
-from pydantic import ValidationError
 
 from .logging import log_security_violation, structured_logger
 

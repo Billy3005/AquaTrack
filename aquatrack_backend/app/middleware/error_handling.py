@@ -5,16 +5,15 @@ Global exception handling, circuit breakers, fallback strategies và recovery me
 """
 
 import asyncio
-import json
 import time
 import traceback
 from collections import defaultdict, deque
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, Optional
 
 import pydantic
-from fastapi import HTTPException, Request, Response, status
+from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -196,8 +195,6 @@ class CircuitBreaker:
 class CircuitBreakerOpenError(Exception):
     """Exception raised when circuit breaker is open"""
 
-    pass
-
 
 class ErrorHandler:
     """
@@ -286,7 +283,7 @@ class ErrorHandler:
         """
         Handle error với comprehensive error processing
         """
-        error_context = context or {}
+        context or {}
         timestamp = time.time()
 
         # Classify error

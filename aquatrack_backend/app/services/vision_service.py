@@ -1,60 +1,114 @@
+"""Smart Scan vision service (ADR-0005).
+
+Pure Vision API strategy: Claude estimates a continuous container capacity
+(reading printed labels when visible) plus fill level. Volume is computed
+server-side as capacity x fill. The response carries physical volume only —
+the hydration coefficient is applied exactly once, at the log step.
+
+Every successful scan is persisted with its resized image: user-confirmed and
+user-corrected scans are the training dataset for the hybrid phase. Fallback
+results (API failure) are never persisted so they cannot poison that dataset.
+"""
+
 import base64
+import json
+import logging
 import os
-import random
+import time
+import uuid
 from io import BytesIO
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 
 import anthropic
 from PIL import Image
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.crud.scan_history import scan_history_crud
 from app.schemas.vision import ScanHistoryCreate, VisionEstimateResponse
 
+logger = logging.getLogger(__name__)
+
+LIQUID_TYPES = ["water", "tea", "coffee", "juice", "smoothie"]
+MIN_CAPACITY_ML = 50
+MAX_CAPACITY_ML = 5000
+
+# Structured output schema — guarantees parseable JSON, no manual extraction
+VISION_OUTPUT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "container_label": {
+            "type": "string",
+            "description": "Short Vietnamese label for the container, "
+            "e.g. 'Chai nhựa 500ml', 'Ly thủy tinh', 'Bình giữ nhiệt'",
+        },
+        "container_capacity_ml": {
+            "type": "integer",
+            "description": "Full capacity of the container in ml. Read the "
+            "printed volume on the label if visible (e.g. '500ml', '1.5L'); "
+            "otherwise estimate from size and shape cues.",
+        },
+        "fill_level": {
+            "type": "number",
+            "description": "How full the container is, 0.0 (empty) to 1.0 (full)",
+        },
+        "liquid_type": {
+            "type": "string",
+            "enum": LIQUID_TYPES,
+            "description": "Type of liquid in the container",
+        },
+        "confidence": {
+            "type": "number",
+            "description": "Overall confidence, 0.0 to 1.0. A value of 0.85 "
+            "or higher means you are confident the volume estimate is within "
+            "15% of the true value. If you cannot clearly see the liquid "
+            "surface line, confidence must be below 0.5.",
+        },
+    },
+    "required": [
+        "container_label",
+        "container_capacity_ml",
+        "fill_level",
+        "liquid_type",
+        "confidence",
+    ],
+    "additionalProperties": False,
+}
+
+VISION_PROMPT = (
+    "Analyze the drink container in this image.\n\n"
+    "1. CAPACITY: read any printed volume on the label first (e.g. '500ml', "
+    "'330ml', '1.5L') — that is the most reliable signal. Otherwise estimate "
+    "from size and shape.\n\n"
+    "2. FILL LEVEL: locate the liquid surface line, then measure its height "
+    "relative to the container's interior height. Clear water in a "
+    "transparent container is subtle — look for the meniscus, the change in "
+    "refraction/distortion of objects behind the container, or the "
+    "elliptical reflection of the liquid surface. Do not assume a typical "
+    "fill level; measure what you actually see. An empty container is 0.0.\n\n"
+    "3. CONFIDENCE: be honest and calibrated. Report 0.85+ only when you "
+    "clearly see both the capacity and the liquid surface line. If you "
+    "cannot clearly locate the liquid surface, report below 0.5 instead of "
+    "guessing confidently."
+)
+
 
 class VisionService:
-    """Service for ML-powered container and volume detection"""
+    """Claude Vision-powered container and volume detection"""
 
-    # Container size mapping (ml) - matches Flutter VisionService
-    CONTAINER_SIZES = {
-        "glass_small": 200,
-        "glass_large": 350,
-        "cup_plastic": 500,
-        "bottle_500": 500,
-        "bottle_750": 750,
-        "bottle_1000": 1000,
-        "bottle_1500": 1500,
-        "mug": 300,
-        "can_330": 330,
-        "other": 300,
-    }
-
-    # Hydration coefficients by liquid type - matches Flutter
-    HYDRATION_COEFFICIENTS = {
-        "water": 1.00,
-        "tea": 0.90,
-        "coffee": 0.80,
-        "juice": 0.85,
-        "smoothie": 0.90,
-    }
-
-    # Available classification options
-    CONTAINER_CLASSES = list(CONTAINER_SIZES.keys())
-    LIQUID_TYPES = list(HYDRATION_COEFFICIENTS.keys())
-
-    def __init__(self):
-        """Initialize the vision service"""
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        self.anthropic_client = None
-
-        if api_key:
-            try:
-                self.anthropic_client = anthropic.Anthropic(api_key=api_key)
-                print("Claude Vision API initialized successfully")
-            except Exception as e:
-                print(f"Failed to initialize Claude API: {str(e)}")
+    def __init__(self, client: Optional[object] = None):
+        if client is not None:
+            self.anthropic_client = client
+        elif settings.ANTHROPIC_API_KEY:
+            self.anthropic_client = anthropic.Anthropic(
+                api_key=settings.ANTHROPIC_API_KEY
+            )
         else:
-            print("ANTHROPIC_API_KEY not set, using fallback inference")
+            self.anthropic_client = None
+            logger.warning(
+                "ANTHROPIC_API_KEY not set — Smart Scan will return "
+                "zero-confidence fallbacks"
+            )
 
     async def estimate_volume_from_image(
         self,
@@ -62,297 +116,172 @@ class VisionService:
         user_id: str,
         db: Session,
         save_to_history: bool = True,
-        confidence_threshold: float = 0.6,
     ) -> VisionEstimateResponse:
-        """
-        Process image and estimate volume using ML
+        """Process an image and estimate the physical volume of liquid.
 
-        Args:
-            image_data: Raw image bytes
-            user_id: User ID for history tracking
-            db: Database session
-            save_to_history: Whether to save scan to history
-            confidence_threshold: Minimum confidence threshold
-
-        Returns:
-            VisionEstimateResponse with detection results
+        Raises ValueError for invalid images (endpoint maps it to 400).
+        API failures degrade to a zero-confidence fallback that is NOT saved.
         """
+        started = time.monotonic()
+
+        # Resize once; the same JPEG bytes go to the API and to disk
+        jpeg_data = self._preprocess_image(image_data)
+
         try:
-            # Validate and preprocess image
-            image = self._preprocess_image(image_data)
-
-            # Run ML inference using Claude Vision API
-            container_class, fill_level, liquid_type, confidence = (
-                await self._run_ml_inference(image_data)
+            label, capacity, fill_level, liquid_type, confidence = self._run_inference(
+                jpeg_data
             )
-
-            # Calculate volumes
-            estimated_volume_ml, effective_volume_ml = self._calculate_volumes(
-                container_class, fill_level, liquid_type
+        except Exception:
+            logger.exception(
+                "Vision inference failed for user %s — returning fallback", user_id
             )
+            return self._fallback_response(started)
 
-            # Save to history if requested
-            scan_id = None
-            if save_to_history:
-                scan_id = await self._save_to_history(
-                    db=db,
-                    user_id=user_id,
-                    container_class=container_class,
-                    fill_level=fill_level,
-                    liquid_type=liquid_type,
-                    confidence=confidence,
-                    estimated_volume_ml=estimated_volume_ml,
-                    effective_volume_ml=effective_volume_ml,
-                )
+        estimated_volume_ml = round(capacity * fill_level)
 
-            return VisionEstimateResponse(
-                container_class=container_class,
-                fill_level_percent=fill_level,
+        scan_id = None
+        if save_to_history:
+            scan_id = self._save_to_history(
+                db=db,
+                user_id=user_id,
+                jpeg_data=jpeg_data,
+                label=label,
+                capacity=capacity,
+                fill_level=fill_level,
                 liquid_type=liquid_type,
                 confidence=confidence,
                 estimated_volume_ml=estimated_volume_ml,
-                effective_volume_ml=effective_volume_ml,
-                scan_id=scan_id,
-                processing_time_ms=1500,  # Mock processing time
             )
 
-        except Exception as e:
-            # In production, log the error and return a fallback response
-            print(f"Vision processing error: {str(e)}")
-            return self._create_fallback_response()
+        return VisionEstimateResponse(
+            container_label=label,
+            container_capacity_ml=capacity,
+            fill_level_percent=fill_level,
+            liquid_type=liquid_type,
+            confidence=confidence,
+            estimated_volume_ml=estimated_volume_ml,
+            scan_id=scan_id,
+            processing_time_ms=int((time.monotonic() - started) * 1000),
+        )
 
-    def _preprocess_image(self, image_data: bytes) -> Image.Image:
-        """Preprocess image for ML inference"""
+    def _preprocess_image(self, image_data: bytes) -> bytes:
+        """Validate, resize to max dimension, and re-encode as JPEG"""
         try:
-            # Open and validate image
             image = Image.open(BytesIO(image_data))
-
-            # Convert to RGB if needed
             if image.mode != "RGB":
                 image = image.convert("RGB")
 
-            # Resize to reasonable size for API transmission (max 1024x1024)
-            # Keep aspect ratio but limit max dimension
-            max_size = 1024
-            if max(image.size) > max_size:
-                ratio = max_size / max(image.size)
+            max_dim = settings.VISION_MAX_IMAGE_DIMENSION
+            if max(image.size) > max_dim:
+                ratio = max_dim / max(image.size)
                 new_size = tuple(int(dim * ratio) for dim in image.size)
                 image = image.resize(new_size, Image.Resampling.LANCZOS)
 
-            return image
-
+            buf = BytesIO()
+            image.save(buf, format="JPEG", quality=85)
+            return buf.getvalue()
         except Exception as e:
             raise ValueError(f"Invalid image format: {str(e)}")
 
-    async def _run_ml_inference(
-        self, image_data: bytes
-    ) -> Tuple[str, float, str, float]:
-        """
-        Run ML inference using Claude Vision API
-        """
-        try:
-            # Check if API client is available
-            if not self.anthropic_client:
-                print("No Claude API client, using enhanced fallback")
-                return self._enhanced_fallback_inference(image_data)
-            # Convert image to base64 for API transmission
-            base64_image = base64.b64encode(image_data).decode("utf-8")
+    def _run_inference(self, jpeg_data: bytes) -> Tuple[str, int, float, str, float]:
+        """Call Claude Vision with structured outputs and clamp the result"""
+        if self.anthropic_client is None:
+            raise RuntimeError("Anthropic client not configured")
 
-            # Create prompt for Claude Vision API
-            prompt = """Analyze this image of a drink container and provide information about:
-
-1. Container type: Choose from [glass_small, glass_large, cup_plastic, bottle_500, bottle_750, bottle_1000, bottle_1500, mug, can_330, other]
-2. Fill level: Percentage (0.0 to 1.0) of how full the container is
-3. Liquid type: Choose from [water, tea, coffee, juice, smoothie]
-4. Confidence: How confident you are in the analysis (0.0 to 1.0)
-
-Please respond in this exact JSON format:
-{
-  "container_class": "bottle_500",
-  "fill_level": 0.75,
-  "liquid_type": "water",
-  "confidence": 0.85
-}
-
-Look carefully at the container shape, size, material, and liquid appearance. Be as accurate as possible."""
-
-            # Call Claude Vision API
-            response = self.anthropic_client.messages.create(
-                model="claude-3-haiku-20240307",  # Use Haiku for cost efficiency
-                max_tokens=200,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": "image/jpeg",
-                                    "data": base64_image,
-                                },
+        response = self.anthropic_client.messages.create(
+            model=settings.VISION_MODEL,
+            max_tokens=512,
+            output_config={
+                "format": {"type": "json_schema", "schema": VISION_OUTPUT_SCHEMA}
+            },
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "image/jpeg",
+                                "data": base64.b64encode(jpeg_data).decode("utf-8"),
                             },
-                            {"type": "text", "text": prompt},
-                        ],
-                    }
-                ],
-            )
+                        },
+                        {"type": "text", "text": VISION_PROMPT},
+                    ],
+                }
+            ],
+        )
 
-            # Parse response
-            response_text = response.content[0].text.strip()
+        text = next(b.text for b in response.content if b.type == "text")
+        result = json.loads(text)
 
-            # Try to extract JSON from response
-            import json
+        label = str(result["container_label"])[:100]
+        capacity = max(
+            MIN_CAPACITY_ML, min(MAX_CAPACITY_ML, int(result["container_capacity_ml"]))
+        )
+        fill_level = max(0.0, min(1.0, float(result["fill_level"])))
+        liquid_type = result["liquid_type"]
+        if liquid_type not in LIQUID_TYPES:
+            liquid_type = "water"
+        confidence = max(0.0, min(1.0, float(result["confidence"])))
 
-            # Find JSON in response (in case there's extra text)
-            start_idx = response_text.find("{")
-            end_idx = response_text.rfind("}") + 1
+        return label, capacity, fill_level, liquid_type, confidence
 
-            if start_idx != -1 and end_idx != -1:
-                json_str = response_text[start_idx:end_idx]
-                result = json.loads(json_str)
-
-                # Validate and extract values
-                container_class = result.get("container_class", "other")
-                fill_level = float(result.get("fill_level", 0.75))
-                liquid_type = result.get("liquid_type", "water")
-                confidence = float(result.get("confidence", 0.75))
-
-                # Clamp values to valid ranges
-                fill_level = max(0.0, min(1.0, fill_level))
-                confidence = max(0.0, min(1.0, confidence))
-
-                # Validate enum values
-                if container_class not in self.CONTAINER_CLASSES:
-                    container_class = "other"
-                if liquid_type not in self.LIQUID_TYPES:
-                    liquid_type = "water"
-
-                return container_class, fill_level, liquid_type, confidence
-
-            else:
-                # Fallback if JSON parsing fails
-                print(f"Could not parse Claude response: {response_text}")
-                return self._fallback_inference()
-
-        except Exception as e:
-            print(f"Claude Vision API error: {str(e)}")
-            # Fallback to mock data if API fails
-            return self._fallback_inference()
-
-    def _fallback_inference(self) -> Tuple[str, float, str, float]:
-        """Fallback inference when Claude API fails"""
-        # Return reasonable defaults
-        container_class = random.choice(["bottle_500", "glass_large", "mug"])
-        fill_level = round(random.uniform(0.5, 0.9), 3)
-        liquid_type = "water"
-        confidence = 0.5  # Low confidence indicates fallback
-
-        return container_class, fill_level, liquid_type, confidence
-
-    def _enhanced_fallback_inference(
-        self, image_data: bytes
-    ) -> Tuple[str, float, str, float]:
-        """Enhanced fallback with basic image analysis"""
-        # Try basic image analysis for better fallback
-        try:
-            image = Image.open(BytesIO(image_data))
-            width, height = image.size
-
-            # Basic shape analysis
-            aspect_ratio = height / width if width > 0 else 1.0
-
-            # Guess container based on aspect ratio
-            if aspect_ratio > 2.0:
-                container_class = random.choice(
-                    ["bottle_500", "bottle_750", "bottle_1000"]
-                )
-            elif aspect_ratio < 0.8:
-                container_class = random.choice(["glass_small", "glass_large"])
-            else:
-                container_class = random.choice(["mug", "cup_plastic"])
-
-            # Random but realistic fill level
-            fill_level = round(random.uniform(0.6, 0.9), 3)
-            liquid_type = random.choice(["water", "tea", "coffee"])
-            confidence = 0.65  # Slightly higher than basic fallback
-
-            print(
-                f"Enhanced fallback: {container_class}, {fill_level:.2f} full, {liquid_type}"
-            )
-            return container_class, fill_level, liquid_type, confidence
-
-        except Exception:
-            # If even basic analysis fails, use simple fallback
-            return self._fallback_inference()
-
-    def _calculate_volumes(
-        self, container_class: str, fill_level: float, liquid_type: str
-    ) -> Tuple[int, int]:
-        """Calculate estimated and effective volumes"""
-        # Get container capacity
-        container_capacity = self.CONTAINER_SIZES.get(container_class, 300)
-
-        # Calculate estimated volume
-        estimated_volume_ml = int(container_capacity * fill_level)
-
-        # Apply hydration coefficient for effective volume
-        hydration_coeff = self.HYDRATION_COEFFICIENTS.get(liquid_type, 1.0)
-        effective_volume_ml = int(estimated_volume_ml * hydration_coeff)
-
-        return estimated_volume_ml, effective_volume_ml
-
-    async def _save_to_history(
+    def _save_to_history(
         self,
         db: Session,
         user_id: str,
-        container_class: str,
+        jpeg_data: bytes,
+        label: str,
+        capacity: int,
         fill_level: float,
         liquid_type: str,
         confidence: float,
         estimated_volume_ml: int,
-        effective_volume_ml: int,
-        image_path: Optional[str] = None,
     ) -> str:
-        """Save scan results to history"""
-        scan_data = ScanHistoryCreate(
-            image_path=image_path,
-            container_type=container_class,
-            fill_level_percent=fill_level,
-            liquid_type=liquid_type,
-            confidence_score=confidence,
-            estimated_volume_ml=estimated_volume_ml,
-            effective_volume_ml=effective_volume_ml,
-        )
+        """Persist the scan and its image (training data for the hybrid phase)"""
+        image_path = self._save_image(jpeg_data, user_id)
 
-        # Create scan history record
         scan_record = scan_history_crud.create_with_user(
-            db=db, obj_in=scan_data, user_id=user_id
+            db=db,
+            obj_in=ScanHistoryCreate(
+                image_path=image_path,
+                container_label=label,
+                container_capacity_ml=capacity,
+                fill_level_percent=fill_level,
+                liquid_type=liquid_type,
+                confidence_score=confidence,
+                estimated_volume_ml=estimated_volume_ml,
+            ),
+            user_id=user_id,
         )
-
         return scan_record.id
 
-    def _create_fallback_response(self) -> VisionEstimateResponse:
-        """Create fallback response when ML processing fails"""
+    def _save_image(self, jpeg_data: bytes, user_id: str) -> Optional[str]:
+        """Write the resized JPEG to disk; a failed write must not block the scan"""
+        try:
+            scan_dir = os.path.join(settings.UPLOAD_DIRECTORY, "scans", user_id)
+            os.makedirs(scan_dir, exist_ok=True)
+            path = os.path.join(scan_dir, f"{uuid.uuid4()}.jpg")
+            with open(path, "wb") as f:
+                f.write(jpeg_data)
+            return path
+        except OSError:
+            logger.exception("Failed to save scan image for user %s", user_id)
+            return None
+
+    def _fallback_response(self, started: float) -> VisionEstimateResponse:
+        """Zero-confidence fallback when inference fails — never persisted"""
         return VisionEstimateResponse(
-            container_class="other",
+            container_label="Không nhận diện được",
+            container_capacity_ml=300,
             fill_level_percent=0.75,
             liquid_type="water",
-            confidence=0.5,  # Low confidence indicates fallback
-            estimated_volume_ml=250,
-            effective_volume_ml=250,
+            confidence=0.0,
+            estimated_volume_ml=225,
             scan_id=None,
-            processing_time_ms=100,
+            processing_time_ms=int((time.monotonic() - started) * 1000),
         )
-
-    def get_confidence_category(self, confidence: float) -> str:
-        """Categorize confidence score for UI display"""
-        if confidence >= 0.80:
-            return "high"
-        elif confidence >= 0.60:
-            return "medium"
-        else:
-            return "low"
 
 
 # Global service instance

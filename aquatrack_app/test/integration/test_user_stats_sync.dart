@@ -38,8 +38,10 @@ Future<void> testLogoutReset() async {
   print('- No stale cached data should remain');
   print('');
 
-  print('✓ Fixed: AuthRepository notifies globalAuthStateNotifier on login/logout');
-  print('✓ Fixed: userStatsProvider watches authStateProvider for auto-invalidation');
+  print(
+      '✓ Fixed: AuthRepository notifies globalAuthStateNotifier on login/logout');
+  print(
+      '✓ Fixed: userStatsProvider watches authStateProvider for auto-invalidation');
   print('✓ Fixed: AuthStateNotifier triggers provider refresh on auth changes');
   print('');
 }

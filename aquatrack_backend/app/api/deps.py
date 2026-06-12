@@ -2,8 +2,6 @@
 API Dependencies - Authentication and common dependencies
 """
 
-from typing import Generator
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
@@ -45,7 +43,7 @@ def get_current_user(
 
         return user
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",

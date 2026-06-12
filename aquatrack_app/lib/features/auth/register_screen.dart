@@ -97,7 +97,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       } else {
         // Registration failed - auth state will have error
         print('❌ Registration failed: ${authState.error}');
-        AppLogger.error('Register', 'Registration failed: ${authState.error}', null);
+        AppLogger.error(
+            'Register', 'Registration failed: ${authState.error}', null);
       }
     } catch (e) {
       print('❌ Registration failed: $e');

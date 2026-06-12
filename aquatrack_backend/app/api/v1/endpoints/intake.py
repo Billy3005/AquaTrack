@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -45,7 +45,6 @@ async def create_intake_log_debug(
     """
     Debug endpoint for intake log creation - simple response
     """
-    from app.crud.user import user_crud
 
     try:
         # Create simple intake log
@@ -107,52 +106,42 @@ async def create_intake_log(
     # Check if goal achieved today (80% threshold)
     goal_achieved = today_total_ml >= (daily_goal * 0.8)
 
-    # Only update streak once per day when goal first achieved
-    if goal_achieved and user:
-        # Check if we already updated streak today by checking DailySummary
-        today = date.today()
-
-        existing_summary = (
-            db.query(DailySummary)
-            .filter(DailySummary.user_id == current_user_id, DailySummary.date == today)
-            .first()
-        )
-
-        if not existing_summary or not existing_summary.goal_achieved:
-            # First time achieving goal today - update streak
-            new_streak = user.current_streak + 1
-            user_crud.update_stats(db, user_id=current_user_id, new_streak=new_streak)
-            current_streak = new_streak
-            longest_streak = max(user.longest_streak, new_streak)
-
-            # Update or create DailySummary
-            if existing_summary:
-                existing_summary.goal_achieved = True
-                existing_summary.total_volume_ml = today_total_ml
-                existing_summary.total_effective_ml = today_total_ml
-            else:
-                daily_summary = DailySummary(
-                    user_id=current_user_id,
-                    date=today,
-                    daily_goal_ml=daily_goal,  # Fix: Add required field
-                    total_volume_ml=today_total_ml,
-                    total_effective_ml=today_total_ml,
-                    goal_achieved=True,
-                )
-                db.add(daily_summary)
-            db.commit()
-        else:
-            # Goal already achieved today - no streak update
-            current_streak = user.current_streak
-            longest_streak = user.longest_streak
+    # Upsert today's DailySummary — the single source the streak is derived from.
+    # We only record today's running totals and the goal flag here; the streak
+    # itself is computed canonically by StreakService below (no naive +1 counter,
+    # which used to diverge from the canonical value and confuse the clients).
+    today = date.today()
+    existing_summary = (
+        db.query(DailySummary)
+        .filter(DailySummary.user_id == current_user_id, DailySummary.date == today)
+        .first()
+    )
+    if existing_summary:
+        existing_summary.daily_goal_ml = daily_goal
+        existing_summary.total_volume_ml = today_total_ml
+        existing_summary.total_effective_ml = today_total_ml
+        # Once achieved, stay achieved for the day (don't flip back on edits).
+        if goal_achieved:
+            existing_summary.goal_achieved = True
     else:
-        current_streak = user.current_streak if user else 0
-        longest_streak = user.longest_streak if user else 0
+        db.add(
+            DailySummary(
+                user_id=current_user_id,
+                date=today,
+                daily_goal_ml=daily_goal,
+                total_volume_ml=today_total_ml,
+                total_effective_ml=today_total_ml,
+                goal_achieved=goal_achieved,
+            )
+        )
+    db.commit()
 
-    # Streak Freeze + canonical streak (ADR 0004): consume an owned Freeze to
-    # bridge a single missed day, then derive the streak from StreakService so the
-    # value we show is freeze-aware and gap-correct (the inline counter above does
-    # not reset on a missed day). Best-effort; never blocks a log.
+    # Canonical streak (single source of truth, ADR 0004): consume an owned Freeze
+    # to bridge a single missed day, then derive the streak from the DailySummary
+    # history via StreakService and persist it onto the user. Both /quests and
+    # /users/stats read this same stored value, so every screen agrees.
+    current_streak = user.current_streak if user else 0
+    longest_streak = user.longest_streak if user else 0
     try:
         from app.services.streak_service import StreakService
 

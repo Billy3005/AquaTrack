@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
-import requests
 import json
 
+import requests
+
 BASE_URL = "http://localhost:8000/api/v1"
+
 
 def test_complete_flow():
     """Test complete registration -> onboarding -> profile flow"""
@@ -15,7 +17,7 @@ def test_complete_flow():
     register_data = {
         "email": "test@aquatrack.com",
         "password": "123456",
-        "username": "testuser"
+        "username": "testuser",
     }
 
     try:
@@ -28,7 +30,9 @@ def test_complete_flow():
             user_data = auth_data.get("user", {})
 
             print(f"   User registered: {user_data.get('email')}")
-            print(f"   Body info: gender={user_data.get('gender')}, age={user_data.get('age')}")
+            print(
+                f"   Body info: gender={user_data.get('gender')}, age={user_data.get('age')}"
+            )
 
             if not access_token:
                 print("   ERROR: No access token returned")
@@ -38,7 +42,13 @@ def test_complete_flow():
             print(f"   Registration failed: {response.text}")
             # Try to get existing user token if already registered
             print("\n   Trying login instead...")
-            login_response = requests.post(f"{BASE_URL}/auth/login", json={"email": register_data["email"], "password": register_data["password"]})
+            login_response = requests.post(
+                f"{BASE_URL}/auth/login",
+                json={
+                    "email": register_data["email"],
+                    "password": register_data["password"],
+                },
+            )
             if login_response.status_code == 200:
                 auth_data = login_response.json()
                 access_token = auth_data.get("access_token")
@@ -63,17 +73,21 @@ def test_complete_flow():
         "health_conditions": ["none"],
         "veggie_intake": "mid",
         "coffee_cups_per_day": 1,
-        "alcohol_units_per_day": 0
+        "alcohol_units_per_day": 0,
     }
 
     try:
-        response = requests.put(f"{BASE_URL}/users/profile", json=onboarding_data, headers=headers)
+        response = requests.put(
+            f"{BASE_URL}/users/profile", json=onboarding_data, headers=headers
+        )
         print(f"   Onboarding status: {response.status_code}")
 
         if response.status_code == 200:
             profile_data = response.json()
             print(f"   Profile updated: {profile_data.get('email')}")
-            print(f"   Body info: gender={profile_data.get('gender')}, age={profile_data.get('age')}, height={profile_data.get('height')}")
+            print(
+                f"   Body info: gender={profile_data.get('gender')}, age={profile_data.get('age')}, height={profile_data.get('height')}"
+            )
         else:
             print(f"   Onboarding failed: {response.text}")
 
@@ -103,23 +117,42 @@ def test_complete_flow():
 
             # Test display formatting
             print(f"\n   Display formatting (Flutter style):")
-            weight = profile_data.get('weight', 0)
-            height = profile_data.get('height', 0)
-            gender = profile_data.get('gender', '')
-            age = profile_data.get('age', 0)
-            activity = profile_data.get('activity_level', '')
-            job = profile_data.get('job_type', '')
-            coffee = profile_data.get('coffee_cups_per_day', 0)
-            alcohol = profile_data.get('alcohol_units_per_day', 0)
+            weight = profile_data.get("weight", 0)
+            height = profile_data.get("height", 0)
+            gender = profile_data.get("gender", "")
+            age = profile_data.get("age", 0)
+            activity = profile_data.get("activity_level", "")
+            job = profile_data.get("job_type", "")
+            coffee = profile_data.get("coffee_cups_per_day", 0)
+            alcohol = profile_data.get("alcohol_units_per_day", 0)
 
             # Format like Flutter ProfileProvider
-            weight_height = f"{int(weight)} kg · {height} cm" if weight and height else "-- kg · -- cm"
-            gender_age_map = {'male': 'Nam', 'female': 'Nu', 'other': 'Khac'}
-            gender_age = f"{gender_age_map.get(gender, '--')} · {age}" if gender and age else "-- · --"
-            activity_map = {'sedentary': 'It van dong', 'light': 'Nhe nhang', 'moderate': 'Vua phai', 'active': 'Tich cuc', 'very_active': 'Rat tich cuc'}
-            activity_display = activity_map.get(activity, '--')
-            job_map = {'office': 'Van phong', 'mixed': 'Hon hop', 'outdoor': 'Ngoai troi', 'manual': 'The luc'}
-            job_display = job_map.get(job, '--')
+            weight_height = (
+                f"{int(weight)} kg · {height} cm"
+                if weight and height
+                else "-- kg · -- cm"
+            )
+            gender_age_map = {"male": "Nam", "female": "Nu", "other": "Khac"}
+            gender_age = (
+                f"{gender_age_map.get(gender, '--')} · {age}"
+                if gender and age
+                else "-- · --"
+            )
+            activity_map = {
+                "sedentary": "It van dong",
+                "light": "Nhe nhang",
+                "moderate": "Vua phai",
+                "active": "Tich cuc",
+                "very_active": "Rat tich cuc",
+            }
+            activity_display = activity_map.get(activity, "--")
+            job_map = {
+                "office": "Van phong",
+                "mixed": "Hon hop",
+                "outdoor": "Ngoai troi",
+                "manual": "The luc",
+            }
+            job_display = job_map.get(job, "--")
             coffee_alcohol = f"{coffee} coc · {alcohol} don vi"
 
             print(f"     Weight-Height: {weight_height}")
@@ -133,6 +166,7 @@ def test_complete_flow():
 
     except Exception as e:
         print(f"   Profile fetch error: {e}")
+
 
 if __name__ == "__main__":
     test_complete_flow()

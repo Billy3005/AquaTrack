@@ -17,7 +17,8 @@ class _NoNetworkApiClient implements ApiClient {
 
   @override
   Future<ApiResponse<T>> get<T>(String endpoint,
-          {Map<String, dynamic>? queryParams, T Function(dynamic)? fromJson}) async =>
+          {Map<String, dynamic>? queryParams,
+          T Function(dynamic)? fromJson}) async =>
       _empty<T>();
 
   @override
@@ -52,7 +53,8 @@ void main() {
   // store via the network layer. Provide Hive + SharedPreferences so async
   // loads degrade gracefully instead of throwing into the test zone.
   setUpAll(() async {
-    tempDir = await Directory.systemTemp.createTemp('aquatrack_profilescreen_test');
+    tempDir =
+        await Directory.systemTemp.createTemp('aquatrack_profilescreen_test');
     Hive.init(tempDir.path);
     await Hive.openBox('auth_storage');
     SharedPreferences.setMockInitialValues({});

@@ -151,8 +151,8 @@ class HomeNotifier extends _$HomeNotifier {
     // Trigger enhanced sync if available
     _triggerEnhancedSync();
 
-    // TODO: Delay refresh to avoid race condition with server sync
-    // _refreshUserStats();
+    // Canonical user stats (incl. streak) are refreshed inside
+    // _syncToServerInBackground once the server confirms the log.
   }
 
   /// Load today's summary (server first → local fallback)
@@ -347,67 +347,20 @@ class HomeNotifier extends _$HomeNotifier {
       // Add XP từ log
       final hasLeveledUp = await levelNotifier.addXP(log.xpEarned);
 
-      // Calculate new streak if goal achieved today (only once per day)
-      int? newStreak;
-      if (summary.progress >= 1.0) {
-        try {
-          // Check if we already increased streak today
-          final storage = HiveStorageService.instance;
-
-          // DEBUG: Reset streak date for testing (remove in production)
-          // await storage.saveSetting('last_streak_date', null); // Clear for clean test
-
-          final lastStreakDate =
-              await storage.loadSetting<String>('last_streak_date');
-          final currentStoredStreak =
-              await storage.loadSetting<int>('current_streak') ?? 0;
-          final today =
-              DateTime.now().toIso8601String().substring(0, 10); // YYYY-MM-DD
-
-          debugPrint(
-              '🔍 Debug: lastStreakDate = $lastStreakDate, today = $today');
-          debugPrint('🔍 Debug: currentStoredStreak = $currentStoredStreak');
-
-          if (lastStreakDate != today) {
-            // First time achieving goal today - increase streak
-            final currentLevelState = await levelNotifier.future;
-            newStreak = currentLevelState.currentStreak + 1;
-
-            debugPrint(
-                '🔥 HomeProvider: Goal achieved for the first time today!');
-            debugPrint(
-                '🔥 Current level state streak: ${currentLevelState.currentStreak}');
-            debugPrint('🔥 New streak will be: $newStreak');
-          } else {
-            debugPrint(
-                '🔥 HomeProvider: Goal already achieved today, streak unchanged');
-          }
-        } catch (e) {
-          // If can't get current streak, start from 1
-          newStreak = 1;
-          debugPrint(
-              '🔥 HomeProvider: Goal achieved! Starting new streak: 1 day');
-        }
-      }
-
-      // Update các stats khác
+      // Update local stats EXCEPT streak. Streak has a single source of truth:
+      // the backend canonical value derived from DailySummary. Computing a local
+      // "+1" here diverged from the server (missions screen read the server value)
+      // and evaporated on relogin. We never touch streak locally now — it arrives
+      // from the server log response (_syncToServerInBackground) and is kept fresh
+      // by userStatsProvider, so Home and Nhiệm vụ always agree.
       await levelNotifier.updateStats(
         additionalLogs: 1,
         additionalVolume: log.effectiveVolumeMl,
-        newStreak: newStreak,
         achievedGoalToday: summary.progress >= 1.0,
       );
 
-      // Save streak date AFTER successful updateStats
-      if (newStreak != null && summary.progress >= 1.0) {
-        final storage = HiveStorageService.instance;
-        final today = DateTime.now().toIso8601String().substring(0, 10);
-        await storage.saveSetting('last_streak_date', today);
-        debugPrint('💾 HomeProvider: Saved streak date: $today');
-      }
-
       debugPrint(
-        '🎮 HomeProvider: Updated level system: +${log.xpEarned}XP${hasLeveledUp ? ' (LEVEL UP!)' : ''}${newStreak != null ? ', Streak: $newStreak' : ''}',
+        '🎮 HomeProvider: Updated level system: +${log.xpEarned}XP${hasLeveledUp ? ' (LEVEL UP!)' : ''}',
       );
     } catch (e) {
       debugPrint('❌ HomeProvider: Error updating level system: $e');
@@ -459,6 +412,10 @@ class HomeNotifier extends _$HomeNotifier {
           debugPrint(
               '✅ HomeProvider: Updated streak from backend: ${progress.currentStreak} days');
         });
+
+        // Refresh the canonical user stats so Nhiệm vụ / Profile / Level read the
+        // same server-side streak this log just produced (single source of truth).
+        ref.invalidate(userStatsProvider);
       }
     } catch (e) {
       debugPrint('🌐 HomeProvider: Failed to sync to server: $e');
@@ -572,19 +529,6 @@ class HomeNotifier extends _$HomeNotifier {
         error: (error, stack) {},
       );
     });
-  }
-
-  /// Refresh user stats and level provider to update UI with latest data
-  void _refreshUserStats() {
-    try {
-      // Just increment refresh counter - level provider will auto-sync
-      final refreshNotifier = ref.read(userStatsRefreshProvider.notifier);
-      refreshNotifier.state++;
-
-      debugPrint('📊 HomeProvider: Refreshed user stats counter');
-    } catch (e) {
-      debugPrint('❌ HomeProvider: Error refreshing providers: $e');
-    }
   }
 }
 

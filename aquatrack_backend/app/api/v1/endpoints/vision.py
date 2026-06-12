@@ -4,11 +4,12 @@ from fastapi import (APIRouter, Depends, File, HTTPException, Query,
                      UploadFile, status)
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud.scan_history import scan_history_crud
 from app.schemas.vision import (ScanHistoryResponse, ScanHistoryUpdate,
-                                VisionEstimateRequest, VisionEstimateResponse)
+                                VisionEstimateResponse)
 from app.services.vision_service import vision_service
 
 router = APIRouter()
@@ -21,42 +22,38 @@ router = APIRouter()
 )
 async def estimate_volume(
     image: UploadFile = File(..., description="Image file for volume estimation"),
-    confidence_threshold: float = Query(0.6, ge=0.0, le=1.0),
     save_to_history: bool = Query(True),
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """
-    Estimate volume from uploaded image using ML
+    Estimate physical liquid volume from an uploaded image (ADR-0005)
 
-    - **image**: Image file (JPEG/PNG)
-    - **confidence_threshold**: Minimum confidence threshold (0.0-1.0)
+    - **image**: Image file (JPEG/PNG/WebP)
     - **save_to_history**: Whether to save scan to user's history
     """
-    # Validate file type
-    if image.content_type not in ["image/jpeg", "image/png", "image/jpg"]:
+    if image.content_type not in settings.ALLOWED_FILE_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only JPEG and PNG images are supported",
+            detail=f"Unsupported image type. Allowed: "
+            f"{', '.join(settings.ALLOWED_FILE_TYPES)}",
         )
 
-    # Validate file size (max 10MB)
-    max_size = 10 * 1024 * 1024  # 10MB
+    max_size = settings.MAX_FILE_SIZE_MB * 1024 * 1024
     image_data = await image.read()
     if len(image_data) > max_size:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Image file too large. Maximum size is 10MB",
+            detail=f"Image file too large. Maximum size is "
+            f"{settings.MAX_FILE_SIZE_MB}MB",
         )
 
     try:
-        # Process image with vision service
         result = await vision_service.estimate_volume_from_image(
             image_data=image_data,
             user_id=current_user_id,
             db=db,
             save_to_history=save_to_history,
-            confidence_threshold=confidence_threshold,
         )
 
         return result
@@ -66,7 +63,7 @@ async def estimate_volume(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Image processing error: {str(e)}",
         )
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error during image processing",
