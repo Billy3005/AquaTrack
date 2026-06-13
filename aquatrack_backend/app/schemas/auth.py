@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.schemas.user import UserResponse
 
@@ -36,14 +36,21 @@ class TokenRefreshResponse(BaseModel):
     expires_in: int
 
 
-class PasswordReset(BaseModel):
-    """Password reset request schema"""
+class GoogleLoginRequest(BaseModel):
+    """Google Sign-In: the ID token from the google_sign_in plugin (ADR 0006)"""
+
+    id_token: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Password Reset step 1: request a 6-digit code by email"""
 
     email: str
 
 
-class PasswordResetConfirm(BaseModel):
-    """Password reset confirmation schema"""
+class ResetPasswordRequest(BaseModel):
+    """Password Reset step 2: trade the emailed code for a new password"""
 
-    token: str
-    new_password: str
+    email: str
+    code: str = Field(..., min_length=6, max_length=6)
+    new_password: str = Field(..., min_length=8)

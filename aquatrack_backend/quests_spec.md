@@ -124,26 +124,33 @@ Note: A `ReminderLog` row is written each time `/friends/{id}/remind/` succeeds.
 
 ---
 
-### 🎯 Weekly Completion Bonus — Rương May Mắn (3/3)
+### 4. Đại Sứ Hydration
+
+| Field       | Value                                                        |
+| ----------- | ------------------------------------------------------------ |
+| Quest ID    | `hydration_ambassador`                                       |
+| Description | Mời 1 người bạn mới dùng AquaTrack (đã uống nước lần đầu)    |
+| Target      | 1 Validated Referral                                         |
+| Source      | `referrals.validated_at` (count within week)                |
+| Reward      | 75 XP + 40 coin                                              |
+| Reset       | 00:00 Monday                                                 |
+| Difficulty  | ⭐⭐⭐⭐ Cao nhất                                            |
+
+A Referral is **validated** at the invited user's first water log (first
+`intake_logs` row), not at sign-up. The week is measured by `validated_at`, so a
+referral counts in the week it validates. See `docs/adr/0007-referral-and-ambassador-quest.md`.
+
+---
+
+### 🎯 Weekly Completion Bonus — Rương May Mắn (4/4)
 
 | Field     | Value                                            |
 | --------- | ------------------------------------------------ |
 | Quest ID  | `weekly_bonus`                                   |
-| Condition | All 3 base weekly quests Done                    |
+| Condition | All 4 base weekly quests Done                    |
 | Reward    | **Random coin 50–150** (Lucky Chest)             |
 
 The chest always grants coin only. Item rewards are planned for a future release.
-
----
-
-## Deferred
-
-### Đại Sứ Hydration
-
-Requires a referral/invite system (invite code → attach to registration → validate
-on new-user sign-up). None of this infrastructure exists yet. **Deferred to a
-future phase.** When implemented, the weekly completion bonus condition changes
-from 3/3 → 4/4.
 
 ---
 
@@ -158,3 +165,10 @@ from 3/3 → 4/4.
 - **Coin** is added to `users.coins` (separate spendable currency from XP).
 - `reminder_logs` exists only to make the friend-reminder quest countable; it has no other purpose.
 - `weekly_bonus` chest: `random.randint(50, 150)` coins at claim time (snapshot saved to `quest_claims.reward_coin`).
+- **Referrals**: each user has a permanent `referral_code`. A `referrals` row
+  `(referrer_id, referred_id, created_at, validated_at)` is created at the invited
+  user's sign-up (code captured at registration only). `validated_at` is stamped on
+  the referred user's first `intake_logs` row; at that moment the referred user is
+  granted a one-time **+50 coin** welcome bonus. `hydration_ambassador` progress is
+  derived on read: count `referrals` rows for the user with `validated_at` inside the
+  weekly window. See `docs/adr/0007-referral-and-ambassador-quest.md`.

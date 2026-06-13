@@ -16,8 +16,8 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.leveling import calculate_level_from_xp
-from app.models import (Conversation, DailySummary, QuestClaim, ReminderLog,
-                        ScanHistory, User)
+from app.models import (Conversation, DailySummary, QuestClaim, Referral,
+                        ReminderLog, ScanHistory, User)
 
 CHEST_COIN_MIN = 50
 CHEST_COIN_MAX = 150
@@ -194,6 +194,22 @@ def _progress_water_scientist(db, user, window) -> Tuple[int, Optional[int]]:
     return count, None
 
 
+def _progress_hydration_ambassador(db, user, window) -> Tuple[int, Optional[int]]:
+    # Count referrals this user made that were *validated* within the week.
+    count = (
+        db.query(func.count(Referral.id))
+        .filter(
+            Referral.referrer_id == user.id,
+            Referral.validated_at.isnot(None),
+            Referral.validated_at >= window.start_utc,
+            Referral.validated_at < window.end_utc,
+        )
+        .scalar()
+        or 0
+    )
+    return count, None
+
+
 def _progress_zero(db, user, window) -> Tuple[int, Optional[int]]:
     return 0, None
 
@@ -280,6 +296,17 @@ WEEKLY_QUESTS: List[QuestDef] = [
         25,
         3,
         _progress_water_scientist,
+    ),
+    QuestDef(
+        "hydration_ambassador",
+        "weekly",
+        "Đại Sứ Hydration",
+        "Mời 1 người bạn mới dùng AquaTrack (đã uống nước lần đầu)",
+        "người",
+        75,
+        40,
+        1,
+        _progress_hydration_ambassador,
     ),
 ]
 

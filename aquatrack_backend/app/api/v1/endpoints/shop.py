@@ -32,7 +32,12 @@ async def get_streak_freeze_status(
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    """Whether the user currently owns a Streak Freeze, and its price."""
+    """Whether the user currently owns a Streak Freeze, and its price.
+
+    Reconciles first: a Freeze that already burned on a missed night shows as
+    consumed (repurchasable) the moment the Shop is opened.
+    """
+    StreakService.reconcile_freeze(db, current_user_id)
     user = user_crud.get(db, current_user_id)
     if not user:
         raise HTTPException(

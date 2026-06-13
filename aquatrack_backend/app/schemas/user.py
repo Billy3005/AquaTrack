@@ -21,6 +21,8 @@ class UserCreate(BaseModel):
     daily_goal_ml: Optional[int] = Field(
         2000, ge=1000, le=5000, description="Daily hydration goal in ml"
     )
+    # Optional invite code captured at sign-up only (ADR-0007).
+    referral_code: Optional[str] = Field(None, max_length=20)
 
     @validator("username")
     def username_alphanumeric(cls, v):

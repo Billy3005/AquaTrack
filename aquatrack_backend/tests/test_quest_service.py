@@ -2,14 +2,29 @@ from datetime import datetime, timezone
 
 import pytest
 
-from app.models import Conversation, DailySummary, QuestClaim, ScanHistory
+from app.models import (Conversation, DailySummary, QuestClaim, Referral,
+                        ScanHistory, User)
 from app.services import quest_service
+from app.services import referral_service as rs
 from app.services.quest_service import QuestAlreadyClaimed, QuestNotDone
 
 # Fixed "now": 2026-05-30 12:00 UTC = 19:00 local (Asia/Ho_Chi_Minh, a Saturday).
 NOW = datetime(2026, 5, 30, 12, 0, tzinfo=timezone.utc)
 # A timestamp that falls inside both the daily and weekly window for NOW.
 IN_WINDOW = datetime(2026, 5, 30, 12, 0)
+
+
+def _add_validated_referral(db, user, referred_id, when=IN_WINDOW):
+    """user refers `referred_id`, validated at `when` (None = still pending)."""
+    db.add(User(id=referred_id, email=f"{referred_id}@t.com", hashed_password="x"))
+    db.add(
+        Referral(
+            referrer_id=user.id,
+            referred_id=referred_id,
+            validated_at=when,
+        )
+    )
+    db.commit()
 
 
 def _add_scan(db, user, liquid="water", when=IN_WINDOW):
@@ -54,6 +69,43 @@ def test_smart_scan_progress_counts_scans_in_window(db, user):
     assert scan["target"] == 4
     assert scan["done"] is False
     assert scan["claimed"] is False
+
+
+def test_ambassador_counts_validated_referrals_in_week(db, user):
+    _add_validated_referral(db, user, "newbie-1")
+    quests = quest_service.get_quests(db, user, now=NOW)
+    amb = next(q for q in quests if q["id"] == "hydration_ambassador")
+    assert amb["period"] == "weekly"
+    assert amb["progress"] == 1
+    assert amb["target"] == 1
+    assert amb["done"] is True
+
+
+def test_ambassador_counts_through_real_validate_path(db, user):
+    # Exercise the real service path (attach → validate stamps validated_at)
+    # so the quest's window comparison runs against a service-produced value,
+    # not a hand-set one — guards the naive/aware datetime convention.
+    code = rs.get_or_create_code(db, user)
+    db.add(User(id="newbie", email="newbie@t.com", hashed_password="x"))
+    db.commit()
+    rs.attach_referral(db, referred_id="newbie", code=code)
+    rs.validate_referral(db, referred_id="newbie", now=IN_WINDOW)
+
+    quests = quest_service.get_quests(db, user, now=NOW)
+    amb = next(q for q in quests if q["id"] == "hydration_ambassador")
+    assert amb["progress"] == 1
+    assert amb["done"] is True
+
+
+def test_ambassador_ignores_pending_and_out_of_week_referrals(db, user):
+    _add_validated_referral(db, user, "pending-1", when=None)  # not validated
+    _add_validated_referral(
+        db, user, "old-1", when=datetime(2026, 5, 1, 12, 0)
+    )  # previous week
+    quests = quest_service.get_quests(db, user, now=NOW)
+    amb = next(q for q in quests if q["id"] == "hydration_ambassador")
+    assert amb["progress"] == 0
+    assert amb["done"] is False
 
 
 # --- claim semantics ----------------------------------------------------
@@ -147,6 +199,8 @@ def test_weekly_chest_credits_random_coin_when_all_weekly_done(db, user):
     # water_scientist: 3 distinct liquid types
     for liquid in ("water", "tea", "coffee"):
         _add_scan(db, user, liquid=liquid)
+    # hydration_ambassador: 1 validated referral this week
+    _add_validated_referral(db, user, "newbie-1")
     db.commit()
 
     result = quest_service.claim_quest(db, user, "weekly_bonus", now=NOW)

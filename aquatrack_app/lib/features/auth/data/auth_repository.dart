@@ -24,8 +24,20 @@ abstract class AuthRepository {
     required String username,
     String? fullName,
     int? dailyGoalMl,
+    String? referralCode,
   });
   Future<void> logout();
+
+  /// Google Sign-In (ADR 0006)
+  Future<User> loginWithGoogle({required String idToken});
+
+  /// Password Reset (ADR 0006)
+  Future<void> forgotPassword({required String email});
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  });
 
   /// Token management
   Future<void> refreshToken();
@@ -75,6 +87,33 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
   // AUTHENTICATION OPERATIONS
   // ═══════════════════════════════════════════════════════════════════════════════════
 
+  /// Persist a successful auth response: tokens + expiry + user + cache.
+  /// Every door into the app (password, register, Google) ends here.
+  Future<User> _persistSession(AuthResponseModel authResponse) async {
+    await _authStorage.saveTokens(
+      accessToken: authResponse.accessToken,
+      refreshToken: authResponse.refreshToken,
+    );
+
+    final expiry =
+        DateTime.now().add(Duration(seconds: authResponse.expiresIn));
+    await _authStorage.setTokenExpiry(expiry);
+
+    final user = authResponse.user.toDomainEntity();
+    await _authStorage.saveUser(user);
+
+    apiClient.setAuthToken(authResponse.accessToken);
+
+    await saveToCache(
+      key: _currentUserCacheKey,
+      data: user,
+      serializer: (user) =>
+          jsonEncode(UserModel.fromDomainEntity(user).toJson()),
+    );
+
+    return user;
+  }
+
   @override
   Future<User> login({
     required String email,
@@ -87,31 +126,7 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
       final authResponse =
           await _authAPI.login(email: email, password: password);
 
-      // Save tokens
-      await _authStorage.saveTokens(
-        accessToken: authResponse.accessToken,
-        refreshToken: authResponse.refreshToken,
-      );
-
-      // Calculate token expiry
-      final expiry =
-          DateTime.now().add(Duration(seconds: authResponse.expiresIn));
-      await _authStorage.setTokenExpiry(expiry);
-
-      // Save user data
-      final user = authResponse.user.toDomainEntity();
-      await _authStorage.saveUser(user);
-
-      // Update API client với new token
-      apiClient.setAuthToken(authResponse.accessToken);
-
-      // Cache user data
-      await saveToCache(
-        key: _currentUserCacheKey,
-        data: user,
-        serializer: (user) =>
-            jsonEncode(UserModel.fromDomainEntity(user).toJson()),
-      );
+      final user = await _persistSession(authResponse);
 
       AppLogger.info(_tag, 'Login successful for user: ${user.username}');
       return user;
@@ -129,6 +144,7 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
     required String username,
     String? fullName,
     int? dailyGoalMl,
+    String? referralCode,
   }) async {
     try {
       AppLogger.info(_tag, 'Register attempt for email: $email');
@@ -140,33 +156,10 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
         username: username,
         fullName: fullName,
         dailyGoalMl: dailyGoalMl,
+        referralCode: referralCode,
       );
 
-      // Save tokens
-      await _authStorage.saveTokens(
-        accessToken: authResponse.accessToken,
-        refreshToken: authResponse.refreshToken,
-      );
-
-      // Calculate token expiry
-      final expiry =
-          DateTime.now().add(Duration(seconds: authResponse.expiresIn));
-      await _authStorage.setTokenExpiry(expiry);
-
-      // Save user data
-      final user = authResponse.user.toDomainEntity();
-      await _authStorage.saveUser(user);
-
-      // Update API client với new token
-      apiClient.setAuthToken(authResponse.accessToken);
-
-      // Cache user data
-      await saveToCache(
-        key: _currentUserCacheKey,
-        data: user,
-        serializer: (user) =>
-            jsonEncode(UserModel.fromDomainEntity(user).toJson()),
-      );
+      final user = await _persistSession(authResponse);
 
       AppLogger.info(
           _tag, 'Registration successful for user: ${user.username}');
@@ -175,6 +168,52 @@ class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
       AppLogger.error(_tag, 'Registration failed for email: $email', e);
       final exception = ErrorHandler.handleError(e);
       throw exception;
+    }
+  }
+
+  @override
+  Future<User> loginWithGoogle({required String idToken}) async {
+    try {
+      AppLogger.info(_tag, 'Google sign-in attempt');
+
+      final authResponse = await _authAPI.loginWithGoogle(idToken: idToken);
+
+      final user = await _persistSession(authResponse);
+
+      AppLogger.info(_tag, 'Google sign-in successful: ${user.username}');
+      return user;
+    } catch (e) {
+      AppLogger.error(_tag, 'Google sign-in failed', e);
+      final exception = ErrorHandler.handleError(e);
+      throw exception;
+    }
+  }
+
+  @override
+  Future<void> forgotPassword({required String email}) async {
+    try {
+      await _authAPI.forgotPassword(email: email);
+    } catch (e) {
+      AppLogger.error(_tag, 'Forgot-password request failed', e);
+      throw ErrorHandler.handleError(e);
+    }
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    try {
+      await _authAPI.resetPassword(
+        email: email,
+        code: code,
+        newPassword: newPassword,
+      );
+    } catch (e) {
+      AppLogger.error(_tag, 'Password reset failed', e);
+      throw ErrorHandler.handleError(e);
     }
   }
 

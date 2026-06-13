@@ -63,6 +63,7 @@ class AuthService {
     required String username,
     String? fullName,
     int? dailyGoalMl,
+    String? referralCode,
   }) async {
     try {
       AppLogger.info(_tag, 'Registration initiated for: $email');
@@ -83,6 +84,7 @@ class AuthService {
         username: username,
         fullName: fullName,
         dailyGoalMl: dailyGoalMl,
+        referralCode: referralCode,
       );
 
       AppLogger.info(_tag, 'Registration successful for: ${user.username}');
@@ -94,6 +96,47 @@ class AuthService {
       AppLogger.error(_tag, 'Registration failed for: $email', e);
       return AuthResult.failure(_getAuthError(e));
     }
+  }
+
+  /// Google Sign-In (ADR 0006): the ID token was already obtained by the
+  /// platform plugin; the backend verifies it and answers with app tokens.
+  Future<AuthResult> loginWithGoogle({required String idToken}) async {
+    try {
+      AppLogger.info(_tag, 'Google sign-in initiated');
+
+      final user = await _authRepository.loginWithGoogle(idToken: idToken);
+      final needsOnboarding = await _checkOnboardingStatus(user);
+
+      AppLogger.info(_tag, 'Google sign-in successful: ${user.username}');
+      return AuthResult.success(user: user, needsOnboarding: needsOnboarding);
+    } catch (e) {
+      AppLogger.error(_tag, 'Google sign-in failed', e);
+      return AuthResult.failure(_getAuthError(e));
+    }
+  }
+
+  /// Password Reset step 1 — always succeeds visibly (no existence leak)
+  Future<void> forgotPassword({required String email}) async {
+    await _authRepository.forgotPassword(email: email);
+  }
+
+  /// Password Reset step 2 — throws with a readable message on bad codes
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    if (newPassword.length < 8) {
+      throw ValidationException(
+        'Mật khẩu mới phải có ít nhất 8 ký tự',
+        code: 'RESET_VALIDATION_ERROR',
+      );
+    }
+    await _authRepository.resetPassword(
+      email: email,
+      code: code,
+      newPassword: newPassword,
+    );
   }
 
   /// Logout user với cleanup

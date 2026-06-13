@@ -318,6 +318,30 @@ async def get_social_stats(
     return fvs.build_social_stats(db, user)
 
 
+# Referral (ADR-0007) — static single-segment route, must precede "/{friend_id}/".
+@router.get("/referral", response_model=dict)
+async def get_my_referral(
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """The current user's permanent invite code + how many they've referred."""
+    from app.models import Referral
+    from app.services import referral_service
+
+    user = _require_user(db, current_user_id)
+    code = referral_service.get_or_create_code(db, user)
+    invited = db.query(Referral).filter(Referral.referrer_id == current_user_id).count()
+    validated = (
+        db.query(Referral)
+        .filter(
+            Referral.referrer_id == current_user_id,
+            Referral.validated_at.isnot(None),
+        )
+        .count()
+    )
+    return {"code": code, "invited_count": invited, "validated_count": validated}
+
+
 # --- Notifications & Challenges (cuộc đua) -------------------------------
 # Static single-segment routes — must precede "/{friend_id}/" (see note above).
 @router.get("/notifications/", response_model=NotificationsResponse)

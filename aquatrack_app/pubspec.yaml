@@ -29,6 +29,7 @@ dependencies:
   path: ^1.8.3
   path_provider: ^2.1.1
   connectivity_plus: ^5.0.2
+  google_sign_in: ^6.2.1
   geolocator: ^10.1.0
   flutter_local_notifications: ^17.2.4
   timezone: ^0.9.4
@@ -41,6 +42,7 @@ dependencies:
   flutter_svg: ^2.0.9
   freezed_annotation: ^2.4.1
   json_annotation: ^4.8.1
+  share_plus: ^7.2.2
 
 dev_dependencies:
   flutter_test:
