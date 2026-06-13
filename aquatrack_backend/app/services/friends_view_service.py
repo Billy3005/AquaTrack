@@ -343,8 +343,15 @@ def build_requests_payload(db, user: User, now: Optional[datetime] = None) -> di
 # --- weekly leaderboard -------------------------------------------------
 
 
+def _day_pct(s: DailySummary) -> float:
+    goal = s.daily_goal_ml or 0
+    if goal <= 0:
+        return 0.0
+    return (s.total_effective_ml or 0) / goal * 100.0
+
+
 def _week_stats_from(summaries: List[DailySummary], days_elapsed: int) -> dict:
-    pct_sum = sum(min(s.progress_percentage or 0.0, 100.0) for s in summaries)
+    pct_sum = sum(min(_day_pct(s), 100.0) for s in summaries)
     total_volume = sum(s.total_effective_ml or 0 for s in summaries)
     goal_days = sum(1 for s in summaries if s.goal_achieved)
     hydration_pct = pct_sum / days_elapsed if days_elapsed else 0.0

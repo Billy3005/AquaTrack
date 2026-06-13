@@ -43,6 +43,48 @@ def _add_scan(db, user, liquid="water", when=IN_WINDOW):
     db.commit()
 
 
+# --- week strip ---------------------------------------------------------
+
+
+def _add_summary(db, user, day, eff, goal=2462, achieved=False):
+    # progress_percentage is intentionally left at its 0.0 default to mimic the
+    # production rows where that column is never kept in sync.
+    db.add(
+        DailySummary(
+            user_id=user.id,
+            date=day,
+            daily_goal_ml=goal,
+            total_effective_ml=eff,
+            goal_achieved=achieved,
+            progress_percentage=0.0,
+        )
+    )
+    db.commit()
+
+
+def _strip_for(db, user):
+    return {d["date_iso"]: d for d in quest_service.build_week_strip(db, user, NOW)}
+
+
+def test_week_strip_derives_pct_from_effective_not_stale_column(db, user):
+    import datetime
+
+    # NOW = Sat 2026-05-30 (T7, today). Wed 05-27 is a past day.
+    _add_summary(db, user, datetime.date(2026, 5, 27), eff=797)
+    _add_summary(db, user, datetime.date(2026, 5, 30), eff=2600)
+
+    strip = _strip_for(db, user)
+    past = strip["2026-05-27"]
+    today = strip["2026-05-30"]
+
+    # Stored progress_percentage is 0.0; the strip must recompute 797/2462≈32%
+    # and 2600/2462≈106% so it matches the Stats screen.
+    assert past["status"] == "partial"
+    assert past["progress_pct"] == 32
+    assert today["status"] == "today"
+    assert today["progress_pct"] == 106
+
+
 # --- period / windowing -------------------------------------------------
 
 
@@ -207,3 +249,46 @@ def test_weekly_chest_credits_random_coin_when_all_weekly_done(db, user):
     assert 50 <= result["reward_coin"] <= 150
     assert result["reward_xp"] == 0
     assert user.coins == result["reward_coin"]
+
+
+def _complete_all_weekly_base(db, user):
+    """Make all four weekly base quests Done for NOW's window."""
+    user.current_streak = 7  # persistence_week
+    for i in range(5):  # hydration_warrior: 5 goal days
+        db.add(
+            DailySummary(
+                user_id=user.id,
+                date=__import__("datetime").date(2026, 5, 25 + i),
+                daily_goal_ml=2000,
+                total_effective_ml=2000,
+                goal_achieved=True,
+            )
+        )
+    for liquid in ("water", "tea", "coffee"):  # water_scientist: 3 types
+        _add_scan(db, user, liquid=liquid)
+    _add_validated_referral(db, user, "newbie-1")  # hydration_ambassador
+    db.commit()
+
+
+def test_claimed_base_quest_keeps_bonus_done_after_progress_regresses(db, user):
+    # All four weekly quests Done; claim the streak quest while streak is 7.
+    _complete_all_weekly_base(db, user)
+    quest_service.claim_quest(db, user, "persistence_week", now=NOW)
+
+    # Streak breaks mid-week -> persistence_week live progress drops to 0.
+    user.current_streak = 0
+    db.commit()
+
+    quests = quest_service.get_quests(db, user, now=NOW)
+    streak = next(q for q in quests if q["id"] == "persistence_week")
+    bonus = next(q for q in quests if q["id"] == "weekly_bonus")
+    # The streak quest itself is no longer "done" live, but it was claimed...
+    assert streak["done"] is False
+    assert streak["claimed"] is True
+    # ...so it still counts toward the chest, which stays unlocked.
+    assert bonus["progress"] == 4
+    assert bonus["done"] is True
+
+    # And the chest is actually claimable, not just shown as done.
+    result = quest_service.claim_quest(db, user, "weekly_bonus", now=NOW)
+    assert 50 <= result["reward_coin"] <= 150

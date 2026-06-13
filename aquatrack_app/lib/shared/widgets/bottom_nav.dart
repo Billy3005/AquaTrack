@@ -34,17 +34,23 @@ class BottomNavigationWrapper extends StatelessWidget {
       }
     }
 
+    // The Chat tab has its own bottom input row; the Smart Scan FAB would
+    // overlap the send area, so hide it there.
+    final showScanFab = location != '/coach';
+
     return Scaffold(
       body: child,
 
       // FAB for Smart Scan (floating camera button)
-      floatingActionButton: FloatingActionButton(
-        heroTag: "smart_scan_fab", // Unique hero tag to prevent conflicts
-        onPressed: () => context.push('/smart-scan'),
-        backgroundColor: AppColors.cyan,
-        foregroundColor: AppColors.textPrimary,
-        child: const Icon(Icons.camera_alt_outlined, size: 28),
-      ),
+      floatingActionButton: showScanFab
+          ? FloatingActionButton(
+              heroTag: "smart_scan_fab", // Unique hero tag to prevent conflicts
+              onPressed: () => context.push('/smart-scan'),
+              backgroundColor: AppColors.cyan,
+              foregroundColor: AppColors.textPrimary,
+              child: const Icon(Icons.camera_alt_outlined, size: 28),
+            )
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
 
       // Bottom Navigation Bar

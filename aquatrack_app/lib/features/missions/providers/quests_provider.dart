@@ -4,6 +4,18 @@ import '../../../core/di/app_providers.dart';
 import '../../../core/network/api_client.dart';
 import '../models/quest.dart';
 
+class ClaimResult {
+  final int rewardCoin;
+  final int rewardXp;
+
+  const ClaimResult({required this.rewardCoin, required this.rewardXp});
+
+  factory ClaimResult.fromJson(Map<String, dynamic> json) => ClaimResult(
+        rewardCoin: (json['reward_coin'] as num?)?.toInt() ?? 0,
+        rewardXp: (json['reward_xp'] as num?)?.toInt() ?? 0,
+      );
+}
+
 /// State for the missions screen.
 class QuestsState {
   final QuestsData? data;
@@ -58,21 +70,24 @@ class QuestsNotifier extends StateNotifier<QuestsState> {
   }
 
   /// Claim a Done quest's reward, then refresh so progress/balances update.
-  /// Returns true on success.
-  Future<bool> claim(String questId) async {
+  /// Returns [ClaimResult] with coins/xp on success, null on failure.
+  Future<ClaimResult?> claim(String questId) async {
     state = state.copyWith(claimingId: questId, clearError: true);
     try {
-      final res = await _api.post('/quests/$questId/claim');
-      if (res.isSuccess) {
+      final res = await _api.post<ClaimResult>(
+        '/quests/$questId/claim',
+        fromJson: (d) => ClaimResult.fromJson((d as Map).cast<String, dynamic>()),
+      );
+      if (res.isSuccess && res.data != null) {
         await load();
         state = state.copyWith(clearClaiming: true);
-        return true;
+        return res.data;
       }
       state = state.copyWith(clearClaiming: true, error: res.message);
-      return false;
+      return null;
     } catch (e) {
       state = state.copyWith(clearClaiming: true, error: e.toString());
-      return false;
+      return null;
     }
   }
 }
