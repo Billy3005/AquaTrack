@@ -22,7 +22,7 @@ def test_get_quests_returns_daily_and_weekly_with_balance(client, user):
     assert res.status_code == 200
     body = res.json()
     assert len(body["daily"]) == 5  # 4 base + daily_bonus
-    assert len(body["weekly"]) == 4  # 3 base + weekly_bonus
+    assert len(body["weekly"]) == 5  # 4 base + weekly_bonus
     assert body["coins"] == 0
     assert any(q["id"] == "smart_scan" for q in body["daily"])
 

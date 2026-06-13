@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
 
+    # Google Sign-In (ADR 0006): the OAuth *Web* client ID — the audience the
+    # google_sign_in plugin puts in its ID tokens (serverClientId).
+    GOOGLE_CLIENT_ID: str = ""
+
     # Smart Scan Vision Settings (ADR-0005)
     # Model is env-configurable so a retired model is a config change, not a deploy
     # Eval 2026-06-11 (n=10): Sonnet ~= Haiku accuracy at 3x cost -> Haiku.

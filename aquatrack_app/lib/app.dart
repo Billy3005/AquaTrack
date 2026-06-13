@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/config/app_config.dart';
 import 'features/splash/splash_screen.dart';
+import 'features/auth/forgot_password_screen.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
 import 'features/onboarding/body_info_screen.dart';
@@ -49,6 +50,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/register',
         pageBuilder: (context, state) => CustomTransitionPage(
           child: const RegisterScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: animation.drive(
+                Tween(begin: const Offset(1.0, 0.0), end: Offset.zero),
+              ),
+              child: child,
+            );
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const ForgotPasswordScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SlideTransition(
               position: animation.drive(

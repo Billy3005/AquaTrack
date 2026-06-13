@@ -1,6 +1,6 @@
 # 0004 — Shop: an avatar storefront, plus a one-time Streak Freeze
 
-- Status: Accepted
+- Status: Accepted (decision 3 amended 2026-06-12 — see Amendment)
 - Date: 2026-06-09
 
 ## Context
@@ -100,6 +100,34 @@ never be paid).
   gap; no length added; two-day gap still breaks; cannot buy when already owned;
   insufficient coins).
 - Theme/Khung remain visible as roadmap signals without pretending to work.
+
+## Amendment 2026-06-12 — Duolingo semantics: "dùng là mất"
+
+Manual testing (3-day scenario: achieve + buy → miss → miss) exposed that the
+original consume-at-log-time rule confuses even its own author: the Home screen
+showed the streak "being protected" by the provisional bridge, yet when the
+streak died anyway the Freeze silently returned to inventory and the Shop kept
+showing "Đã có" forever — the user couldn't tell whether the item was spent or
+not, and reported it as a bug.
+
+Decision 3's consumption rule is replaced:
+
+- **The Freeze burns at the midnight of the first fully-passed missed day it
+  protects** (a day with a live streak entering it), whether or not the streak
+  ultimately survives. One miss → bridged + consumed; two misses → consumed on
+  the first, broken on the second. The Shop resets to repurchasable — the item
+  becomes a repeatable coin sink.
+- **Provisional bridging on read is removed.** `_resolve_streak` bridges only
+  recorded `frozen_dates`. Consumption is materialised by `reconcile_freeze`,
+  now called lazily from the read paths (`calculate_current_streak`, Shop
+  status GET). The original objection — "merely opening Stats spends it" — no
+  longer applies under these semantics: the burn is *decided deterministically
+  at the missed midnight*; reads only record an already-decided fact, and any
+  read order yields the same state.
+- **New column `freeze_purchased_on` bounds coverage.** A Freeze never covers a
+  day missed before it was bought — buying one cannot resurrect an
+  already-dead run. NULL (legacy rows) means no bound, which deliberately lets
+  pre-amendment owners' pending protections settle on next read.
 
 ## When to revisit
 

@@ -13,6 +13,7 @@ import 'providers/friends_provider.dart';
 import 'providers/notifications_provider.dart';
 import 'providers/suggestions_provider.dart';
 import 'widgets/friend_search.dart';
+import 'widgets/invite_friends_sheet.dart';
 import 'widgets/notifications_dropdown.dart';
 
 /// Friends Screen - Social hydration with leaderboard and social actions
@@ -119,6 +120,11 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
         .then((_) {
       if (mounted) ref.invalidate(friendsNotifierProvider);
     });
+  }
+
+  void _openInvite() {
+    HapticFeedback.lightImpact();
+    showInviteFriendsSheet(context);
   }
 
   void _openNotifications() {
@@ -379,6 +385,12 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
                       ),
                       Row(
                         children: [
+                          GestureDetector(
+                            onTap: _openInvite,
+                            child: _buildHeaderButton(
+                                Icons.person_add_alt_1, false),
+                          ),
+                          const SizedBox(width: 8),
                           GestureDetector(
                             onTap: _openSearch,
                             child: _buildHeaderButton(Icons.search, false),

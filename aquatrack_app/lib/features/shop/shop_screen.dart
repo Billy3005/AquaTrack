@@ -323,7 +323,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Giữ chuỗi không reset khi lỡ 1 ngày. Tự dùng khi cần.',
+                  'Tự kích hoạt đêm bạn lỡ goal — dùng là mất, mua lại được.',
                   style: AppTextStyles.caption.copyWith(
                     color: AppColors.textSecondary,
                     fontSize: 10.5,

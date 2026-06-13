@@ -1660,6 +1660,7 @@ const Map<String, ({String icon, String glow})> _questVisuals = {
   'persistence_week': (icon: '🔥', glow: '#F97316'),
   'hydration_warrior': (icon: '💪', glow: '#38BDF8'),
   'water_scientist': (icon: '🧪', glow: '#A3E635'),
+  'hydration_ambassador': (icon: '📣', glow: '#C084FC'),
   'weekly_bonus': (icon: '🎁', glow: '#FBBF24'),
 };
 

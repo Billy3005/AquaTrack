@@ -6,11 +6,58 @@ import '../models/notification_models.dart';
 import '../models/social_failure.dart';
 import '../models/suggested_friend.dart';
 
+/// The current user's invite code and how many people they've referred
+/// (ADR-0007). `validatedCount` counts referrals that have started using the app.
+class ReferralInfo {
+  final String code;
+  final int invitedCount;
+  final int validatedCount;
+
+  const ReferralInfo({
+    required this.code,
+    required this.invitedCount,
+    required this.validatedCount,
+  });
+
+  factory ReferralInfo.fromJson(Map<String, dynamic> json) => ReferralInfo(
+        code: json['code'] as String? ?? '',
+        invitedCount: json['invited_count'] as int? ?? 0,
+        validatedCount: json['validated_count'] as int? ?? 0,
+      );
+}
+
 /// Social service for friend management and social features
 class SocialService {
   final ApiClient _apiService;
 
   SocialService(this._apiService);
+
+  /// Get the current user's referral code + invite counts (ADR-0007).
+  Future<ReferralInfo> getReferral() async {
+    try {
+      final response = await _apiService.get<Map<String, dynamic>>(
+        '/friends/referral',
+      );
+
+      if (response.isSuccess && response.data != null) {
+        return ReferralInfo.fromJson(response.data!);
+      }
+
+      throw SocialFailure.server(
+        message: 'Failed to load referral code',
+        statusCode: response.statusCode,
+      );
+    } on ApiException catch (e) {
+      throw SocialFailure.fromApiException(e);
+    } on SocketException {
+      throw const SocialFailure.network(message: 'Network connection failed');
+    } catch (e) {
+      throw SocialFailure.unknown(
+        message: 'Unexpected error loading referral code',
+        originalException: e is Exception ? e : Exception(e.toString()),
+      );
+    }
+  }
 
   /// Get user's friends list
   Future<List<Friend>> getFriends() async {

@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import (JSON, Boolean, Column, DateTime, Float, Integer,
+from sqlalchemy import (JSON, Boolean, Column, Date, DateTime, Float, Integer,
                         String, Text)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -16,11 +16,20 @@ class User(Base):
     # Primary key
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
 
-    # Authentication fields
+    # Authentication fields (ADR 0006)
+    # Empty hashed_password = Passwordless Account (Google-first, or password
+    # disabled by Account Linking) — recoverable via Password Reset.
+    # `google_sub` is Google's permanent subject ID: the identity key for
+    # Google sign-in; email is display data, never a key.
     email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=False, default="")
+    google_sub = Column(String, unique=True, nullable=True, index=True)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
+    # Password Reset: 6-digit code (hash only), short TTL, attempt-limited.
+    reset_code_hash = Column(String, nullable=True)
+    reset_code_expires_at = Column(DateTime, nullable=True)
+    reset_code_attempts = Column(Integer, default=0)
 
     # Profile fields
     username = Column(String, nullable=False, default="Aqua Warrior")
@@ -74,10 +83,14 @@ class User(Base):
     current_streak = Column(Integer, default=0)
     longest_streak = Column(Integer, default=0)
     # Streak Freeze (one-time consumable bought in the Shop; see ADR 0004).
-    # `streak_freeze_owned` is a binary inventory (own at most one). `frozen_dates`
+    # `streak_freeze_owned` is a binary inventory (own at most one). The Freeze
+    # burns on the first fully-passed missed day on/after `freeze_purchased_on`
+    # (Duolingo semantics — it never resurrects a run that died before purchase;
+    # NULL on legacy rows means no date bound). `frozen_dates`
     # records the missed days a Freeze has bridged so the derived streak stays
     # continuous across them (a bridged day adds 0 length).
     streak_freeze_owned = Column(Boolean, default=False)
+    freeze_purchased_on = Column(Date, nullable=True)
     frozen_dates = Column(JSON, default=list)
 
     # Statistics
@@ -96,6 +109,9 @@ class User(Base):
     # Social features
     status = Column(String, default="normal")  # normal/thirsty/stressed/offline
     is_online = Column(Boolean, default=False)
+
+    # Referral (ADR-0007): permanent per-user invite code, generated lazily.
+    referral_code = Column(String, unique=True, nullable=True, index=True)
 
     # Relationships
     intake_logs = relationship(
