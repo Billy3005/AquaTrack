@@ -1,6 +1,6 @@
 ---
 domain: AquaTrack Hydration App
-last_updated: 2026-05-30
+last_updated: 2026-06-13
 ---
 
 # AquaTrack Domain Glossary
@@ -61,6 +61,20 @@ last_updated: 2026-05-30
 
 **Reminder (Friend Nudge)** — A hydration nudge one user sends to a *friend*. Counts toward the "Hội Bạn Cùng Uống" Quest. Distinct from a **Reminder Slot** (a user's self-reminder — see Hydration Reminders).
 
+## Social & Referral
+
+**Friend Request** (Kết bạn) — Connecting two people who *both already use AquaTrack*: one searches the other by username, sends a request, the other accepts. Produces a Friend relationship. Distinct from a **Referral**, which brings a person who is *not yet a user* onto the app.
+
+**Referral** (Mời bạn) — Bringing a brand-new person to install and register AquaTrack via the inviter's **Referral Code**. A Referral is one-directional (Referrer → Referred) and exists only for a person whose account is created with a Referral Code attached at sign-up. It does **not** create a Friend relationship by itself.
+
+**Referral Code** — A permanent, stable code unique to each user (one code per user, reusable indefinitely). The inviter shares it; a new user attaches it at registration. A code can never be self-applied, and is captured only at sign-up — never added to an existing account afterwards.
+
+**Validated Referral** — A Referral that has reached its **Validation Moment**: the Referred user's **first water log**. Until then a Referral is *pending* and counts for nothing. Only Validated Referrals grant rewards or count toward the Ambassador Quest. Validation is one-time and irreversible.
+
+**Two-Sided Reward** — On validation, *both* parties are rewarded once: the Referrer gets credit toward the Ambassador Quest, and the Referred user gets a one-time welcome Coin bonus. The welcome bonus is granted exactly once per Referred user.
+
+**Ambassador Quest** (Đại Sứ Hydration) — The fourth **Weekly Quest**: become Done by achieving one Validated Referral within the current week (the week is measured by the Referral's Validation Moment, not when the code was shared). Completing it (alongside the other weekly quests) is what raises the Weekly Completion Bonus condition from 3/3 to 4/4 — it is the quest that was Deferred in `quests_spec.md` until referral infrastructure existed.
+
 ## Levels & Achievements
 
 **Level** — A progression tier derived purely from Total XP via the canonical XP curve. Never stored as an editable value; recomputed from Total XP. A Level may carry a display name (the canonical tier names live in one place, not duplicated per screen).
@@ -97,7 +111,7 @@ last_updated: 2026-05-30
 
 **Shop** (Cửa hàng) — The coin storefront: the canonical place to **spend Coins**. The coin badge everywhere in the app routes here. Today the Shop sells the coin-purchasable Avatars (those whose Unlock Condition includes a `coin` price) plus the **Streak Freeze** consumable; Theme and Khung are shown as "Sắp ra mắt". The Shop never sells XP or coin multipliers — XP stays monotonic from real sources and Coins are the only spendable currency. Distinct from the **Collection**, which displays *all* Avatars and handles equipping.
 
-**Streak Freeze** (Đóng băng chuỗi) — A one-time consumable bought with Coins that bridges a single fully-missed day so the user's Streak does not reset. Inventory is binary — a user owns at most one Freeze at a time; protecting a missed day consumes it (back to zero, must re-buy). A bridged day preserves continuity but does **not** add to streak length (the user did not hit goal that day). Consumed at log time, not on read; while owned, a single missed day is treated as provisionally protected so reads never show a false break. Multiple consecutive missed days break the streak — one Freeze covers one day only.
+**Streak Freeze** (Đóng băng chuỗi) — A one-time consumable bought with Coins that bridges a single fully-missed day so the user's Streak does not reset. Inventory is binary — a user owns at most one Freeze at a time. **Duolingo semantics ("dùng là mất")**: the Freeze burns at the midnight of the first fully-passed missed day it protects — whether or not the streak ultimately survives — and the Shop resets to repurchasable. A bridged day preserves continuity but does **not** add to streak length (the user did not hit goal that day). The burn is decided at the missed midnight and *recorded* lazily on the next read (`reconcile_freeze`); a Freeze never covers days missed before its purchase date (`freeze_purchased_on`), so buying one cannot resurrect a dead run. Multiple consecutive missed days break the streak — one Freeze covers one day only (burned on the first miss).
 
 ## Smart Scan
 
@@ -126,6 +140,16 @@ last_updated: 2026-05-30
 **Tone** (Giọng nhắc) — The voice/style of a Reminder Slot's notification copy (e.g. Năng động, Thân thiện, Nhẹ nhàng, Bình yên). Selects which message template fires; does not affect timing.
 
 **Schedule Suggestion** (Gợi ý lịch) — A generated Hydration Schedule spread evenly (~every 2h) across the user's waking window (wake time → sleep time). Exists to reduce setup friction; the user can then edit, add, or remove Slots manually. Regenerating replaces the current Slots.
+
+## Authentication
+
+**Social Sign-In** (Đăng nhập liên kết) — Signing in via an external identity provider. AquaTrack supports exactly one: **Google**. Apple and Facebook are deliberately absent (not "coming soon" — see honest UI in ADR 0004): Apple Sign-In only becomes relevant (and then *mandatory*, per App Store rules) if an iOS release ships; Facebook is dropped. The backend remains the only identity authority — a social sign-in ends in the same AquaTrack session tokens as a password login.
+
+**Account Linking** (Liên kết tài khoản) — When a Google sign-in carries a verified email that matches an existing password account, the sign-in **auto-links** into that account (one person, one account, two doors). Linking into an account whose email was never verified disables its password (it must be reset to be used again) — this closes the pre-registration takeover hole. Google identity is keyed by Google's permanent subject ID, never by email.
+
+**Passwordless Account** (Tài khoản không mật khẩu) — An account created via Google sign-in has no password. A password login attempt against it is answered honestly ("this account signs in with Google") rather than with a generic wrong-password error.
+
+**Password Reset** (Đặt lại mật khẩu) — Recovery via a short-lived 6-digit code emailed to the account address; entering the code lets the user set a new password. The same flow re-arms a password disabled by Account Linking, and lets a Passwordless Account add a password later. Email verification at registration is deliberately **not** enforced yet (sign-up friction beats spam risk at this stage — revisit with Production Readiness).
 
 ## Statistics & History
 

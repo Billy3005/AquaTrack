@@ -1,5 +1,4 @@
 import '../../../core/network/api_client.dart';
-import '../domain/entities/user.dart';
 import 'models/auth_models.dart';
 
 /// Auth API interface
@@ -20,6 +19,20 @@ abstract class AuthAPI {
     required String username,
     String? fullName,
     int? dailyGoalMl,
+    String? referralCode,
+  });
+
+  /// Google Sign-In (ADR 0006): trade a Google ID token for app tokens
+  Future<AuthResponseModel> loginWithGoogle({required String idToken});
+
+  /// Password Reset step 1: request a 6-digit code by email
+  Future<void> forgotPassword({required String email});
+
+  /// Password Reset step 2: trade the emailed code for a new password
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
   });
 
   /// Refresh access token using refresh token
@@ -73,6 +86,7 @@ class AuthAPIImpl implements AuthAPI {
     required String username,
     String? fullName,
     int? dailyGoalMl,
+    String? referralCode,
   }) async {
     final response = await _apiClient.post<Map<String, dynamic>>(
       '/auth/register',
@@ -82,11 +96,48 @@ class AuthAPIImpl implements AuthAPI {
         'username': username,
         if (fullName != null) 'full_name': fullName,
         if (dailyGoalMl != null) 'daily_goal_ml': dailyGoalMl,
+        if (referralCode != null && referralCode.isNotEmpty)
+          'referral_code': referralCode,
       },
       fromJson: (data) => data as Map<String, dynamic>,
     );
 
     return AuthResponseModel.fromJson(response.data!);
+  }
+
+  @override
+  Future<AuthResponseModel> loginWithGoogle({required String idToken}) async {
+    final response = await _apiClient.post<Map<String, dynamic>>(
+      '/auth/google',
+      data: {'id_token': idToken},
+      fromJson: (data) => data as Map<String, dynamic>,
+    );
+
+    return AuthResponseModel.fromJson(response.data!);
+  }
+
+  @override
+  Future<void> forgotPassword({required String email}) async {
+    await _apiClient.post<void>(
+      '/auth/forgot-password',
+      data: {'email': email},
+    );
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    await _apiClient.post<void>(
+      '/auth/reset-password',
+      data: {
+        'email': email,
+        'code': code,
+        'new_password': newPassword,
+      },
+    );
   }
 
   @override

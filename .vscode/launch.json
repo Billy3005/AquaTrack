@@ -6,21 +6,30 @@
       "request": "launch",
       "type": "dart",
       "program": "aquatrack_app/lib/main.dart",
-      "args": ["--debug"]
+      "args": [
+        "--debug",
+        "--dart-define=GOOGLE_SERVER_CLIENT_ID=704987942078-ddomgdr9bt3l6eecct6pd4sn9mmgt21v.apps.googleusercontent.com"
+      ]
     },
     {
       "name": "Flutter (Release)",
       "request": "launch",
       "type": "dart",
       "program": "aquatrack_app/lib/main.dart",
-      "args": ["--release"]
+      "args": [
+        "--release",
+        "--dart-define=GOOGLE_SERVER_CLIENT_ID=704987942078-ddomgdr9bt3l6eecct6pd4sn9mmgt21v.apps.googleusercontent.com"
+      ]
     },
     {
       "name": "Flutter (Profile)",
       "request": "launch",
       "type": "dart",
       "program": "aquatrack_app/lib/main.dart",
-      "args": ["--profile"]
+      "args": [
+        "--profile",
+        "--dart-define=GOOGLE_SERVER_CLIENT_ID=704987942078-ddomgdr9bt3l6eecct6pd4sn9mmgt21v.apps.googleusercontent.com"
+      ]
     }
   ]
 }

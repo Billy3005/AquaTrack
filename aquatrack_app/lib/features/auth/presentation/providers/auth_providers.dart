@@ -4,6 +4,7 @@ import '../../../../core/di/app_providers.dart';
 import '../../data/auth_api.dart';
 import '../../data/auth_repository.dart';
 import '../../data/auth_storage.dart';
+import '../../data/google_signin_service.dart';
 import '../../domain/auth_service.dart';
 import '../../domain/entities/user.dart';
 
@@ -57,6 +58,11 @@ final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService(authRepository: authRepository);
 });
 
+/// Google Sign-In plugin wrapper (ADR 0006)
+final googleSignInServiceProvider = Provider<GoogleSignInService>((ref) {
+  return GoogleSignInService();
+});
+
 // ═══════════════════════════════════════════════════════════════════════════════════
 // STATE PROVIDERS
 // ═══════════════════════════════════════════════════════════════════════════════════
@@ -65,7 +71,11 @@ final authServiceProvider = Provider<AuthService>((ref) {
 final authStateProvider =
     StateNotifierProvider<AuthStateNotifier, AuthState>((ref) {
   final authService = ref.watch(authServiceProvider);
-  return AuthStateNotifier(authService: authService);
+  final googleSignInService = ref.watch(googleSignInServiceProvider);
+  return AuthStateNotifier(
+    authService: authService,
+    googleSignInService: googleSignInService,
+  );
 });
 
 /// Current user provider
@@ -161,9 +171,13 @@ class AuthState {
 /// Authentication state notifier
 class AuthStateNotifier extends StateNotifier<AuthState> {
   final AuthService _authService;
+  final GoogleSignInService? _googleSignInService;
 
-  AuthStateNotifier({required AuthService authService})
-      : _authService = authService,
+  AuthStateNotifier({
+    required AuthService authService,
+    GoogleSignInService? googleSignInService,
+  })  : _authService = authService,
+        _googleSignInService = googleSignInService,
         super(AuthState(
           isAuthenticated: false,
           lastUpdated: DateTime.now(),
@@ -250,6 +264,54 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Google Sign-In (ADR 0006): run the account picker, trade the ID token
+  /// for app tokens. A dismissed picker is not an error — just stop loading.
+  Future<void> loginWithGoogle() async {
+    final google = _googleSignInService;
+    if (google == null) return;
+
+    try {
+      state = state.copyWith(isLoading: true, clearError: true);
+
+      final idToken = await google.getIdToken();
+      if (!mounted) return;
+
+      if (idToken == null) {
+        state = state.copyWith(isLoading: false);
+        return; // user closed the picker
+      }
+
+      final result = await _authService.loginWithGoogle(idToken: idToken);
+      if (!mounted) return;
+
+      if (result.isSuccess && result.user != null) {
+        state = state.copyWith(
+          isAuthenticated: true,
+          currentUser: result.user,
+          isLoading: false,
+          needsOnboarding: result.needsOnboarding,
+        );
+      } else {
+        // Backend refused the token — drop the plugin's cached account so a
+        // retry shows the picker again instead of silently reusing it.
+        await google.signOut();
+        state = state.copyWith(
+          isAuthenticated: false,
+          isLoading: false,
+          error: result.error ?? 'Đăng nhập Google thất bại',
+          clearUser: true,
+        );
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isAuthenticated: false,
+        isLoading: false,
+        error: 'Lỗi đăng nhập Google: $e',
+        clearUser: true,
+      );
+    }
+  }
+
   /// Register user
   Future<void> register({
     required String email,
@@ -257,6 +319,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     required String username,
     String? fullName,
     int? dailyGoalMl,
+    String? referralCode,
   }) async {
     try {
       state = state.copyWith(isLoading: true, clearError: true);
@@ -267,6 +330,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
         username: username,
         fullName: fullName,
         dailyGoalMl: dailyGoalMl,
+        referralCode: referralCode,
       );
       if (!mounted) return;
 
@@ -301,6 +365,8 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(isLoading: true, clearError: true);
 
       await _authService.logout();
+      // Also drop the Google account cache so the next sign-in re-prompts.
+      await _googleSignInService?.signOut();
       if (!mounted) return;
 
       state = state.copyWith(

@@ -33,4 +33,13 @@ class AppConstants {
 
   // Default daily goal calculation base
   static const dailyGoalBaseMultiplier = 35; // per kg body weight
+
+  // Google Sign-In (ADR 0006): the OAuth *Web* client ID from Google Cloud
+  // Console. On Android this is the serverClientId that makes the plugin
+  // return an ID token; the backend verifies against the same value
+  // (GOOGLE_CLIENT_ID in aquatrack_backend/.env). Empty = not configured yet.
+  static const googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+    defaultValue: '',
+  );
 }

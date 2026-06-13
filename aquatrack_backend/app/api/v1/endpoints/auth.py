@@ -9,11 +9,74 @@ from app.core.database import get_db
 from app.core.security import (create_access_token, create_refresh_token,
                                get_current_user_id)
 from app.crud import user_crud
-from app.schemas.auth import RefreshToken, TokenRefreshResponse
+from app.schemas.auth import (ForgotPasswordRequest, GoogleLoginRequest,
+                              RefreshToken, ResetPasswordRequest,
+                              TokenRefreshResponse)
 from app.schemas.user import UserCreate, UserLogin, UserResponse
+from app.services import password_reset_service
+from app.services.mailer import Mailer
+from app.services.social_auth_service import GoogleAuthError, GoogleAuthService
 
 router = APIRouter()
 security = HTTPBearer()
+
+
+def get_google_auth_service() -> GoogleAuthService:
+    """DI hook — tests override this with a fake-verifier service."""
+    return GoogleAuthService()
+
+
+def get_email_service() -> Mailer:
+    """DI hook — tests override this with a capturing fake."""
+    return Mailer()
+
+
+def _auth_response(user) -> dict:
+    """Tokens + user payload shared by register / login / Google sign-in."""
+    return {
+        "access_token": create_access_token(subject=user.id),
+        "refresh_token": create_refresh_token(subject=user.id),
+        "token_type": "bearer",
+        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "username": user.username,
+            "full_name": user.full_name,
+            "avatar_id": user.avatar_id,
+            "level": user.current_level,
+            "total_xp": user.total_xp,
+            "daily_goal_ml": user.daily_goal_ml,
+            "calculated_daily_goal_ml": user.calculated_daily_goal_ml,
+            # Level & progression
+            "current_streak": user.current_streak,
+            "longest_streak": user.longest_streak,
+            # Statistics for profile
+            "total_logs_count": user.total_logs_count,
+            "total_volume_ml": user.total_volume_ml,
+            # Settings
+            "notifications_enabled": user.notifications_enabled,
+            "theme_preference": user.theme_preference,
+            "language_preference": user.language_preference,
+            "sound_enabled": user.sound_enabled,
+            "timezone": user.timezone,
+            # Body information for profile display
+            "gender": user.gender,
+            "age": user.age,
+            "height": user.height,
+            "weight": user.weight,
+            "activity_level": user.activity_level,
+            "job_type": user.job_type,
+            "health_conditions": user.health_conditions,
+            "coffee_cups_per_day": user.coffee_cups_per_day,
+            "alcohol_units_per_day": user.alcohol_units_per_day,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "last_active_at": (
+                user.last_login.isoformat() if user.last_login else None
+            ),
+            "is_active": user.is_active,
+        },
+    }
 
 
 @router.post("/register")
@@ -59,57 +122,19 @@ async def register_user(user_create: UserCreate, db: Session = Depends(get_db)):
             f"✅ User created - ID: {user.id}, Username: {user.username}, Email: {user.email}"
         )
 
-        # Generate JWT tokens for auto-login
-        print("[DEBUG] Generating JWT tokens...")
-        access_token = create_access_token(subject=user.id)
-        refresh_token = create_refresh_token(subject=user.id)
-        print("✅ JWT tokens generated")
+        # Referral (ADR-0007): if an invite code was supplied, attach a pending
+        # referral. A bad/self code is ignored — registration must still succeed.
+        if user_create.referral_code:
+            from app.services import referral_service
 
-        # Return same format as login for Flutter compatibility
-        return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer",
-            "expires_in": 1800,  # 30 minutes
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "username": user.username,
-                "full_name": user.full_name,
-                "avatar_id": user.avatar_id,
-                "level": user.current_level,
-                "total_xp": user.total_xp,
-                "daily_goal_ml": user.daily_goal_ml,
-                "calculated_daily_goal_ml": user.calculated_daily_goal_ml,
-                # Level & progression
-                "current_streak": user.current_streak,
-                "longest_streak": user.longest_streak,
-                # Statistics for profile
-                "total_logs_count": user.total_logs_count,
-                "total_volume_ml": user.total_volume_ml,
-                # Settings
-                "notifications_enabled": user.notifications_enabled,
-                "theme_preference": user.theme_preference,
-                "language_preference": user.language_preference,
-                "sound_enabled": user.sound_enabled,
-                "timezone": user.timezone,
-                # Body information for profile display
-                "gender": user.gender,
-                "age": user.age,
-                "height": user.height,
-                "weight": user.weight,
-                "activity_level": user.activity_level,
-                "job_type": user.job_type,
-                "health_conditions": user.health_conditions,
-                "coffee_cups_per_day": user.coffee_cups_per_day,
-                "alcohol_units_per_day": user.alcohol_units_per_day,
-                "created_at": user.created_at.isoformat() if user.created_at else None,
-                "last_active_at": (
-                    user.last_login.isoformat() if user.last_login else None
-                ),
-                "is_active": user.is_active,
-            },
-        }
+            referral_service.attach_referral(
+                db, referred_id=user.id, code=user_create.referral_code.strip()
+            )
+
+        # Same response shape as login for Flutter compatibility
+        return _auth_response(user)
+    except HTTPException:
+        raise  # 400s must stay 400s, not be swallowed into a 500
     except Exception as e:
         print(f"[ERROR] REGISTRATION ERROR: {str(e)}")
         print(f"[ERROR] Exception type: {type(e).__name__}")
@@ -170,9 +195,18 @@ async def login(request: UserLogin, db: Session = Depends(get_db)):
             detail="Email and password required",
         )
 
+    # Passwordless Account (ADR 0006): answer honestly instead of a generic
+    # wrong-password error — the account has no password to be wrong about.
+    existing = user_crud.get_by_email(db, email=email)
+    if existing and not existing.hashed_password and existing.google_sub:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tài khoản này đăng nhập bằng Google. "
+            "Hãy dùng nút 'Tiếp tục với Google' hoặc đặt mật khẩu qua Quên mật khẩu.",
+        )
+
     # Authenticate user with database
     user = user_crud.authenticate(db, email=email, password=password)
-    print(f"DEBUG: Authentication result: {user is not None}")
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password"
@@ -187,52 +221,60 @@ async def login(request: UserLogin, db: Session = Depends(get_db)):
     # Update last login timestamp
     user_crud.update_last_login(db, user_id=user.id)
 
-    # Generate JWT tokens
-    access_token = create_access_token(subject=user.id)
-    refresh_token = create_refresh_token(subject=user.id)
+    return _auth_response(user)
 
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer",
-        "expires_in": 1800,  # 30 minutes
-        "user": {
-            "id": user.id,
-            "email": user.email,
-            "username": user.username,
-            "full_name": user.full_name,
-            "avatar_id": user.avatar_id,
-            "level": user.current_level,
-            "total_xp": user.total_xp,
-            "daily_goal_ml": user.daily_goal_ml,
-            "calculated_daily_goal_ml": user.calculated_daily_goal_ml,
-            # Level & progression
-            "current_streak": user.current_streak,
-            "longest_streak": user.longest_streak,
-            # Statistics for profile
-            "total_logs_count": user.total_logs_count,
-            "total_volume_ml": user.total_volume_ml,
-            # Settings
-            "notifications_enabled": user.notifications_enabled,
-            "theme_preference": user.theme_preference,
-            "language_preference": user.language_preference,
-            "sound_enabled": user.sound_enabled,
-            "timezone": user.timezone,
-            # Body information for profile display
-            "gender": user.gender,
-            "age": user.age,
-            "height": user.height,
-            "weight": user.weight,
-            "activity_level": user.activity_level,
-            "job_type": user.job_type,
-            "health_conditions": user.health_conditions,
-            "coffee_cups_per_day": user.coffee_cups_per_day,
-            "alcohol_units_per_day": user.alcohol_units_per_day,
-            "created_at": user.created_at.isoformat() if user.created_at else None,
-            "last_active_at": user.last_login.isoformat() if user.last_login else None,
-            "is_active": user.is_active,
-        },
-    }
+
+@router.post("/google")
+async def google_sign_in(
+    request: GoogleLoginRequest,
+    db: Session = Depends(get_db),
+    service: GoogleAuthService = Depends(get_google_auth_service),
+):
+    """Google Sign-In (ADR 0006): verify the ID token, find-or-create the
+    user (auto-linking by verified email), return ordinary app tokens."""
+    try:
+        user = service.authenticate(db, id_token=request.id_token)
+    except GoogleAuthError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
+
+    if not user_crud.is_active(user):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Account is deactivated"
+        )
+
+    user_crud.update_last_login(db, user_id=user.id)
+    return _auth_response(user)
+
+
+@router.post("/forgot-password")
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    db: Session = Depends(get_db),
+    mailer: Mailer = Depends(get_email_service),
+):
+    """Password Reset step 1: email a 6-digit code.
+
+    Always answers generically — account existence must not leak.
+    """
+    password_reset_service.request_reset(db, email=request.email, mailer=mailer)
+    return {"message": "Nếu email tồn tại, mã đặt lại đã được gửi."}
+
+
+@router.post("/reset-password")
+async def reset_password(
+    request: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    """Password Reset step 2: trade the emailed code for a new password."""
+    ok = password_reset_service.reset_password(
+        db, email=request.email, code=request.code, new_password=request.new_password
+    )
+    if not ok:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Mã không đúng hoặc đã hết hạn. Hãy yêu cầu mã mới.",
+        )
+    return {"message": "Mật khẩu đã được đặt lại. Hãy đăng nhập."}
 
 
 @router.post("/refresh", response_model=TokenRefreshResponse)

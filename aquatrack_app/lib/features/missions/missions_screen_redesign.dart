@@ -8,6 +8,7 @@ import '../../core/constants/app_text_styles.dart';
 import '../../shared/widgets/coin_badge.dart';
 import 'models/quest.dart';
 import 'providers/quests_provider.dart';
+import 'widgets/chest_reward_overlay.dart';
 
 /// Missions Screen với Daily & Weekly missions
 class MissionsScreenRedesign extends ConsumerStatefulWidget {
@@ -52,11 +53,15 @@ class _MissionsScreenRedesignState extends ConsumerState<MissionsScreenRedesign>
   }
 
   Future<void> _claim(String id) async {
-    final ok = await ref.read(questsProvider.notifier).claim(id);
+    final result = await ref.read(questsProvider.notifier).claim(id);
     if (!mounted) return;
+    if (result != null && id == 'weekly_bonus') {
+      showChestReward(context, coins: result.rewardCoin);
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(ok ? '🎉 Đã nhận thưởng!' : 'Chưa thể nhận thưởng'),
+        content: Text(result != null ? '🎉 Đã nhận thưởng!' : 'Chưa thể nhận thưởng'),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -120,6 +125,7 @@ class _MissionsScreenRedesignState extends ConsumerState<MissionsScreenRedesign>
                         missions: weekly,
                         onClaim: _claim,
                         weekStrip: data.weekStrip,
+                        resetAt: data.weeklyResetAt,
                       ),
               ),
             ),
@@ -229,8 +235,11 @@ class _MissionsScreenRedesignState extends ConsumerState<MissionsScreenRedesign>
   }
 
   Widget _buildTabSwitcher(List<Mission> dailyData, List<Mission> weeklyData) {
-    final dailyDone = dailyData.where((m) => m.done).length;
-    final weeklyDone = weeklyData.where((m) => m.progress >= m.target).length;
+    bool isBase(Mission m) => m.id != 'daily_bonus' && m.id != 'weekly_bonus';
+    final dailyBase = dailyData.where(isBase).toList();
+    final weeklyBase = weeklyData.where(isBase).toList();
+    final dailyDone = dailyBase.where((m) => m.done).length;
+    final weeklyDone = weeklyBase.where((m) => m.claimed || m.progress >= m.target).length;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -276,12 +285,12 @@ class _MissionsScreenRedesignState extends ConsumerState<MissionsScreenRedesign>
                 _buildTabButton(
                   'daily',
                   'Hằng ngày',
-                  '$dailyDone/${dailyData.length}',
+                  '$dailyDone/${dailyBase.length}',
                 ),
                 _buildTabButton(
                   'weekly',
                   'Hằng tuần',
-                  '$weeklyDone/${weeklyData.length}',
+                  '$weeklyDone/${weeklyBase.length}',
                 ),
               ],
             ),
@@ -540,24 +549,37 @@ class _WeeklyView extends StatelessWidget {
   final List<Mission> missions;
   final Future<void> Function(String questId) onClaim;
   final List<WeekDayStatus> weekStrip;
+  final DateTime resetAt;
 
   const _WeeklyView({
     required this.missions,
     required this.onClaim,
     required this.weekStrip,
+    required this.resetAt,
   });
+
+  String _resetLabel() {
+    final diff = resetAt.difference(DateTime.now());
+    if (diff.isNegative) return 'đang làm mới';
+    if (diff.inHours >= 24) return 'còn ${diff.inDays} ngày';
+    return 'còn ${diff.inHours}h ${diff.inMinutes % 60}p';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final weeklyDone = missions.where((m) => m.progress >= m.target).length;
-    final totalReward = missions.fold(0, (sum, m) => sum + m.reward);
-    final weekProgress = missions.isEmpty
+    bool isBase(Mission m) => m.id != 'daily_bonus' && m.id != 'weekly_bonus';
+    bool achieved(Mission m) => m.claimed || m.progress >= m.target;
+
+    final regular = missions.where(isBase).toList();
+    final bonus = missions.where((m) => m.id == 'weekly_bonus').firstOrNull;
+    final weeklyDone = regular.where(achieved).length;
+    final weekProgress = regular.isEmpty
         ? 0
-        : ((missions.fold(
+        : ((regular.fold(
                       0.0,
                       (sum, m) => sum + math.min(1.0, m.progress / m.target),
                     ) /
-                    missions.length) *
+                    regular.length) *
                 100)
             .round();
 
@@ -566,9 +588,9 @@ class _WeeklyView extends StatelessWidget {
         // Weekly Chest Card
         _buildWeeklyChest(
           weeklyDone,
-          missions.length,
+          regular.length,
           weekProgress,
-          totalReward,
+          bonus,
         ),
         const SizedBox(height: 14),
 
@@ -576,8 +598,8 @@ class _WeeklyView extends StatelessWidget {
         _buildWeekStrip(weekStrip),
         const SizedBox(height: 14),
 
-        // Weekly Mission Cards
-        ...missions.map(
+        // Weekly Mission Cards (exclude bonus — chest handles it)
+        ...regular.map(
           (mission) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: _MissionCard(
@@ -591,7 +613,19 @@ class _WeeklyView extends StatelessWidget {
     );
   }
 
-  Widget _buildWeeklyChest(int done, int total, int progress, int reward) {
+  Widget _buildWeeklyChest(int done, int total, int progress, Mission? bonus) {
+    final bool isClaimed = bonus?.claimed ?? false;
+    final bool isDone = bonus?.done ?? (done >= total && total > 0);
+    final chestState = isClaimed
+        ? _ChestState.claimed
+        : isDone
+            ? _ChestState.claimable
+            : _ChestState.locked;
+
+    final borderColor = chestState == _ChestState.claimable
+        ? const Color(0xFFFBBF24).withValues(alpha: 0.7)
+        : const Color(0xFFA5B4FC).withValues(alpha: 0.4);
+
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -600,136 +634,153 @@ class _WeeklyView extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         border: Border.all(
-          color: const Color(0xFFA5B4FC).withValues(alpha: 0.4),
+          color: borderColor,
+          width: chestState == _ChestState.claimable ? 1.5 : 1.0,
         ),
         borderRadius: BorderRadius.circular(18),
+        boxShadow: chestState == _ChestState.claimable
+            ? [
+                BoxShadow(
+                  color: const Color(0xFFFBBF24).withValues(alpha: 0.25),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ]
+            : null,
       ),
       padding: const EdgeInsets.all(16),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Background glow
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(1.0, -1.0),
-                  colors: [
-                    const Color(0xFFFBBF24).withValues(alpha: 0.18),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.55],
+          // Header row: label + reset countdown
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'KHO BÁU CUỐI TUẦN',
+                style: AppTextStyles.caption.copyWith(
+                  color: const Color(0xFFFCD34D),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
                 ),
-                borderRadius: BorderRadius.circular(18),
+              ),
+              Text(
+                _resetLabel(),
+                style: AppTextStyles.caption.copyWith(
+                  color: const Color(0xFFC7D2FE),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Hoàn thành cả tuần để mở khoá',
+            style: AppTextStyles.bodyLarge.copyWith(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.4,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '$done/$total nhiệm vụ',
+            style: AppTextStyles.caption.copyWith(
+              color: const Color(0xFFC7D2FE),
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Full-width progress bar
+          Container(
+            height: 8,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: (progress / 100).clamp(0.0, 1.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFFFBBF24),
+                      Color(0xFFF59E0B),
+                      Color(0xFFA78BFA),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFBBF24).withValues(alpha: 0.5),
+                      blurRadius: 12,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'KHO BÁU CUỐI TUẦN',
-                      style: AppTextStyles.caption.copyWith(
-                        color: const Color(0xFFFCD34D),
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Hoàn thành cả tuần để mở khoá',
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.4,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$done/$total nhiệm vụ · còn 3 ngày',
-                      style: AppTextStyles.caption.copyWith(
-                        color: const Color(0xFFC7D2FE),
-                        fontSize: 12,
-                        height: 1.4,
-                      ),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    // Progress Bar
-                    Column(
-                      children: [
-                        Container(
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: FractionallySizedBox(
-                            alignment: Alignment.centerLeft,
-                            widthFactor: progress / 100,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFFFBBF24),
-                                    Color(0xFFF59E0B),
-                                    Color(0xFFA78BFA),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(999),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(
-                                      0xFFFBBF24,
-                                    ).withValues(alpha: 0.5),
-                                    blurRadius: 12,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '$progress% hoàn thành',
-                              style: AppTextStyles.caption.copyWith(
-                                color: const Color(0xFFFCD34D),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 10.5,
-                              ),
-                            ),
-                            Text(
-                              '+${reward.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} xu · 2 unlock',
-                              style: AppTextStyles.caption.copyWith(
-                                color: AppColors.textSecondary,
-                                fontSize: 10.5,
-                                fontFeatures: [
-                                  const FontFeature.tabularFigures(),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // Chest Icon
-              _ChestIcon(),
-            ],
+          const SizedBox(height: 6),
+          Text(
+            '$progress% hoàn thành · 50–150 xu',
+            style: AppTextStyles.caption.copyWith(
+              color: const Color(0xFFFCD34D),
+              fontWeight: FontWeight.w600,
+              fontSize: 10.5,
+            ),
           ),
+          const SizedBox(height: 16),
+
+          // Chest icon + caption centered
+          Center(
+            child: Column(
+              children: [
+                GestureDetector(
+                  onTap: chestState == _ChestState.claimable
+                      ? () => onClaim('weekly_bonus')
+                      : null,
+                  child: _ChestIcon(state: chestState),
+                ),
+                if (chestState == _ChestState.claimable) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Chạm để mở',
+                    style: AppTextStyles.caption.copyWith(
+                      color: const Color(0xFFFCD34D),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          // Claimed confirmation
+          if (chestState == _ChestState.claimed) ...[
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: Color(0xFF4ADE80),
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Đã nhận thưởng tuần này!',
+                  style: AppTextStyles.caption.copyWith(
+                    color: const Color(0xFF4ADE80),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -1513,99 +1564,179 @@ class _RewardPillState extends State<_RewardPill>
   }
 }
 
-/// Chest Icon Component
-class _ChestIcon extends StatelessWidget {
+enum _ChestState { locked, claimable, claimed }
+
+/// Chest Icon — pulses when claimable, dims when claimed.
+class _ChestIcon extends StatefulWidget {
+  final _ChestState state;
+
+  const _ChestIcon({required this.state});
+
+  @override
+  State<_ChestIcon> createState() => _ChestIconState();
+}
+
+class _ChestIconState extends State<_ChestIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulse;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _scale = Tween(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
+    );
+    if (widget.state == _ChestState.claimable) {
+      _pulse.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(_ChestIcon old) {
+    super.didUpdateWidget(old);
+    if (widget.state == _ChestState.claimable) {
+      _pulse.repeat(reverse: true);
+    } else {
+      _pulse.stop();
+      _pulse.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 64,
-      height: 64,
-      decoration: BoxDecoration(
-        gradient: RadialGradient(
-          center: const Alignment(-0.3, -0.3),
-          colors: [
+    final dim = widget.state == _ChestState.claimed;
+    final opened = widget.state == _ChestState.claimed;
+
+    final borderColor = dim
+        ? Colors.white.withValues(alpha: 0.15)
+        : const Color(0xFFFBBF24).withValues(alpha: 0.5);
+    final gradientColors = dim
+        ? [
+            Colors.white.withValues(alpha: 0.06),
+            Colors.white.withValues(alpha: 0.02),
+          ]
+        : [
             const Color(0xFFFBBF24).withValues(alpha: 0.35),
             const Color(0xFFF59E0B).withValues(alpha: 0.1),
-          ],
-        ),
-        border: Border.all(
-          color: const Color(0xFFFBBF24).withValues(alpha: 0.5),
-        ),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFF59E0B).withValues(alpha: 0.25),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
+          ];
+
+    return AnimatedBuilder(
+      animation: _scale,
+      builder: (context, child) => Transform.scale(
+        scale: _scale.value,
+        child: child,
       ),
-      child: Stack(
-        children: [
-          // Chest SVG
-          Center(
+      child: Opacity(
+        opacity: dim ? 0.55 : 1.0,
+        child: Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: const Alignment(-0.3, -0.3),
+              colors: gradientColors,
+            ),
+            border: Border.all(color: borderColor),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: dim
+                ? null
+                : [
+                    BoxShadow(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                      blurRadius: 24,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+          ),
+          child: Center(
             child: CustomPaint(
-              size: const Size(38, 38),
-              painter: _ChestPainter(),
+              size: const Size(42, 42),
+              painter: _ChestPainter(opened: opened, dim: dim),
             ),
           ),
-          // Sparkle
-          const Positioned(
-            top: -4,
-            right: -4,
-            child: Text('✨', style: TextStyle(fontSize: 16)),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
 class _ChestPainter extends CustomPainter {
+  final bool opened;
+  final bool dim;
+
+  const _ChestPainter({this.opened = false, this.dim = false});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
 
+    final bottomColor =
+        dim ? const Color(0xFF4B5563) : const Color(0xFF92400E);
+    final topColor = dim ? const Color(0xFF6B7280) : const Color(0xFFB45309);
+    final lockColor = dim ? const Color(0xFF9CA3AF) : const Color(0xFFFBBF24);
+    final holeColor = dim ? const Color(0xFF374151) : const Color(0xFF78350F);
+
     // Chest bottom
-    paint.color = const Color(0xFF92400E);
+    paint.color = bottomColor;
     canvas.drawRRect(
       RRect.fromLTRBR(
-        2,
-        10,
-        size.width - 2,
-        size.height - 2,
-        const Radius.circular(2),
+        2, 12, size.width - 2, size.height - 2, const Radius.circular(3),
       ),
       paint,
     );
 
-    // Chest top
-    paint.color = const Color(0xFFB45309);
-    canvas.drawRRect(
-      RRect.fromLTRBR(2, 5, size.width - 2, 15, const Radius.circular(6)),
-      paint,
-    );
-
-    // Lock area
-    paint.color = const Color(0xFFFBBF24);
-    canvas.drawRRect(
-      RRect.fromLTRBR(
-        size.width / 2 - 4,
-        11,
-        size.width / 2 + 4,
-        23,
-        const Radius.circular(1),
-      ),
-      paint,
-    );
-
-    // Keyhole
-    paint.color = const Color(0xFF78350F);
-    canvas.drawCircle(Offset(size.width / 2, 15.5), 1.6, paint);
+    if (opened) {
+      // Lid flipped up (rotated 60° back, showing underside)
+      paint.color = topColor.withValues(alpha: 0.7);
+      canvas.drawRRect(
+        RRect.fromLTRBR(2, 0, size.width - 2, 8, const Radius.circular(6)),
+        paint,
+      );
+      // Dark cavity inside open chest
+      paint.color = holeColor.withValues(alpha: 0.6);
+      canvas.drawRRect(
+        RRect.fromLTRBR(
+          4, 12, size.width - 4, 20, const Radius.circular(2),
+        ),
+        paint,
+      );
+    } else {
+      // Chest lid (closed)
+      paint.color = topColor;
+      canvas.drawRRect(
+        RRect.fromLTRBR(2, 5, size.width - 2, 16, const Radius.circular(6)),
+        paint,
+      );
+      // Lock area
+      paint.color = lockColor;
+      canvas.drawRRect(
+        RRect.fromLTRBR(
+          size.width / 2 - 4, 12,
+          size.width / 2 + 4, 24,
+          const Radius.circular(1),
+        ),
+        paint,
+      );
+      // Keyhole
+      paint.color = holeColor;
+      canvas.drawCircle(Offset(size.width / 2, 16.5), 1.8, paint);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(_ChestPainter old) =>
+      old.opened != opened || old.dim != dim;
 }
 
 /// Mission Data Model
@@ -1660,6 +1791,7 @@ const Map<String, ({String icon, String glow})> _questVisuals = {
   'persistence_week': (icon: '🔥', glow: '#F97316'),
   'hydration_warrior': (icon: '💪', glow: '#38BDF8'),
   'water_scientist': (icon: '🧪', glow: '#A3E635'),
+  'hydration_ambassador': (icon: '📣', glow: '#C084FC'),
   'weekly_bonus': (icon: '🎁', glow: '#FBBF24'),
 };
 

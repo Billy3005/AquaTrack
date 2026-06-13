@@ -41,11 +41,11 @@ def init_db() -> None:
     # Import all models here to ensure they're registered
 
     from app.models import CoinGift  # noqa: F401
-    from app.models import (Achievement, Challenge, Conversation,
+    from app.models import (Achievement, Challenge, Conversation,  # noqa: F401
                             ConversationSession, DailySummary, Friend,
                             FriendRequest, IntakeLog, LeaderboardEntry,
-                            QuestClaim, ReminderLog, ScanHistory, User,
-                            UserInsight)
+                            QuestClaim, Referral, ReminderLog, ScanHistory,
+                            User, UserInsight)
 
     Base.metadata.create_all(bind=engine)
     _ensure_user_columns()
@@ -113,4 +113,38 @@ def _ensure_user_columns() -> None:
         if "frozen_dates" not in existing:
             conn.execute(
                 text("ALTER TABLE users ADD COLUMN frozen_dates JSON DEFAULT '[]'")
+            )
+        if "freeze_purchased_on" not in existing:
+            # Duolingo-semantics amendment (ADR 0004): the purchase date bounds
+            # which missed days a Freeze may cover. NULL (legacy) = no bound.
+            conn.execute(text("ALTER TABLE users ADD COLUMN freeze_purchased_on DATE"))
+        if "google_sub" not in existing:
+            # Google Sign-In rollout (ADR 0006): permanent Google subject ID
+            # (identity key) + Password Reset code state.
+            conn.execute(text("ALTER TABLE users ADD COLUMN google_sub VARCHAR"))
+            conn.execute(
+                text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_google_sub "
+                    "ON users (google_sub)"
+                )
+            )
+            conn.execute(text("ALTER TABLE users ADD COLUMN reset_code_hash VARCHAR"))
+            conn.execute(
+                text("ALTER TABLE users ADD COLUMN reset_code_expires_at DATETIME")
+            )
+            conn.execute(
+                text(
+                    "ALTER TABLE users ADD COLUMN reset_code_attempts "
+                    "INTEGER DEFAULT 0"
+                )
+            )
+        if "referral_code" not in existing:
+            # Referral rollout (ADR-0007): permanent per-user invite code,
+            # generated lazily on first read. Unique index guards collisions.
+            conn.execute(text("ALTER TABLE users ADD COLUMN referral_code VARCHAR"))
+            conn.execute(
+                text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_referral_code "
+                    "ON users (referral_code)"
+                )
             )

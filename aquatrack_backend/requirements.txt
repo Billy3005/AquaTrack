@@ -33,3 +33,7 @@ httpx==0.25.2
 
 # Image processing
 Pillow==10.1.0
+
+# Google Sign-In ID token verification (ADR 0006)
+google-auth>=2.35.0
+

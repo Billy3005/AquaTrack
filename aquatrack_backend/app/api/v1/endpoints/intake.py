@@ -85,6 +85,16 @@ async def create_intake_log(
     )
     achievements = []  # No achievements for now
 
+    # Referral (ADR-0007): the referred user's first water log validates their
+    # referral (stamp + welcome bonus). Idempotent and best-effort — never let a
+    # referral hiccup break logging.
+    try:
+        from app.services import referral_service
+
+        referral_service.validate_referral(db, referred_id=current_user_id)
+    except Exception:
+        pass
+
     # Calculate today's total for UI
     today_summary_result = (
         db.query(func.coalesce(func.sum(IntakeLog.effective_volume_ml), 0))

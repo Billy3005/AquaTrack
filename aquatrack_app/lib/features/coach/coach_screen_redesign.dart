@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
 import '../../shared/models/daily_summary.dart';
 import '../home/providers/home_provider.dart';
 import 'models/chat_message.dart';
@@ -642,99 +641,99 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
 
   Widget _buildComposer() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 28),
+      decoration: const BoxDecoration(
+        color: Color(0xF20B1626),
         border: Border(
-          top: BorderSide(
-            color: const Color(0x1438BDF8), // rgba(56,189,248,0.08)
-          ),
+          top: BorderSide(color: Color(0x1A38BDF8)),
         ),
-        color: const Color(0x990F1A2E), // rgba(15,26,46,0.6)
       ),
-      child: ClipRect(
-        child: BackdropFilter(
-          filter: ColorFilter.mode(
-            Colors.white.withValues(alpha: 0.05),
-            BlendMode.lighten,
-          ),
-          child: Row(
-            children: [
-              // Text input
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-                  decoration: BoxDecoration(
-                    color: AppColors.nightCard,
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.06),
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: _textController,
+        builder: (context, value, _) {
+          final hasText = value.text.trim().isNotEmpty;
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            constraints: const BoxConstraints(minHeight: 52),
+            padding: const EdgeInsets.fromLTRB(20, 5, 6, 5),
+            decoration: BoxDecoration(
+              color: AppColors.nightCard,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: hasText
+                    ? const Color(0xFF38BDF8).withValues(alpha: 0.45)
+                    : Colors.white.withValues(alpha: 0.08),
+                width: 1.2,
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _textController,
+                    maxLines: null,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Hỏi Aqua AI bất cứ điều gì...',
+                      hintStyle: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 14,
+                      ),
+                      filled: false,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      focusedErrorBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    onSubmitted: _sendMessage,
+                    textInputAction: TextInputAction.send,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: hasText ? () => _sendMessage(_textController.text) : null,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: hasText
+                          ? const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFF0EA5E9), Color(0xFF38BDF8)],
+                            )
+                          : null,
+                      color: hasText ? null : const Color(0x2038BDF8),
+                      boxShadow: hasText
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF0EA5E9).withValues(alpha: 0.4),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_upward_rounded,
+                      color: Colors.white,
+                      size: 20,
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _textController,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textPrimary,
-                            fontFamily: 'SF Pro Text',
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Hỏi Aqua AI bất cứ điều gì...',
-                            hintStyle: TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 14,
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                          onSubmitted: _sendMessage,
-                          textInputAction: TextInputAction.send,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-
-              // Send button
-              GestureDetector(
-                onTap: () => _sendMessage(_textController.text),
-                child: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    gradient: _textController.text.trim().isNotEmpty
-                        ? const LinearGradient(
-                            begin: Alignment(-1.35, -1.35),
-                            end: Alignment(1.35, 1.35),
-                            colors: [Color(0xFF0EA5E9), Color(0xFF38BDF8)],
-                          )
-                        : null,
-                    color: _textController.text.trim().isEmpty
-                        ? const Color(0x3338BDF8) // rgba(56,189,248,0.2)
-                        : null,
-                    shape: BoxShape.circle,
-                    boxShadow: _textController.text.trim().isNotEmpty
-                        ? [
-                            BoxShadow(
-                              color: const Color(
-                                0x660EA5E9,
-                              ), // rgba(14,165,233,0.4)
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: const Icon(Icons.send, color: Colors.white, size: 18),
-                ),
-              ),
-            ],
-          ),
-        ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

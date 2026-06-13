@@ -41,32 +41,26 @@ class StreakService:
         return out
 
     @staticmethod
-    def _resolve_streak(
-        achieved: set, today: date, frozen: set, freeze_owned: bool
-    ) -> int:
-        """Pure streak computation with Streak Freeze bridging (ADR 0004).
+    def _resolve_streak(achieved: set, today: date, frozen: set) -> int:
+        """Pure streak computation with frozen-day bridging (ADR 0004, amended).
 
         A run is the consecutive achieved days ending at the most recent achieved
         day. A *frozen* day bridges a gap (keeps the run continuous) but adds 0 to
-        length. An owned-but-unconsumed Freeze (`freeze_owned`) provisionally
-        bridges the single most-recent missed day at the head, so a live streak
-        never shows a false break before the next log reconciles it. Today is
-        pending and never breaks the streak.
+        length. Today is pending and never breaks the streak. There is no
+        provisional bridging here: Freeze consumption is materialised by
+        `reconcile_freeze` BEFORE this resolver runs, so only recorded frozen
+        days bridge.
         """
         if not achieved:
             return 0
 
         most_recent = max(achieved)
-        provisional = freeze_owned
 
-        # Head: bridge the gap from the most recent achieved day up to yesterday
-        # so the run counts as "current". One provisional bridge max.
+        # Head: the gap from the most recent achieved day up to yesterday must
+        # be fully frozen for the run to still count as "current".
         cursor = today - timedelta(days=1)
         while cursor > most_recent:
             if cursor in frozen:
-                cursor -= timedelta(days=1)
-            elif provisional:
-                provisional = False
                 cursor -= timedelta(days=1)
             else:
                 return 0  # unbridgeable gap → streak broken
@@ -108,8 +102,8 @@ class StreakService:
         threshold) ending at the most recent achieved day. It is only
         considered *current* (non-zero) if that most recent achieved day is
         today or yesterday — this gives the user until the end of today to keep
-        it alive, but resets to 0 once a full day is missed. A Streak Freeze can
-        bridge a single missed day (see `_resolve_streak`).
+        it alive, but resets to 0 once a full day is missed. A consumed Streak
+        Freeze bridges a single missed day (see `reconcile_freeze`).
 
         Returns:
             int: Length of the current streak (0 if broken).
@@ -118,49 +112,75 @@ class StreakService:
         if not user:
             return 0
 
+        # Materialise any already-decided Freeze burn before resolving, so the
+        # streak and the Shop always agree (ADR 0004, Duolingo semantics).
+        if StreakService.reconcile_freeze(db, user_id):
+            db.refresh(user)
+
         achieved = set(StreakService._achieved_dates(db, user))
         frozen = StreakService._parse_frozen(user.frozen_dates)
-        return StreakService._resolve_streak(
-            achieved, date.today(), frozen, bool(user.streak_freeze_owned)
-        )
+        return StreakService._resolve_streak(achieved, date.today(), frozen)
+
+    @staticmethod
+    def _live_entering(day: date, achieved: set, frozen: set) -> bool:
+        """Whether a streak is alive going into `day` — the previous day chains
+        back through frozen days to an achieved day."""
+        cursor = day - timedelta(days=1)
+        while cursor in frozen:
+            cursor -= timedelta(days=1)
+        return cursor in achieved
 
     @staticmethod
     def reconcile_freeze(db: Session, user_id: str) -> bool:
-        """Consume an owned Freeze at log time to permanently bridge a single
-        missed day between the two most recent achieved days.
+        """Lazily record an already-decided Freeze burn (ADR 0004, amended).
 
-        Called after an intake log records today's achievement. If exactly one
-        day separates the two most recent achieved days and the user owns a
-        Freeze, that missing day is recorded in `frozen_dates` and the Freeze is
-        consumed. Multi-day gaps are not bridged (one Freeze covers one day).
+        Duolingo semantics ("dùng là mất"): an owned Freeze burns at the
+        midnight of the FIRST fully-passed missed day that (a) had a live
+        streak entering it and (b) is on/after the purchase date — whether or
+        not the streak ultimately survives. Reads don't *spend* the item; the
+        miss spent it. This call just materialises that fact in
+        `frozen_dates` / `streak_freeze_owned` so the streak resolver and the
+        Shop both see it (there is no nightly job to do it at the midnight).
 
         Returns:
-            bool: True if a Freeze was consumed.
+            bool: True if a Freeze burn was recorded.
         """
         user = user_crud.get(db, user_id)
         if not user or not user.streak_freeze_owned:
             return False
 
-        achieved = StreakService._achieved_dates(db, user)
-        if len(achieved) < 2:
-            return False
+        achieved = set(StreakService._achieved_dates(db, user))
+        if not achieved:
+            return False  # nothing to protect yet
 
-        most_recent, prev = achieved[0], achieved[1]
-        # Only reconcile on the log that just made *today* achieved, so the
-        # bridged day is always yesterday (the head gap) — never an older gap a
-        # sub-goal log happens to sit next to.
-        if most_recent != date.today():
-            return False
-        # Exactly one missing day between the two most recent achieved days.
-        if (most_recent - prev).days != 2:
-            return False
-
-        missing = most_recent - timedelta(days=1)
         frozen = StreakService._parse_frozen(user.frozen_dates)
-        if missing in frozen:
+        today = date.today()
+        purchased = user.freeze_purchased_on
+        if purchased is None:
+            # Legacy rows (pre freeze_purchased_on): the purchase date is
+            # unknowable, so bound to the most recent achieved day — the burn
+            # lands on the current run's miss (mirroring the old provisional
+            # behaviour), never on an ancient gap of a long-dead run.
+            purchased = max(achieved)
+
+        # Candidate burns: the first uncovered day after each covered run.
+        candidates = []
+        for day in achieved | frozen:
+            nxt = day + timedelta(days=1)
+            if nxt in achieved or nxt in frozen:
+                continue  # not a run end
+            if nxt >= today:
+                continue  # today is still pending — not a miss yet
+            if nxt < purchased:
+                continue  # Freeze didn't exist yet — never resurrect a dead run
+            if StreakService._live_entering(nxt, achieved, frozen):
+                candidates.append(nxt)
+        if not candidates:
             return False
 
-        frozen.add(missing)
+        # The earliest qualifying miss is when the Freeze actually burned.
+        burned = min(candidates)
+        frozen.add(burned)
         user.frozen_dates = sorted(d.isoformat() for d in frozen)
         user.streak_freeze_owned = False
         db.add(user)
@@ -189,7 +209,13 @@ class StreakService:
                 User.streak_freeze_owned.is_(False),
                 User.coins >= price,
             )
-            .values(coins=User.coins - price, streak_freeze_owned=True)
+            .values(
+                coins=User.coins - price,
+                streak_freeze_owned=True,
+                # Bounds which missed days this Freeze may cover: it protects
+                # from tonight onward, never gaps that predate the purchase.
+                freeze_purchased_on=date.today(),
+            )
         )
         db.commit()
         if result.rowcount == 0:
