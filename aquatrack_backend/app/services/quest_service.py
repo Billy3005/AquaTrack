@@ -348,6 +348,14 @@ _ALL_DEFS: Dict[str, QuestDef] = {
 _DAY_LABELS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
 
 
+def _summary_pct(summary) -> int:
+    """Derive progress % from raw ml columns — the stored column is stale in prod."""
+    goal = summary.daily_goal_ml or 0
+    if goal <= 0:
+        return 0
+    return round(summary.total_effective_ml / goal * 100)
+
+
 def build_week_strip(db: Session, user: User, now: datetime) -> list:
     """Return a 7-item list describing each day of the current ISO week."""
     tz = ZoneInfo(user.timezone or "UTC")
@@ -383,7 +391,7 @@ def build_week_strip(db: Session, user: User, now: datetime) -> list:
                 }
             )
         elif day_date == today_local:
-            pct = round(summary.progress_percentage) if summary else 0
+            pct = _summary_pct(summary) if summary else 0
             strip.append(
                 {
                     "day_label": _DAY_LABELS[i],
@@ -398,7 +406,7 @@ def build_week_strip(db: Session, user: User, now: datetime) -> list:
                 pct = 100
             elif summary and summary.total_effective_ml > 0:
                 status = "partial"
-                pct = min(99, round(summary.progress_percentage))
+                pct = min(99, _summary_pct(summary))
             else:
                 status = "future"  # no log for a past day — treat as missed
                 pct = 0
@@ -468,11 +476,11 @@ def get_quests(db: Session, user: User, now: Optional[datetime] = None) -> List[
             progress, dyn_target = qdef.progress_fn(db, user, window)
             target = dyn_target if dyn_target is not None else qdef.target
             done = progress >= target
-            if done:
+            is_claimed = (qdef.id, window.key) in claimed
+            # A claimed quest counts toward the chest even if progress later regresses.
+            if done or is_claimed:
                 base_done += 1
-            out.append(
-                _state(qdef, progress, target, done, (qdef.id, window.key) in claimed)
-            )
+            out.append(_state(qdef, progress, target, done, is_claimed))
 
         # Completion bonus for this period.
         bonus = _BONUS_BY_PERIOD[period]
@@ -515,11 +523,12 @@ def _state(
 
 def _is_done(db, user, qdef: QuestDef, window: PeriodWindow) -> bool:
     if qdef.is_bonus:
+        claimed = _claimed_keys(db, user.id, [window.key])
         base_done = 0
         for base in _BY_PERIOD[qdef.period]:
             progress, dyn_target = base.progress_fn(db, user, window)
             target = dyn_target if dyn_target is not None else base.target
-            if progress >= target:
+            if progress >= target or (base.id, window.key) in claimed:
                 base_done += 1
         return base_done >= qdef.target
     progress, dyn_target = qdef.progress_fn(db, user, window)
