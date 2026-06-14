@@ -104,7 +104,9 @@ class _AuthHeroState extends State<AuthHero> with TickerProviderStateMixin {
         ),
       ),
       padding: const EdgeInsets.fromLTRB(24, 56, 24, 28),
-      child: Stack(
+      child: LayoutBuilder(
+        builder: (context, constraints) => Stack(
+        alignment: Alignment.topCenter,
         children: [
           // Glow halo behind the drop
           Positioned.fill(
@@ -123,7 +125,7 @@ class _AuthHeroState extends State<AuthHero> with TickerProviderStateMixin {
               ),
             ),
           ),
-          ..._buildBubbles(),
+          ..._buildBubbles(constraints.maxWidth),
           Column(
             children: [
               AnimatedBuilder(
@@ -184,11 +186,12 @@ class _AuthHeroState extends State<AuthHero> with TickerProviderStateMixin {
               ),
             ),
         ],
+        ),
       ),
     );
   }
 
-  List<Widget> _buildBubbles() {
+  List<Widget> _buildBubbles(double width) {
     const positions = [
       (left: 0.12, bottom: 10.0, size: 4.0, delay: 0.0),
       (left: 0.28, bottom: 27.0, size: 6.0, delay: 0.4),
@@ -208,7 +211,7 @@ class _AuthHeroState extends State<AuthHero> with TickerProviderStateMixin {
                   ? (1.0 - t) / 0.3 * 0.8
                   : 0.8;
           return Positioned(
-            left: _kAuthMaxWidth * b.left,
+            left: width * b.left,
             bottom: b.bottom + t * -120.0,
             child: Container(
               width: b.size,
