@@ -10,6 +10,7 @@ import '../avatars/avatar_collection_screen.dart';
 import '../avatars/data/avatar_catalog.dart';
 import '../avatars/widgets/aqua_avatar.dart' show AvatarBubble;
 import 'providers/level_data_provider.dart';
+import 'providers/level_provider.dart';
 
 /// Level Screen — wired to real backend data (see ADR 0003).
 /// XP/achievements from `levelDataProvider`; coins/streak/level name from
@@ -88,6 +89,8 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
   Widget build(BuildContext context) {
     final statsAsync = ref.watch(userStatsProvider);
     final levelAsync = ref.watch(levelDataProvider);
+    // XP bar shares Home's source so both screens always show identical XP.
+    final levelState = ref.watch(levelNotifierProvider).valueOrNull;
 
     return Scaffold(
       body: Container(
@@ -109,7 +112,7 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildLevelCard(level, stats),
+                          _buildLevelCard(level, stats, levelState),
                           const SizedBox(height: 16),
                           _buildAchievementsSection(level),
                           const SizedBox(height: 18),
@@ -218,10 +221,15 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
     );
   }
 
-  Widget _buildLevelCard(LevelData level, UserStatsData? stats) {
+  Widget _buildLevelCard(
+      LevelData level, UserStatsData? stats, LevelState? levelState) {
     final levelName = stats?.levelName ?? 'Tân binh';
-    final xp = level.currentXP;
-    final xpMax = level.nextLevelXP;
+    // Prefer the shared levelNotifierProvider state (same source as Home's XP
+    // bar) so the two screens never diverge; fall back to the API-fetched
+    // LevelData until that state has loaded.
+    final currentLevel = levelState?.currentLevel ?? level.currentLevel;
+    final xp = levelState?.currentXP ?? level.currentXP;
+    final xpMax = levelState?.nextLevelXP ?? level.nextLevelXP;
     final pct = xpMax > 0 ? (xp / xpMax).clamp(0.0, 1.0) : 0.0;
     final remaining = (xpMax - xp).clamp(0, xpMax);
 
@@ -268,7 +276,7 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Còn $remaining XP để lên Lv ${level.currentLevel + 1}',
+                      'Còn $remaining XP để lên Lv ${currentLevel + 1}',
                       style: const TextStyle(
                         fontSize: 12,
                         color: Color(0xFFC7D2FE),
@@ -284,7 +292,7 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'LV ${level.currentLevel}',
+                  'LV $currentLevel',
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -301,7 +309,7 @@ class _LevelScreenRedesignState extends ConsumerState<LevelScreenRedesign> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'LV ${level.currentLevel} · $levelName',
+                'LV $currentLevel · $levelName',
                 style: const TextStyle(
                   fontSize: 11,
                   color: AppColors.textSecondary,

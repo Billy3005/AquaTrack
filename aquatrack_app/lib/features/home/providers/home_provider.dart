@@ -14,6 +14,7 @@ import '../../../shared/models/daily_summary.dart';
 import '../../../shared/models/intake_log.dart';
 import '../../../shared/storage/hive_storage_service.dart';
 import '../../level/providers/level_provider.dart';
+import '../../level/providers/level_data_provider.dart';
 import '../../stats/providers/stats_provider.dart';
 
 part 'home_provider.g.dart';
@@ -339,28 +340,24 @@ class HomeNotifier extends _$HomeNotifier {
     );
   }
 
-  /// Update level system với new log data
+  /// Update level system với new log data.
+  ///
+  /// XP is NOT added optimistically here. The old local addXP() used a level
+  /// curve that diverged from the backend (100*level*1.5 vs level*100+(level-1)*50)
+  /// and ignored the 200 XP/day cap, so the bar jumped then "reset" once the
+  /// server's authoritative value arrived. The XP bar is now driven solely by
+  /// the server's level_progress (see _syncToServerInBackground → syncFromServer),
+  /// which both Home and the Level screen read from levelNotifierProvider.
   Future<void> _updateLevelSystem(IntakeLog log, DailySummary summary) async {
     try {
       final levelNotifier = ref.read(levelNotifierProvider.notifier);
 
-      // Add XP từ log
-      final hasLeveledUp = await levelNotifier.addXP(log.xpEarned);
-
-      // Update local stats EXCEPT streak. Streak has a single source of truth:
-      // the backend canonical value derived from DailySummary. Computing a local
-      // "+1" here diverged from the server (missions screen read the server value)
-      // and evaporated on relogin. We never touch streak locally now — it arrives
-      // from the server log response (_syncToServerInBackground) and is kept fresh
-      // by userStatsProvider, so Home and Nhiệm vụ always agree.
+      // Local counters only (logs/volume/goal) for achievement + avatar progress.
+      // Streak and XP are server-authoritative and handled elsewhere.
       await levelNotifier.updateStats(
         additionalLogs: 1,
         additionalVolume: log.effectiveVolumeMl,
         achievedGoalToday: summary.progress >= 1.0,
-      );
-
-      debugPrint(
-        '🎮 HomeProvider: Updated level system: +${log.xpEarned}XP${hasLeveledUp ? ' (LEVEL UP!)' : ''}',
       );
     } catch (e) {
       debugPrint('❌ HomeProvider: Error updating level system: $e');
@@ -419,11 +416,17 @@ class HomeNotifier extends _$HomeNotifier {
 
         // Patch Level provider with server-authoritative XP — direct state
         // update, no API reload, so the XP bar never flashes back to zero.
+        // Both the Home bar and the Level screen card read this same state.
         ref.read(levelNotifierProvider.notifier).syncFromServer(
               currentLevel: progress.currentLevel,
               currentXp: progress.currentXp,
               nextLevelXp: progress.xpForNextLevel,
             );
+
+        // Refresh the Level screen's achievement catalog (volume/level
+        // achievements may have advanced). XP on that screen now comes from
+        // levelNotifierProvider above, so this only affects the badge list.
+        ref.invalidate(levelDataProvider);
       }
     } catch (e) {
       debugPrint('🌐 HomeProvider: Failed to sync to server: $e');
