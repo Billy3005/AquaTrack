@@ -37,9 +37,12 @@ class AppConstants {
   // Google Sign-In (ADR 0006): the OAuth *Web* client ID from Google Cloud
   // Console. On Android this is the serverClientId that makes the plugin
   // return an ID token; the backend verifies against the same value
-  // (GOOGLE_CLIENT_ID in aquatrack_backend/.env). Empty = not configured yet.
+  // (GOOGLE_CLIENT_ID in aquatrack_backend/.env). An OAuth client ID is a public
+  // identifier (shipped in every build), not a secret, so it is safe to bake in
+  // as the default. A --dart-define still overrides it for other environments.
   static const googleServerClientId = String.fromEnvironment(
     'GOOGLE_SERVER_CLIENT_ID',
-    defaultValue: '',
+    defaultValue:
+        '704987942078-ddomgdr9bt3l6eecct6pd4sn9mmgt21v.apps.googleusercontent.com',
   );
 }

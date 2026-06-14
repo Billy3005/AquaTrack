@@ -93,6 +93,9 @@ class GoogleAuthService:
             google_sub=sub,
             is_verified=True,
             username=self._unique_username(db, claims.get("name") or email),
+            # Carry Google's display name so the profile has a real name
+            # (avoids an empty full_name that older onboarding checks tripped on).
+            full_name=claims.get("name"),
         )
         db.add(user)
         db.commit()

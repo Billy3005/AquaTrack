@@ -70,6 +70,9 @@ def _auth_response(user) -> dict:
             "health_conditions": user.health_conditions,
             "coffee_cups_per_day": user.coffee_cups_per_day,
             "alcohol_units_per_day": user.alcohol_units_per_day,
+            # Onboarding gate: authoritative flag so the app does not re-run
+            # onboarding on every login (it is set True by OnboardingService).
+            "profile_complete": user.profile_complete,
             "created_at": user.created_at.isoformat() if user.created_at else None,
             "last_active_at": (
                 user.last_login.isoformat() if user.last_login else None
