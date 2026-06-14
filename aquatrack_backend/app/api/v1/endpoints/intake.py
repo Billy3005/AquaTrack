@@ -189,10 +189,13 @@ async def create_intake_log(
             or 0
         )
         _li = calculate_level_from_xp(_intake_xp + (user.total_xp or 0))
+        # Key names must match the Flutter LevelProgress.fromJson parser
+        # (current_xp / xp_for_next_level) — and /levels/current — or the
+        # client silently falls back to 0 / 100 and the XP bar "resets".
         level_progress = {
             "current_level": _li["level"],
-            "current_level_xp": _li["current_xp"],
-            "next_level_xp": _li["xp_for_next_level"],
+            "current_xp": _li["current_xp"],
+            "xp_for_next_level": _li["xp_for_next_level"],
             "progress_percent": _li["progress_percentage"],
         }
         # Add streak info to level progress
