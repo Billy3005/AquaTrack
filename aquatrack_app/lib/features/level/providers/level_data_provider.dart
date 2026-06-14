@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/user_stats_provider.dart';
 import '../../../core/repositories/level_repository.dart';
+import 'level_provider.dart';
 
 /// One achievement as the Level screen needs it — full backend data, no lossy
 /// local catalog. Sourced from `/levels/achievements` (see ADR 0003).
@@ -124,8 +125,21 @@ Future<LevelApiResponse<ClaimRewardResponse>> claimLevelAchievement(
   final repo = ref.read(levelDataRepositoryProvider);
   final res = await repo.claimAchievement(achievementId);
   if (res.isSuccess) {
-    // Claiming credits XP (and may level up): refresh both the level data AND
-    // userStatsProvider, which feeds the level name / coins / reward avatars.
+    final data = res.data;
+    // Patch the shared levelNotifierProvider with the claim's authoritative
+    // level_progress. Without this the XP bar (which prefers levelNotifier over
+    // levelDataProvider) never moves, and a claim that crossed a level never
+    // fires the celebration — both bugs the user reported. syncFromServer also
+    // detects the level jump and queues LevelUpEvent for the shell to show.
+    if (data?.currentLevel != null) {
+      await ref.read(levelNotifierProvider.notifier).syncFromServer(
+            currentLevel: data!.currentLevel!,
+            currentXp: data.currentXp ?? 0,
+            nextLevelXp: data.xpForNextLevel ?? 100,
+            coinsAwarded: data.coinsAwarded,
+          );
+    }
+    // Refresh the achievement catalog (claimed flag) and coins/level name.
     ref.invalidate(levelDataProvider);
     ref.invalidate(userStatsProvider);
   }

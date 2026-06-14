@@ -61,6 +61,10 @@ class LevelProgress {
   final int todayTotalMl;
   final int dailyGoalMl;
 
+  /// Coins granted for any levels this log crossed (ADR 0008). Drives the
+  /// reward chip in the level-up celebration; 0 when no level was gained.
+  final int coinsAwarded;
+
   const LevelProgress({
     required this.currentLevel,
     required this.currentXp,
@@ -71,6 +75,7 @@ class LevelProgress {
     required this.goalAchievedToday,
     required this.todayTotalMl,
     required this.dailyGoalMl,
+    this.coinsAwarded = 0,
   });
 
   factory LevelProgress.fromJson(Map<String, dynamic> json) {
@@ -84,6 +89,7 @@ class LevelProgress {
       goalAchievedToday: json['goal_achieved_today'] as bool? ?? false,
       todayTotalMl: json['today_total_ml'] as int? ?? 0,
       dailyGoalMl: json['daily_goal_ml'] as int? ?? 2000,
+      coinsAwarded: json['coins_awarded'] as int? ?? 0,
     );
   }
 
@@ -98,6 +104,7 @@ class LevelProgress {
       'goal_achieved_today': goalAchievedToday,
       'today_total_ml': todayTotalMl,
       'daily_goal_ml': dailyGoalMl,
+      'coins_awarded': coinsAwarded,
     };
   }
 }

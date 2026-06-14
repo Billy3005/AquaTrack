@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/providers/user_stats_provider.dart';
+import '../../features/level/providers/level_data_provider.dart';
+import '../../features/level/providers/level_provider.dart';
+import '../../features/level/widgets/level_up_overlay.dart';
 
 /// Bottom Navigation Wrapper.
 ///
@@ -11,7 +16,11 @@ import '../../core/constants/app_text_styles.dart';
 /// destinations (Thống kê, Bạn bè) live behind a "Thêm" sheet so the row never
 /// overflows. Every tab is wrapped in [Expanded], so it divides the width
 /// evenly regardless of label length — that was the source of the 51px overflow.
-class BottomNavigationWrapper extends StatelessWidget {
+///
+/// As the shell wrapping every authenticated screen, it also hosts the single
+/// level-up listener: when levelNotifierProvider reports a level increase (from
+/// a water log OR an achievement claim), it shows [LevelUpOverlay] once.
+class BottomNavigationWrapper extends ConsumerStatefulWidget {
   final Widget child;
 
   const BottomNavigationWrapper({super.key, required this.child});
@@ -20,18 +29,55 @@ class BottomNavigationWrapper extends StatelessWidget {
     (icon: Icons.water_drop, label: 'Nước', route: '/'),
     (icon: Icons.chat_bubble, label: 'Chat', route: '/coach'),
     (icon: Icons.track_changes, label: 'Nhiệm vụ', route: '/missions'),
-    (icon: Icons.emoji_events, label: 'Cấp độ', route: '/level'),
+    (icon: Icons.people, label: 'Bạn bè', route: '/friends'),
     (icon: Icons.person, label: 'Hồ sơ', route: '/profile'),
   ];
 
   /// Destinations reachable via the "Thêm" sheet.
   static const moreRoutes = [
     (icon: Icons.show_chart, label: 'Thống kê', route: '/stats'),
-    (icon: Icons.people, label: 'Bạn bè', route: '/friends'),
+    (icon: Icons.emoji_events, label: 'Cấp độ', route: '/level'),
   ];
 
   @override
+  ConsumerState<BottomNavigationWrapper> createState() =>
+      _BottomNavigationWrapperState();
+}
+
+class _BottomNavigationWrapperState
+    extends ConsumerState<BottomNavigationWrapper> {
+  static const tabs = BottomNavigationWrapper.tabs;
+  static const moreRoutes = BottomNavigationWrapper.moreRoutes;
+
+  @override
   Widget build(BuildContext context) {
+    // Single place every XP source funnels through → one celebration trigger.
+    ref.listen(levelNotifierProvider, (prev, next) {
+      final event = next.valueOrNull?.pendingLevelUp;
+      if (event == null) return;
+      // Clear immediately so a rebuild can't double-show the same event.
+      ref.read(levelNotifierProvider.notifier).clearLevelUp();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        LevelUpOverlayHost.show(
+          context,
+          fromLevel: event.fromLevel,
+          toLevel: event.toLevel,
+          currentXp: event.currentXp,
+          xpForNextLevel: event.xpForNextLevel,
+          coinsAwarded: event.coinsAwarded,
+          rankName: event.rankName,
+          // On close, re-read the persisted level from the backend so the XP
+          // bar settles on the authoritative value (matches logout/login).
+          onClosed: () {
+            ref.read(levelNotifierProvider.notifier).reloadFromApi();
+            ref.invalidate(userStatsProvider);
+            ref.invalidate(levelDataProvider);
+          },
+        );
+      });
+    });
+
     final String location = GoRouterState.of(context).uri.path;
 
     int selectedIndex = 0;
@@ -48,7 +94,7 @@ class BottomNavigationWrapper extends StatelessWidget {
     // design's home-only placement). Providing one here too stacked a second
     // camera button over the rightmost tabs.
     return Scaffold(
-      body: child,
+      body: widget.child,
 
       // Bottom Navigation Bar
       bottomNavigationBar: Container(

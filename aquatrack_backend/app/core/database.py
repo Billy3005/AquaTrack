@@ -43,9 +43,9 @@ def init_db() -> None:
     from app.models import Challenge  # noqa: F401
     from app.models import CoinGift  # noqa: F401
     from app.models import Conversation  # noqa: F401
-    from app.models import (Achievement, ConversationSession,  # noqa: F401
-                            DailySummary, Friend, FriendRequest, IntakeLog,
-                            LeaderboardEntry, QuestClaim, Referral,
+    from app.models import ConversationSession  # noqa: F401
+    from app.models import (Achievement, DailySummary, Friend, FriendRequest,
+                            IntakeLog, LeaderboardEntry, QuestClaim, Referral,
                             ReminderLog, ScanHistory, User, UserInsight)
 
     Base.metadata.create_all(bind=engine)
