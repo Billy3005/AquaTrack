@@ -5,6 +5,8 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/providers/user_stats_provider.dart';
 import '../../../core/repositories/intake_repository.dart';
 import '../../home/providers/home_provider.dart';
+import '../../level/providers/level_provider.dart';
+import '../../level/providers/level_data_provider.dart';
 
 part 'log_drink_provider.g.dart';
 
@@ -92,6 +94,19 @@ class LogDrinkNotifier extends _$LogDrinkNotifier {
       // log immediately — single source of truth, no local recomputation.
       ref.invalidate(homeNotifierProvider);
       ref.invalidate(userStatsProvider);
+
+      // Sync the XP bar (Home + Level both read levelNotifierProvider) with the
+      // server-authoritative level_progress from this log, then refresh the
+      // Level screen's achievement catalog.
+      final progress = result.levelProgress;
+      if (progress != null) {
+        ref.read(levelNotifierProvider.notifier).syncFromServer(
+              currentLevel: progress.currentLevel,
+              currentXp: progress.currentXp,
+              nextLevelXp: progress.xpForNextLevel,
+            );
+      }
+      ref.invalidate(levelDataProvider);
     } catch (e) {
       state = state.copyWith(isLoading: false);
       rethrow;
