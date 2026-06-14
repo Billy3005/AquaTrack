@@ -11,7 +11,7 @@ class AppConstants {
 
   // XP Events (Gamification system)
   static const xpEvents = {
-    'log_drink': 10, // mỗi lần log
+    'log_drink': 20, // mỗi lần log (max 200 XP/ngày)
     'daily_goal_met': 50, // đạt 100% mục tiêu
     'streak_7': 100,
     'streak_30': 500,

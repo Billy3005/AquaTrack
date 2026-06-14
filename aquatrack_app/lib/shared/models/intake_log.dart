@@ -69,7 +69,7 @@ class IntakeLog {
       liquidType: liquidType,
       loggedAt: DateTime.now(),
       source: 'quick_log',
-      xpEarned: 10, // Base XP for logging
+      xpEarned: 20, // Matches backend: 20 XP flat per log
     );
   }
 
