@@ -416,6 +416,10 @@ class HomeNotifier extends _$HomeNotifier {
         // Refresh the canonical user stats so Nhiệm vụ / Profile / Level read the
         // same server-side streak this log just produced (single source of truth).
         ref.invalidate(userStatsProvider);
+
+        // Sync Level screen XP with authoritative server values. Without this,
+        // Level screen keeps stale local state until the user restarts the app.
+        ref.invalidate(levelNotifierProvider);
       }
     } catch (e) {
       debugPrint('🌐 HomeProvider: Failed to sync to server: $e');
