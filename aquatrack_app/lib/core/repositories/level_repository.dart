@@ -281,19 +281,36 @@ class ClaimRewardResponse {
   final String? unlockAvatarId;
   final String? unlockBadgeId;
 
+  // Authoritative level state after the claim (from `level_progress`). Used to
+  // patch levelNotifierProvider so the XP bar advances and a level-up that the
+  // claim triggered fires the celebration. Null only on legacy/short responses.
+  final int? currentLevel;
+  final int? currentXp;
+  final int? xpForNextLevel;
+  final int coinsAwarded;
+
   const ClaimRewardResponse({
     required this.message,
     required this.xpReward,
     this.unlockAvatarId,
     this.unlockBadgeId,
+    this.currentLevel,
+    this.currentXp,
+    this.xpForNextLevel,
+    this.coinsAwarded = 0,
   });
 
   factory ClaimRewardResponse.fromJson(Map<String, dynamic> json) {
+    final progress = json['level_progress'] as Map<String, dynamic>?;
     return ClaimRewardResponse(
       message: json['message'] ?? '',
       xpReward: json['xp_reward'] ?? 0,
       unlockAvatarId: json['unlock_avatar_id'],
       unlockBadgeId: json['unlock_badge_id'],
+      currentLevel: progress?['current_level'] as int?,
+      currentXp: progress?['current_xp'] as int?,
+      xpForNextLevel: progress?['xp_for_next_level'] as int?,
+      coinsAwarded: progress?['coins_awarded'] as int? ?? 0,
     );
   }
 }
