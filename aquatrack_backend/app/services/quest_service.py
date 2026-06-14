@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.core.leveling import calculate_level_from_xp
+from app.core.leveling import calculate_level_from_xp, reconcile_level_coins
 from app.models import (Conversation, DailySummary, QuestClaim, Referral,
                         ReminderLog, ScanHistory, User)
 
@@ -578,10 +578,20 @@ def claim_quest(
 
     user.total_xp = (user.total_xp or 0) + reward_xp
     user.coins = (user.coins or 0) + reward_coin
-    user.current_level = calculate_level_from_xp(user.total_xp)["level"]
-
     db.commit()
     db.refresh(user)
+
+    # Level-Up Rewards (ADR 0008): the quest XP may have crossed one or more
+    # levels — grant those coins idempotently off the AUTHORITATIVE total XP
+    # (intake + stored), and report the new level + coins for the celebration.
+    from app.crud.intake_log import authoritative_total_xp
+
+    total_xp = authoritative_total_xp(db, user)
+    level_coins = reconcile_level_coins(db, user, total_xp)
+    db.refresh(user)
+    _li = calculate_level_from_xp(total_xp)
+    user.current_level = _li["level"]
+    db.commit()
 
     return {
         "quest_id": quest_id,
@@ -590,4 +600,11 @@ def claim_quest(
         "total_xp": user.total_xp,
         "coins": user.coins,
         "current_level": user.current_level,
+        "level_progress": {
+            "current_level": _li["level"],
+            "current_xp": _li["current_xp"],
+            "xp_for_next_level": _li["xp_for_next_level"],
+            "progress_percent": _li["progress_percentage"],
+            "coins_awarded": level_coins,
+        },
     }

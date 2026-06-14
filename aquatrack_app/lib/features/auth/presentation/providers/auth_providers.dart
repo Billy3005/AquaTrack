@@ -203,8 +203,9 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
         // profile_complete. Using the local flag alone re-triggered onboarding
         // for restored sessions because nothing ever set it.
         final onboardingDone = await _authService.hasCompletedOnboarding();
-        final needsOnboarding =
-            onboardingDone ? false : (user == null ? false : !user.profileComplete);
+        final needsOnboarding = onboardingDone
+            ? false
+            : (user == null ? false : !user.profileComplete);
         if (!mounted) return;
 
         state = state.copyWith(

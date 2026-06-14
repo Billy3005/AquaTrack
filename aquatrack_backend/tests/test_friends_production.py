@@ -15,7 +15,7 @@ from app.models import User
 from app.models.friend_request import FriendRequest, FriendRequestStatus
 from app.services import friends_view_service as fvs
 
-NOW = datetime(2026, 5, 31, 3, 0, tzinfo=timezone.utc)
+NOW = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
 
 
 def make_user(db, uid, username, last_login=None):

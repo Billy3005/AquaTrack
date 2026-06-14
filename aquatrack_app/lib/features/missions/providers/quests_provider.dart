@@ -76,7 +76,8 @@ class QuestsNotifier extends StateNotifier<QuestsState> {
     try {
       final res = await _api.post<ClaimResult>(
         '/quests/$questId/claim',
-        fromJson: (d) => ClaimResult.fromJson((d as Map).cast<String, dynamic>()),
+        fromJson: (d) =>
+            ClaimResult.fromJson((d as Map).cast<String, dynamic>()),
       );
       if (res.isSuccess && res.data != null) {
         await load();

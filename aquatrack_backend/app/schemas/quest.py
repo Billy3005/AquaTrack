@@ -51,3 +51,6 @@ class ClaimResponse(BaseModel):
     total_xp: int
     coins: int
     current_level: int
+    # Level-Up Rewards (ADR 0008): present so a claim that crossed a level can
+    # drive the celebration (carries coins_awarded for this claim).
+    level_progress: Optional[dict] = None

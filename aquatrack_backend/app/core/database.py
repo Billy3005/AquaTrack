@@ -40,13 +40,24 @@ def init_db() -> None:
     """
     # Import all models here to ensure they're registered
 
+    from app.models import Challenge  # noqa: F401
     from app.models import CoinGift  # noqa: F401
     from app.models import Conversation  # noqa: F401
-    from app.models import (Achievement, Challenge,  # noqa: F401
-                            ConversationSession, DailySummary, Friend,
-                            FriendRequest, IntakeLog, LeaderboardEntry,
-                            QuestClaim, Referral, ReminderLog, ScanHistory,
-                            User, UserInsight)
+    from app.models import (  # noqa: F401
+        Achievement,
+        ConversationSession,
+        DailySummary,
+        Friend,
+        FriendRequest,
+        IntakeLog,
+        LeaderboardEntry,
+        QuestClaim,
+        Referral,
+        ReminderLog,
+        ScanHistory,
+        User,
+        UserInsight,
+    )
 
     Base.metadata.create_all(bind=engine)
     _ensure_user_columns()
@@ -149,3 +160,40 @@ def _ensure_user_columns() -> None:
                     "ON users (referral_code)"
                 )
             )
+        if "coins_granted_up_to_level" not in existing:
+            # Level-Up Rewards rollout (ADR 0008): high-water mark of the highest
+            # Level already paid out in coins. Seed it to each existing user's
+            # CURRENT level (derived from total_xp) so we never back-grant coins
+            # for levels reached before this feature shipped — only future
+            # level-ups pay out. New rows default to 1 (earn from Level 2 up).
+            from app.core.leveling import calculate_level_from_xp
+
+            conn.execute(
+                text(
+                    "ALTER TABLE users ADD COLUMN coins_granted_up_to_level "
+                    "INTEGER DEFAULT 1"
+                )
+            )
+            # Seed from the AUTHORITATIVE Total XP (intake xp+bonus + stored
+            # total_xp) — the same value the Level is derived from at runtime.
+            # Seeding from users.total_xp alone would mark heavy water-loggers
+            # (whose XP lives on intake_logs, not total_xp) as Level 1 and then
+            # back-grant a pile of coins on their next log.
+            rows = conn.execute(
+                text(
+                    "SELECT u.id, "
+                    "COALESCE(u.total_xp, 0) + COALESCE(("
+                    "  SELECT SUM(il.xp_earned + il.bonus_xp) FROM intake_logs il"
+                    "  WHERE il.user_id = u.id), 0) AS total_xp "
+                    "FROM users u"
+                )
+            ).fetchall()
+            for uid, total_xp in rows:
+                level = calculate_level_from_xp(total_xp or 0)["level"]
+                conn.execute(
+                    text(
+                        "UPDATE users SET coins_granted_up_to_level = :lvl "
+                        "WHERE id = :uid"
+                    ),
+                    {"lvl": level, "uid": uid},
+                )
