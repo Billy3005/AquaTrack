@@ -398,6 +398,28 @@ class LevelNotifier extends _$LevelNotifier {
     );
   }
 
+  /// Patch level state with authoritative values from server without a full
+  /// reload. Called after a drink log sync so Home + Level always agree.
+  Future<void> syncFromServer({
+    required int currentLevel,
+    required int currentXp,
+    required int nextLevelXp,
+  }) async {
+    try {
+      final currentState = await future;
+      final updatedState = currentState.copyWith(
+        currentLevel: currentLevel,
+        currentXP: currentXp,
+        nextLevelXP: nextLevelXp,
+      );
+      final finalState = _updateAchievementsAndAvatars(updatedState);
+      state = AsyncValue.data(finalState);
+      await _saveToStorage();
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
   /// Add XP và check for level up
   Future<bool> addXP(int xpAmount) async {
     try {
