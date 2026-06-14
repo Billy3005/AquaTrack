@@ -29,8 +29,18 @@ class CRUDIntakeLog(CRUDBase[IntakeLog, IntakeLogCreate, IntakeLogUpdate]):
         hydration_factor = hydration_factors.get(obj_in.liquid_type, 0.75)
         effective_volume = int(obj_in.volume_ml * hydration_factor)
 
-        # Calculate XP based on volume (base: 1 XP per 100ml)
-        base_xp = max(1, obj_in.volume_ml // 100)
+        # Flat 20 XP per log, capped at 200 XP per calendar day.
+        _XP_PER_LOG = 20
+        _DAILY_XP_CAP = 200
+        today_xp = (
+            db.query(func.coalesce(func.sum(IntakeLog.xp_earned), 0))
+            .filter(
+                IntakeLog.user_id == user_id,
+                func.date(IntakeLog.logged_at) == datetime.now().date(),
+            )
+            .scalar()
+        ) or 0
+        base_xp = _XP_PER_LOG if today_xp < _DAILY_XP_CAP else 0
 
         # Create database object với explicit logged_at
         db_obj = IntakeLog(
@@ -203,6 +213,21 @@ class CRUDIntakeLog(CRUDBase[IntakeLog, IntakeLogCreate, IntakeLogUpdate]):
             )
             .scalar()
         )
+
+
+def authoritative_total_xp(db: Session, user) -> int:
+    """The user's true Total XP — the single value the Level is derived from
+    everywhere (matches /levels/current): repeatable intake XP
+    (xp_earned + bonus_xp) plus the quest/milestone XP stored on user.total_xp.
+    Use this (never user.total_xp alone) when reconciling Level-Up coins so the
+    high-water mark tracks the real level."""
+    intake_xp = (
+        db.query(func.sum(IntakeLog.xp_earned + IntakeLog.bonus_xp))
+        .filter(IntakeLog.user_id == user.id)
+        .scalar()
+        or 0
+    )
+    return int(intake_xp) + (user.total_xp or 0)
 
 
 # Global instance

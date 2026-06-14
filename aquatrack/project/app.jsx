@@ -20,7 +20,8 @@ function App() {
     "goal": 2500,
     "homeState": "normal",
     "hot": false,
-    "showAllScreens": true
+    "showAllScreens": true,
+    "showLevelUp": false
   }/*EDITMODE-END*/;
 
   const [tweaks, setTweak] = useTweaks(TWEAKS);
@@ -69,9 +70,17 @@ function App() {
           {screen === 'register' && <RegisterScreen onNavigate={setScreen} onSignedIn={() => setScreen('bodyinfo')} />}
           {screen === 'bodyinfo' && <BodyInfoScreen mode="onboarding" onNavigate={setScreen} onDone={() => setScreen('home')} />}
           {screen === 'bodyinfo-edit' && <BodyInfoScreen mode="edit" onNavigate={setScreen} onDone={() => setScreen('profile')} />}
+          {tweaks.showLevelUp && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 50 }}>
+              <LevelUpCelebration onDone={() => setTweak('showLevelUp', false)} />
+            </div>
+          )}
         </IOSDevice>
 
         <TweaksPanel>
+          <TweakSection label="Khoảnh khắc">
+            <TweakToggle label="Hiện mừng lên cấp" value={tweaks.showLevelUp} onChange={(v) => setTweak('showLevelUp', v)} />
+          </TweakSection>
           <TweakSection label="Hydration">
             <TweakSlider label="Hiện tại (ml)" min={0} max={3500} step={50} value={tweaks.current} onChange={(v) => setTweak('current', v)} />
             <TweakSlider label="Mục tiêu (ml)" min={1500} max={4000} step={100} value={tweaks.goal} onChange={(v) => setTweak('goal', v)} />
@@ -132,6 +141,12 @@ function App() {
           <DCArtboard id="level" label="05 · Cấp độ & Thành tựu" width={420} height={870}>
             <IOSDevice width={390} height={844} dark>
               <LevelScreen onNavigate={() => {}} />
+            </IOSDevice>
+          </DCArtboard>
+
+          <DCArtboard id="levelup" label="05b · Mừng lên cấp" width={420} height={870}>
+            <IOSDevice width={390} height={844} dark>
+              <LevelUpCelebration />
             </IOSDevice>
           </DCArtboard>
 
@@ -278,6 +293,7 @@ function App() {
         </TweakSection>
         <TweakSection label="Chế độ">
           <TweakToggle label="Canvas (tất cả màn)" value={tweaks.showAllScreens} onChange={(v) => setTweak('showAllScreens', v)} />
+          <TweakToggle label="Hiện mừng lên cấp (1 màn)" value={tweaks.showLevelUp} onChange={(v) => setTweak('showLevelUp', v)} />
         </TweakSection>
       </TweaksPanel>
     </div>

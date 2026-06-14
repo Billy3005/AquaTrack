@@ -76,7 +76,8 @@ async def create_intake_log(
     """
     # Import services here to avoid circular imports
     # Create intake log (temporarily disable streak for testing)
-    from app.core.leveling import calculate_level_from_xp
+    from app.core.leveling import (calculate_level_from_xp,
+                                   reconcile_level_coins)
     from app.crud.user import user_crud
 
     # Create simple intake log
@@ -189,11 +190,22 @@ async def create_intake_log(
             or 0
         )
         _li = calculate_level_from_xp(_intake_xp + (user.total_xp or 0))
+        # Level-Up Rewards (ADR 0008): grant coins for any newly-reached level,
+        # idempotently. The high-water mark uses total_xp, so seed it with the
+        # full XP we just computed before reconciling (intake XP isn't on
+        # user.total_xp). Returns coins_awarded for the celebration to display.
+        _coins_awarded = reconcile_level_coins(
+            db, user, _intake_xp + (user.total_xp or 0)
+        )
+        # Key names must match the Flutter LevelProgress.fromJson parser
+        # (current_xp / xp_for_next_level) — and /levels/current — or the
+        # client silently falls back to 0 / 100 and the XP bar "resets".
         level_progress = {
             "current_level": _li["level"],
-            "current_level_xp": _li["current_xp"],
-            "next_level_xp": _li["xp_for_next_level"],
+            "current_xp": _li["current_xp"],
+            "xp_for_next_level": _li["xp_for_next_level"],
             "progress_percent": _li["progress_percentage"],
+            "coins_awarded": _coins_awarded,
         }
         # Add streak info to level progress
         level_progress.update(

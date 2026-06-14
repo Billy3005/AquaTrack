@@ -104,91 +104,94 @@ class _AuthHeroState extends State<AuthHero> with TickerProviderStateMixin {
         ),
       ),
       padding: const EdgeInsets.fromLTRB(24, 56, 24, 28),
-      child: Stack(
-        children: [
-          // Glow halo behind the drop
-          Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: const Alignment(0, -0.4),
-                    radius: 0.9,
-                    colors: [
-                      AppColors.glow.withValues(alpha: 0.25),
-                      Colors.transparent,
-                    ],
+      child: LayoutBuilder(
+        builder: (context, constraints) => Stack(
+          alignment: Alignment.topCenter,
+          children: [
+            // Glow halo behind the drop
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: const Alignment(0, -0.4),
+                      radius: 0.9,
+                      colors: [
+                        AppColors.glow.withValues(alpha: 0.25),
+                        Colors.transparent,
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          ..._buildBubbles(),
-          Column(
-            children: [
-              AnimatedBuilder(
-                animation: _breath,
-                builder: (context, child) {
-                  final t = Curves.easeInOut.transform(_breath.value);
-                  return Transform.scale(
-                    scale: 1.0 + 0.04 * t,
-                    child: SizedBox(
-                      width: 110,
-                      height: 110 * 1.13,
-                      child: CustomPaint(
-                        painter: LivingDropPainter(percent: 66 + 8 * t),
+            ..._buildBubbles(constraints.maxWidth),
+            Column(
+              children: [
+                AnimatedBuilder(
+                  animation: _breath,
+                  builder: (context, child) {
+                    final t = Curves.easeInOut.transform(_breath.value);
+                    return Transform.scale(
+                      scale: 1.0 + 0.04 * t,
+                      child: SizedBox(
+                        width: 110,
+                        height: 110 * 1.13,
+                        child: CustomPaint(
+                          painter: LivingDropPainter(percent: 66 + 8 * t),
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 14),
-              Text(
-                'AQUATRACK',
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.cyanLight,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 2.0,
+                    );
+                  },
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.title,
-                style: AppTextStyles.headlineMedium.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
+                const SizedBox(height: 14),
+                Text(
+                  'AQUATRACK',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.cyanLight,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 2.0,
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.subtitle,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textBright,
+                const SizedBox(height: 4),
+                Text(
+                  widget.title,
+                  style: AppTextStyles.headlineMedium.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-          if (widget.showBack)
-            Positioned(
-              left: 0,
-              top: 0,
-              child: IconButton(
-                onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(
-                  Icons.arrow_back_ios_new,
-                  color: AppColors.textBright,
-                  size: 20,
+                const SizedBox(height: 4),
+                Text(
+                  widget.subtitle,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textBright,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-              ),
+              ],
             ),
-        ],
+            if (widget.showBack)
+              Positioned(
+                left: 0,
+                top: 0,
+                child: IconButton(
+                  onPressed: () => Navigator.of(context).maybePop(),
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: AppColors.textBright,
+                    size: 20,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  List<Widget> _buildBubbles() {
+  List<Widget> _buildBubbles(double width) {
     const positions = [
       (left: 0.12, bottom: 10.0, size: 4.0, delay: 0.0),
       (left: 0.28, bottom: 27.0, size: 6.0, delay: 0.4),
@@ -208,7 +211,7 @@ class _AuthHeroState extends State<AuthHero> with TickerProviderStateMixin {
                   ? (1.0 - t) / 0.3 * 0.8
                   : 0.8;
           return Positioned(
-            left: _kAuthMaxWidth * b.left,
+            left: width * b.left,
             bottom: b.bottom + t * -120.0,
             child: Container(
               width: b.size,

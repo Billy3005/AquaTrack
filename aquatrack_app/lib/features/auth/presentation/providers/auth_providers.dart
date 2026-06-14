@@ -198,7 +198,14 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
 
       if (isAuth) {
         final user = await _authService.getCurrentUser();
-        final needsOnboarding = !(await _authService.hasCompletedOnboarding());
+        // Backend-authoritative onboarding gate (mirrors _checkOnboardingStatus):
+        // honour the local "done" flag, otherwise fall back to the user's
+        // profile_complete. Using the local flag alone re-triggered onboarding
+        // for restored sessions because nothing ever set it.
+        final onboardingDone = await _authService.hasCompletedOnboarding();
+        final needsOnboarding = onboardingDone
+            ? false
+            : (user == null ? false : !user.profileComplete);
         if (!mounted) return;
 
         state = state.copyWith(

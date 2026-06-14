@@ -57,7 +57,9 @@ last_updated: 2026-06-13
 
 **Total XP** — The cumulative, monotonic (never-decreasing) sum of all XP a user has earned. The user's Level is derived from Total XP through one canonical XP curve; the curve lives in exactly one place so Quests, Achievements, and the Level screen can never disagree.
 
-**Coin** — A spendable in-app currency, separate from XP, earned from Quests and spent in the Shop.
+**Coin** — A spendable in-app currency, separate from XP, earned from Quests **and from Level-Up** (reaching a new Level grants Coins), and spent in the Shop.
+
+**Level-Up Reward** — The one-time grant given the first time a user reaches a given Level. Comprises **Coins** (scaling: reaching Level N grants `(N-1)×10` Coins) and any **Avatar** whose level-rail Unlock Condition lands on a crossed Level. Granted server-side and idempotently — each Level is rewarded at most once, tracked by a monotonic high-water mark (`coins_granted_up_to_level`), so re-login or multi-device replay never double-grants. Distinct from the **Level-Up Celebration**, which is the client-side visual overlay that announces the same event; the Celebration may be shown more than once (it is presentational) but the Reward is granted exactly once.
 
 **Reminder (Friend Nudge)** — A hydration nudge one user sends to a *friend*. Counts toward the "Hội Bạn Cùng Uống" Quest. Distinct from a **Reminder Slot** (a user's self-reminder — see Hydration Reminders).
 

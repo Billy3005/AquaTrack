@@ -77,9 +77,13 @@ class User(Base):
     # Level system
     current_level = Column(Integer, default=1)
     total_xp = Column(Integer, default=0)
-    # Spendable currency from quests / gifts / shop. New users start at 100
-    # (matches the one-time grant in database.STARTING_COINS).
+    # Spendable currency from quests / gifts / shop / level-up. New users start
+    # at 100 (matches the one-time grant in database.STARTING_COINS).
     coins = Column(Integer, default=100)
+    # Level-Up Rewards high-water mark (ADR 0008): the highest Level already
+    # paid out in coins. Monotonic like Level; reconcile grants only for levels
+    # above this, then advances it — so re-login / multi-device never double-pays.
+    coins_granted_up_to_level = Column(Integer, default=1)
     current_streak = Column(Integer, default=0)
     longest_streak = Column(Integer, default=0)
     # Streak Freeze (one-time consumable bought in the Shop; see ADR 0004).
