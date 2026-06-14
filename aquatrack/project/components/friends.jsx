@@ -38,9 +38,6 @@ function FriendsScreen({ onNavigate }) {
     return pri(a.mood) - pri(b.mood);
   });
 
-  // Top 3 of week (by pct + streak)
-  const podium = friends.slice().sort((a, b) => (b.pct + b.streak * 2) - (a.pct + a.streak * 2)).slice(0, 3);
-
   return (
     <div style={{
       width: '100%', height: '100%',
@@ -121,34 +118,13 @@ function FriendsScreen({ onNavigate }) {
       <div style={{ flex: 1, overflow: 'auto', padding: '14px 16px 20px' }}>
         {tab === 'friends' && (
           <>
-            {/* Weekly podium */}
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(251,191,36,0.10), rgba(168,85,247,0.06))',
-              border: '1px solid rgba(251,191,36,0.2)',
-              borderRadius: 16, padding: '14px 14px 16px',
-              marginBottom: 16,
-              position: 'relative', overflow: 'hidden',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {I.trophy('#FBBF24', 14)}
-                  <div style={{ fontSize: 11, color: '#FCD34D', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: FONT_TEXT }}>
-                    Tuần này
-                  </div>
-                </div>
-                <div style={{ fontSize: 11, color: COLORS.textMuted, fontFamily: FONT_TEXT }}>
-                  Còn 2 ngày
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, justifyContent: 'center' }}>
-                {/* 2nd */}
-                <PodiumPos rank={2} f={podium[1]} h={62} medal="🥈" />
-                {/* 1st */}
-                <PodiumPos rank={1} f={podium[0]} h={84} medal="🥇" />
-                {/* 3rd */}
-                <PodiumPos rank={3} f={podium[2]} h={48} medal="🥉" />
-              </div>
-            </div>
+            {/* Interactive weekly ranking */}
+            <InteractiveRanking
+              friends={friends}
+              me={me}
+              onNudge={nudge}
+              onChallenge={challenge}
+            />
 
             {/* Filter chips */}
             <div style={{ display: 'flex', gap: 6, marginBottom: 12, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
@@ -507,35 +483,369 @@ function FriendCard({ f, onNudge, onChallenge }) {
   );
 }
 
-function PodiumPos({ rank, f, h, medal }) {
-  if (!f) return null;
-  const ringColor = rank === 1 ? '#FBBF24' : rank === 2 ? '#CBD5E1' : '#D97706';
+/* ─── Interactive weekly ranking ──────────────────────
+   Tap a podium member → expands inline detail with quick actions.
+   Period toggle re-sorts. "Your rank" row pinned when outside top 3. */
+function InteractiveRanking({ friends, me, onNudge, onChallenge }) {
+  const [period, setPeriod] = React.useState('week'); // week | month | all
+  const [selected, setSelected] = React.useState(null); // friend id
+  const [justChanged, setJustChanged] = React.useState(false);
+
+  const PERIODS = [
+    { id: 'week', label: 'Tuần này', left: 'Còn 2 ngày' },
+    { id: 'month', label: 'Tháng', left: 'Còn 12 ngày' },
+    { id: 'all', label: 'Mọi lúc', left: 'Mọi thời điểm' },
+  ];
+
+  // Score model differs per period so the toggle visibly re-ranks
+  const scoreFor = (f) => {
+    if (period === 'week') return f.pct + f.streak * 2;
+    if (period === 'month') return f.pct * 0.6 + f.streak * 4 + f.level * 3;
+    return f.level * 10 + f.streak * 3 + f.pct * 0.3;
+  };
+
+  // Full ranked list incl. "me"
+  const everyone = [{ ...me, id: 'me', isMe: true }, ...friends];
+  const ranked = everyone.slice().sort((a, b) => scoreFor(b) - scoreFor(a));
+  const top3 = ranked.slice(0, 3);
+  const myRank = ranked.findIndex((x) => x.isMe) + 1;
+  const myEntry = ranked[myRank - 1];
+  const meInTop3 = myRank <= 3;
+
+  const curPeriod = PERIODS.find((p) => p.id === period);
+
+  function switchPeriod(id) {
+    if (id === period) return;
+    setSelected(null);
+    setPeriod(id);
+    setJustChanged(true);
+    setTimeout(() => setJustChanged(false), 420);
+  }
+
+  // podium visual order: 2nd, 1st, 3rd
+  const order = [top3[1], top3[0], top3[2]];
+  const ranksByPos = [2, 1, 3];
+
+  const selFriend = selected ? friends.find((f) => f.id === selected) : null;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
-      <div style={{ position: 'relative' }}>
-        <div style={{
-          width: rank === 1 ? 56 : 46, height: rank === 1 ? 56 : 46, borderRadius: 999,
-          background: `radial-gradient(circle at 30% 30%, ${f.avatar}EE, ${f.avatar}88)`,
-          border: `2px solid ${ringColor}`,
-          boxShadow: rank === 1 ? `0 0 16px ${ringColor}88` : 'none',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          {I.drop('white', rank === 1 ? 24 : 20)}
+    <div style={{
+      background: 'linear-gradient(150deg, rgba(251,191,36,0.10), rgba(168,85,247,0.07) 60%, rgba(56,189,248,0.05))',
+      border: '1px solid rgba(251,191,36,0.18)',
+      borderRadius: 18, padding: '14px 14px 14px',
+      marginBottom: 16,
+      position: 'relative', overflow: 'hidden',
+    }}>
+      {/* soft top glow */}
+      <div style={{
+        position: 'absolute', top: -70, left: '50%', transform: 'translateX(-50%)',
+        width: 240, height: 140, borderRadius: '50%',
+        background: 'radial-gradient(ellipse, rgba(251,191,36,0.22), transparent 70%)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Header: title + countdown */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {I.trophy('#FBBF24', 15)}
+          <div style={{ fontSize: 11.5, color: '#FCD34D', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: FONT_TEXT }}>
+            Bảng xếp hạng
+          </div>
         </div>
         <div style={{
-          position: 'absolute', top: -8, right: -8, fontSize: rank === 1 ? 18 : 14,
-        }}>{medal}</div>
+          display: 'inline-flex', alignItems: 'center', gap: 5,
+          background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 999, padding: '3px 10px',
+          fontSize: 10.5, color: '#FCD34D', fontFamily: FONT_TEXT, fontWeight: 600,
+        }}>
+          <span style={{ width: 5, height: 5, borderRadius: 999, background: '#FBBF24', boxShadow: '0 0 6px #FBBF24' }} />
+          {curPeriod.left}
+        </div>
       </div>
-      <div style={{ fontSize: 11, fontWeight: 600, color: 'white', fontFamily: FONT_TEXT, textAlign: 'center', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {f.name.split(' ').slice(-1)[0]}
-      </div>
+
+      {/* Period segmented control */}
       <div style={{
-        background: rank === 1 ? `linear-gradient(180deg, ${ringColor}33, ${ringColor}11)` : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${rank === 1 ? ringColor + '44' : 'rgba(255,255,255,0.08)'}`,
-        borderRadius: 8, padding: '4px 10px',
-        fontSize: 12, fontFamily: FONT_ROUND, fontWeight: 700, color: 'white',
-        letterSpacing: '-0.01em',
-      }}>{f.pct}%</div>
+        display: 'flex', gap: 3, position: 'relative',
+        background: 'rgba(0,0,0,0.3)', borderRadius: 10, padding: 3,
+        border: '1px solid rgba(255,255,255,0.05)', marginBottom: 16,
+      }}>
+        {PERIODS.map((p) => {
+          const on = p.id === period;
+          return (
+            <button key={p.id} onClick={() => switchPeriod(p.id)} style={{
+              flex: 1, padding: '7px 0', borderRadius: 8,
+              background: on ? 'linear-gradient(135deg, rgba(251,191,36,0.25), rgba(245,158,11,0.18))' : 'transparent',
+              border: on ? '1px solid rgba(251,191,36,0.4)' : '1px solid transparent',
+              color: on ? '#FDE68A' : COLORS.textSecondary,
+              fontSize: 12, fontWeight: 600, fontFamily: FONT_TEXT,
+              cursor: 'pointer', transition: 'all 0.18s',
+            }}>{p.label}</button>
+          );
+        })}
+      </div>
+
+      {/* Podium row */}
+      <div key={period + (justChanged ? '1' : '0')} style={{
+        display: 'flex', alignItems: 'flex-end', gap: 8, justifyContent: 'center',
+        position: 'relative',
+        animation: justChanged ? 'rank-pop 0.42s cubic-bezier(0.34,1.56,0.64,1)' : 'none',
+      }}>
+        {order.map((f, i) => (
+          <PodiumColumn
+            key={f ? f.id : i}
+            f={f}
+            rank={ranksByPos[i]}
+            selected={selected === (f && f.id)}
+            onSelect={() => {
+              if (!f || f.isMe) { setSelected(null); return; }
+              setSelected((s) => s === f.id ? null : f.id);
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Expanded detail for selected podium member */}
+      {selFriend && (
+        <div style={{
+          marginTop: 14,
+          background: 'rgba(8,15,30,0.72)', backdropFilter: 'blur(8px)',
+          border: `1px solid ${selFriend.avatar}44`,
+          borderRadius: 14, padding: '12px 14px',
+          animation: 'rank-detail 0.28s cubic-bezier(0.34,1.4,0.64,1)',
+          position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{
+            position: 'absolute', top: -30, right: -20, width: 120, height: 120, borderRadius: '50%',
+            background: `radial-gradient(circle, ${selFriend.avatar}22, transparent 70%)`, pointerEvents: 'none',
+          }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
+            <DropAvatar color={selFriend.avatar} pct={selFriend.pct} size={46} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'white', fontFamily: FONT_TEXT }}>{selFriend.name}</div>
+              <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 1, fontFamily: FONT_TEXT }}>
+                {selFriend.handle} · uống lần cuối {selFriend.lastDrink}
+              </div>
+            </div>
+            <button onClick={() => setSelected(null)} style={{
+              width: 26, height: 26, borderRadius: 999, flexShrink: 0,
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+              color: COLORS.textMuted, cursor: 'pointer', fontSize: 14,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>×</button>
+          </div>
+
+          {/* mini stats */}
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <MiniStat label="Hydrate" value={`${selFriend.pct}%`} color="#38BDF8" />
+            <MiniStat label="Streak" value={`${selFriend.streak} ngày`} color="#FB923C" />
+            <MiniStat label="Cấp" value={`LV ${selFriend.level}`} color="#A78BFA" />
+          </div>
+
+          {/* actions */}
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <button
+              onClick={() => onNudge(selFriend)}
+              disabled={selFriend.reminded}
+              style={{
+                flex: 1, padding: '9px 10px', borderRadius: 10,
+                background: selFriend.reminded ? 'rgba(16,185,129,0.10)' : 'linear-gradient(135deg, rgba(56,189,248,0.24), rgba(14,165,233,0.18))',
+                border: selFriend.reminded ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(56,189,248,0.35)',
+                color: selFriend.reminded ? '#86EFAC' : '#BAE6FD',
+                fontSize: 12, fontFamily: FONT_TEXT, fontWeight: 600,
+                cursor: selFriend.reminded ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}>
+              {selFriend.reminded ? '✓ Đã nhắc' : '💧 Nhắc uống nước'}
+            </button>
+            <button onClick={() => onChallenge(selFriend)} style={{
+              flex: 1, padding: '9px 10px', borderRadius: 10,
+              background: 'rgba(168,85,247,0.14)', border: '1px solid rgba(168,85,247,0.35)',
+              color: '#DDD6FE', fontSize: 12, fontFamily: FONT_TEXT, fontWeight: 600,
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            }}>⚔️ Thách đấu</button>
+          </div>
+        </div>
+      )}
+
+      {/* Your rank pill */}
+      <div style={{
+        marginTop: 14,
+        display: 'flex', alignItems: 'center', gap: 12,
+        background: meInTop3 ? 'rgba(56,189,248,0.10)' : 'rgba(255,255,255,0.04)',
+        border: `1px solid ${meInTop3 ? 'rgba(56,189,248,0.3)' : 'rgba(255,255,255,0.08)'}`,
+        borderRadius: 12, padding: '10px 12px',
+        position: 'relative',
+      }}>
+        <div style={{
+          width: 30, textAlign: 'center', flexShrink: 0,
+          fontFamily: FONT_ROUND, fontWeight: 800, fontSize: 16,
+          color: meInTop3 ? '#7DD3FC' : COLORS.textSecondary,
+          letterSpacing: '-0.02em',
+        }}>#{myRank}</div>
+        <DropAvatar color={me.avatar} pct={myEntry.pct} size={38} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'white', fontFamily: FONT_TEXT }}>
+            Bạn {meInTop3 && <span style={{ color: '#FCD34D', fontSize: 11 }}>· trong top 3 🎉</span>}
+          </div>
+          <div style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 1, fontFamily: FONT_TEXT }}>
+            {myEntry.pct}% hôm nay · streak {me.streak} ngày
+          </div>
+        </div>
+        {!meInTop3 && (() => {
+          const ahead = ranked[myRank - 2];
+          const gap = ahead ? Math.max(1, Math.round(scoreFor(ahead) - scoreFor(myEntry))) : 0;
+          return (
+            <div style={{
+              textAlign: 'right', flexShrink: 0,
+              fontSize: 10.5, color: COLORS.textMuted, fontFamily: FONT_TEXT, lineHeight: 1.3,
+            }}>
+              <div style={{ color: '#7DD3FC', fontWeight: 600 }}>+{gap} điểm</div>
+              <div>để vượt #{myRank - 1}</div>
+            </div>
+          );
+        })()}
+      </div>
+
+      <style>{`
+        @keyframes rank-pop {
+          0% { opacity: 0.4; transform: translateY(8px) scale(0.97); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes rank-detail {
+          0% { opacity: 0; transform: translateY(-6px) scale(0.98); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes drop-wave {
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(-12px); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, color }) {
+  return (
+    <div style={{
+      flex: 1, textAlign: 'center',
+      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+      borderRadius: 10, padding: '8px 4px',
+    }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color, fontFamily: FONT_ROUND, letterSpacing: '-0.01em' }}>{value}</div>
+      <div style={{ fontSize: 9.5, color: COLORS.textMuted, marginTop: 2, fontFamily: FONT_TEXT, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{label}</div>
+    </div>
+  );
+}
+
+// Water-fill drop avatar — fill height reflects pct
+function DropAvatar({ color, pct, size = 50, ring }) {
+  const fillH = Math.max(8, Math.min(100, pct));
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: 999, flexShrink: 0,
+      background: 'rgba(8,20,38,0.9)',
+      border: ring ? `2px solid ${ring}` : `1.5px solid ${color}66`,
+      boxShadow: ring ? `0 0 16px ${ring}77` : `0 2px 8px ${color}33`,
+      position: 'relative', overflow: 'hidden',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      {/* water fill */}
+      <div style={{
+        position: 'absolute', left: '-20%', right: '-20%', bottom: 0,
+        height: `${fillH}%`,
+        background: `linear-gradient(180deg, ${color}EE, ${color}AA)`,
+        transition: 'height 0.5s cubic-bezier(0.34,1.4,0.64,1)',
+      }}>
+        {/* wavy top */}
+        <div style={{
+          position: 'absolute', top: -4, left: 0, right: 0, height: 8,
+          background: color, borderRadius: '50%',
+          opacity: 0.6,
+          animation: 'drop-wave 2.6s ease-in-out infinite',
+        }} />
+      </div>
+      {/* drop glyph on top */}
+      <div style={{ position: 'relative', zIndex: 1, opacity: 0.92 }}>
+        {I.drop('white', size * 0.42)}
+      </div>
+    </div>
+  );
+}
+
+function PodiumColumn({ f, rank, selected, onSelect }) {
+  if (!f) return <div style={{ flex: 1 }} />;
+  const ringColor = rank === 1 ? '#FBBF24' : rank === 2 ? '#CBD5E1' : '#D97706';
+  const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉';
+  const isFirst = rank === 1;
+  const avatarSize = isFirst ? 64 : 52;
+  const pedH = rank === 1 ? 50 : rank === 2 ? 36 : 26;
+  const shortName = f.isMe ? 'Bạn' : f.name.split(' ').slice(-1)[0];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, minWidth: 0 }}>
+      {/* crown for #1 */}
+      <div style={{ height: 18, display: 'flex', alignItems: 'flex-end', marginBottom: 2 }}>
+        {isFirst && <span style={{ fontSize: 16, filter: 'drop-shadow(0 2px 4px rgba(251,191,36,0.6))' }}>👑</span>}
+      </div>
+
+      <button
+        onClick={onSelect}
+        style={{
+          background: 'none', border: 'none', padding: 0, cursor: f.isMe ? 'default' : 'pointer',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+          width: '100%',
+          transform: selected ? 'translateY(-3px)' : 'none',
+          transition: 'transform 0.2s',
+        }}>
+        <div style={{ position: 'relative' }}>
+          <DropAvatar color={f.avatar} pct={f.pct} size={avatarSize} ring={ringColor} />
+          {/* medal badge */}
+          <div style={{
+            position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)',
+            width: 22, height: 22, borderRadius: 999,
+            background: '#0B1120', border: `1.5px solid ${ringColor}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, zIndex: 2,
+          }}>{medal}</div>
+          {/* tap hint ring when selected */}
+          {selected && (
+            <div style={{
+              position: 'absolute', inset: -4, borderRadius: 999,
+              border: `1.5px dashed ${ringColor}`, opacity: 0.7,
+              pointerEvents: 'none',
+            }} />
+          )}
+        </div>
+
+        <div style={{
+          fontSize: isFirst ? 13 : 12, fontWeight: 700,
+          color: f.isMe ? '#7DD3FC' : 'white', fontFamily: FONT_TEXT,
+          textAlign: 'center', maxWidth: '100%', overflow: 'hidden',
+          textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 4,
+        }}>{shortName}</div>
+      </button>
+
+      {/* pedestal */}
+      <div style={{
+        width: '86%', height: pedH, marginTop: 8,
+        background: isFirst
+          ? `linear-gradient(180deg, ${ringColor}3A, ${ringColor}10)`
+          : 'rgba(255,255,255,0.05)',
+        border: `1px solid ${isFirst ? ringColor + '55' : 'rgba(255,255,255,0.08)'}`,
+        borderRadius: '10px 10px 6px 6px',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        position: 'relative',
+      }}>
+        <div style={{
+          fontSize: isFirst ? 17 : 15, fontFamily: FONT_ROUND, fontWeight: 800,
+          color: 'white', letterSpacing: '-0.02em', lineHeight: 1,
+        }}>{f.pct}%</div>
+        {f.streak >= 7 && (
+          <div style={{ fontSize: 9, color: '#FB923C', fontFamily: FONT_ROUND, fontWeight: 700, marginTop: 2 }}>
+            🔥{f.streak}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
