@@ -1243,7 +1243,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                     ),
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.edit,
