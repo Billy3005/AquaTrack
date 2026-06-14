@@ -441,9 +441,14 @@ class _SuggestionSheetState extends State<_SuggestionSheet> {
   }
 
   Future<bool?> _confirmReplace(BuildContext context) {
+    // Pop with the dialog's OWN context. The sheet lives on the nested (shell)
+    // navigator while showDialog defaults to the root navigator — popping with
+    // the sheet's context would dismiss the sheet and leave this dialog stuck
+    // and orphaned (the bug the user hit). dialogContext always resolves to the
+    // navigator the dialog was actually pushed onto.
     return showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.surface,
         title: const Text('Thay lịch hiện tại?',
             style: TextStyle(color: Colors.white)),
@@ -453,12 +458,12 @@ class _SuggestionSheetState extends State<_SuggestionSheet> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Huỷ',
                 style: TextStyle(color: AppColors.textSecondary)),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Thay lịch', style: TextStyle(color: _cyan)),
           ),
         ],

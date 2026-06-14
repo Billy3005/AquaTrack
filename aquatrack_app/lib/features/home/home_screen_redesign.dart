@@ -616,7 +616,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        const Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
@@ -630,7 +630,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
               ),
             ),
             Text(
-              'Giữ để nạp liên tục',
+              'Ghi nhanh 1 chạm',
               style: TextStyle(fontSize: 11, color: AppColors.textMuted),
             ),
           ],
