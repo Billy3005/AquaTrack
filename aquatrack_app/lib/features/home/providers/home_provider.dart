@@ -417,9 +417,13 @@ class HomeNotifier extends _$HomeNotifier {
         // same server-side streak this log just produced (single source of truth).
         ref.invalidate(userStatsProvider);
 
-        // Sync Level screen XP with authoritative server values. Without this,
-        // Level screen keeps stale local state until the user restarts the app.
-        ref.invalidate(levelNotifierProvider);
+        // Patch Level provider with server-authoritative XP — direct state
+        // update, no API reload, so the XP bar never flashes back to zero.
+        ref.read(levelNotifierProvider.notifier).syncFromServer(
+              currentLevel: progress.currentLevel,
+              currentXp: progress.currentXp,
+              nextLevelXp: progress.xpForNextLevel,
+            );
       }
     } catch (e) {
       debugPrint('🌐 HomeProvider: Failed to sync to server: $e');
