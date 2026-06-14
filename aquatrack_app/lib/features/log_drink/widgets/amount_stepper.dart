@@ -106,19 +106,24 @@ class AmountStepper extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          children: presets.map((preset) {
-            final isSelected = currentAmount == preset;
-            return _PresetButton(
-              amount: preset,
-              isSelected: isSelected,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                onAmountChanged(preset);
-              },
-            );
-          }).toList(),
+        // Row + Expanded so all four presets share the width on a single line
+        // (a Wrap dropped 500ml to a lonely second row).
+        Row(
+          children: [
+            for (int i = 0; i < presets.length; i++) ...[
+              if (i > 0) const SizedBox(width: 10),
+              Expanded(
+                child: _PresetButton(
+                  amount: presets[i],
+                  isSelected: currentAmount == presets[i],
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onAmountChanged(presets[i]);
+                  },
+                ),
+              ),
+            ],
+          ],
         ),
       ],
     );
@@ -190,7 +195,8 @@ class _PresetButton extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: isSelected ? AppColors.cyanAccent : AppColors.surfaceColor,
           borderRadius: BorderRadius.circular(20),
@@ -211,8 +217,11 @@ class _PresetButton extends StatelessWidget {
         ),
         child: Text(
           '${amount}ml',
+          maxLines: 1,
+          overflow: TextOverflow.visible,
+          softWrap: false,
           style: AppTextStyles.bodyMedium.copyWith(
-            color: isSelected ? AppColors.textPrimary : AppColors.textPrimary,
+            color: AppColors.textPrimary,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
