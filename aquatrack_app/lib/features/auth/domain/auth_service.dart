@@ -90,7 +90,11 @@ class AuthService {
       AppLogger.info(_tag, 'Registration successful for: ${user.username}');
       return AuthResult.success(
         user: user,
-        needsOnboarding: !user.hasCompletedProfile, // New users need onboarding
+        // Backend-authoritative: profile_complete is the single source of truth
+        // for the onboarding gate (set True by the backend OnboardingService).
+        // The old computed hasCompletedProfile also required a full_name, which
+        // Google accounts lack — that re-triggered onboarding on every login.
+        needsOnboarding: !user.profileComplete,
       );
     } catch (e) {
       AppLogger.error(_tag, 'Registration failed for: $email', e);
@@ -458,8 +462,12 @@ class AuthService {
     final onboardingCompleted = await _authRepository.hasCompletedOnboarding();
     if (onboardingCompleted) return false;
 
-    // Check if user profile is complete
-    return !user.hasCompletedProfile;
+    // Backend-authoritative onboarding gate. profile_complete is set True by
+    // the backend OnboardingService and returned on login, so it survives
+    // logout/login. The old hasCompletedProfile getter also required full_name,
+    // which Google (passwordless) accounts lack — that re-triggered onboarding
+    // on every login even after it was finished.
+    return !user.profileComplete;
   }
 
   /// Validate email format

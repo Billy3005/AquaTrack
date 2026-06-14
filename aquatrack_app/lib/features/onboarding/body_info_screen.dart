@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
 import '../../core/repositories/user_repository.dart';
 import '../../core/utils/logger.dart';
 import '../../shared/widgets/living_drop.dart';
+import '../auth/presentation/providers/auth_providers.dart';
 import '../profile/providers/profile_provider.dart';
 
 /// Body Info Onboarding Screen - 5-step wizard after registration
@@ -106,6 +106,11 @@ class _BodyInfoScreenState extends ConsumerState<BodyInfoScreen> {
 
       // Refresh ProfileProvider with new data
       await ref.read(profileNotifierProvider.notifier).refreshProfile();
+
+      // Refresh the auth user so the cached/stored user now carries
+      // profile_complete = true. Without this, reopening the app (no logout)
+      // would read a stale cached user and re-trigger onboarding.
+      await ref.read(authStateProvider.notifier).refreshUser();
 
       // Navigate to main app
       if (mounted) {
