@@ -61,7 +61,8 @@ class _MissionsScreenRedesignState extends ConsumerState<MissionsScreenRedesign>
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(result != null ? '🎉 Đã nhận thưởng!' : 'Chưa thể nhận thưởng'),
+        content: Text(
+            result != null ? '🎉 Đã nhận thưởng!' : 'Chưa thể nhận thưởng'),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -239,7 +240,8 @@ class _MissionsScreenRedesignState extends ConsumerState<MissionsScreenRedesign>
     final dailyBase = dailyData.where(isBase).toList();
     final weeklyBase = weeklyData.where(isBase).toList();
     final dailyDone = dailyBase.where((m) => m.done).length;
-    final weeklyDone = weeklyBase.where((m) => m.claimed || m.progress >= m.target).length;
+    final weeklyDone =
+        weeklyBase.where((m) => m.claimed || m.progress >= m.target).length;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -481,17 +483,6 @@ class _DailyView extends StatelessWidget {
                       spacing: 6,
                       runSpacing: 4,
                       children: [
-                        _RewardPill(
-                          icon: Icons.monetization_on,
-                          text: '+40 đã nhận',
-                          color: const Color(0xFFFDE68A),
-                          backgroundColor: const Color(
-                            0xFFF59E0B,
-                          ).withValues(alpha: 0.15),
-                          borderColor: const Color(
-                            0xFFF59E0B,
-                          ).withValues(alpha: 0.35),
-                        ),
                         if (claimable > 0)
                           _RewardPill(
                             icon: Icons.monetization_on,
@@ -1681,8 +1672,7 @@ class _ChestPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
 
-    final bottomColor =
-        dim ? const Color(0xFF4B5563) : const Color(0xFF92400E);
+    final bottomColor = dim ? const Color(0xFF4B5563) : const Color(0xFF92400E);
     final topColor = dim ? const Color(0xFF6B7280) : const Color(0xFFB45309);
     final lockColor = dim ? const Color(0xFF9CA3AF) : const Color(0xFFFBBF24);
     final holeColor = dim ? const Color(0xFF374151) : const Color(0xFF78350F);
@@ -1691,7 +1681,11 @@ class _ChestPainter extends CustomPainter {
     paint.color = bottomColor;
     canvas.drawRRect(
       RRect.fromLTRBR(
-        2, 12, size.width - 2, size.height - 2, const Radius.circular(3),
+        2,
+        12,
+        size.width - 2,
+        size.height - 2,
+        const Radius.circular(3),
       ),
       paint,
     );
@@ -1707,7 +1701,11 @@ class _ChestPainter extends CustomPainter {
       paint.color = holeColor.withValues(alpha: 0.6);
       canvas.drawRRect(
         RRect.fromLTRBR(
-          4, 12, size.width - 4, 20, const Radius.circular(2),
+          4,
+          12,
+          size.width - 4,
+          20,
+          const Radius.circular(2),
         ),
         paint,
       );
@@ -1722,8 +1720,10 @@ class _ChestPainter extends CustomPainter {
       paint.color = lockColor;
       canvas.drawRRect(
         RRect.fromLTRBR(
-          size.width / 2 - 4, 12,
-          size.width / 2 + 4, 24,
+          size.width / 2 - 4,
+          12,
+          size.width / 2 + 4,
+          24,
           const Radius.circular(1),
         ),
         paint,

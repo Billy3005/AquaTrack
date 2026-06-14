@@ -215,5 +215,20 @@ class CRUDIntakeLog(CRUDBase[IntakeLog, IntakeLogCreate, IntakeLogUpdate]):
         )
 
 
+def authoritative_total_xp(db: Session, user) -> int:
+    """The user's true Total XP — the single value the Level is derived from
+    everywhere (matches /levels/current): repeatable intake XP
+    (xp_earned + bonus_xp) plus the quest/milestone XP stored on user.total_xp.
+    Use this (never user.total_xp alone) when reconciling Level-Up coins so the
+    high-water mark tracks the real level."""
+    intake_xp = (
+        db.query(func.sum(IntakeLog.xp_earned + IntakeLog.bonus_xp))
+        .filter(IntakeLog.user_id == user.id)
+        .scalar()
+        or 0
+    )
+    return int(intake_xp) + (user.total_xp or 0)
+
+
 # Global instance
 intake_log_crud = CRUDIntakeLog(IntakeLog)

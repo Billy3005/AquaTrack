@@ -163,6 +163,9 @@ async def claim_achievement(
         "current_level": result["current_level"],
         "unlock_avatar_id": None,
         "unlock_badge_id": None,
+        # Level-Up Rewards (ADR 0008): drives the celebration when a claim
+        # crossed a level; carries coins_awarded for this claim.
+        "level_progress": result.get("level_progress"),
     }
 
 

@@ -656,9 +656,25 @@ def claim_achievement(db: Session, user: User, achievement_id: str) -> dict:
     db.commit()
     db.refresh(user)
 
+    # Level-Up Rewards (ADR 0008): a Milestone XP claim can jump several levels —
+    # grant those coins idempotently off the full Total XP and surface the new
+    # level + coins for the celebration.
+    from app.core.leveling import reconcile_level_coins
+
+    level_coins = reconcile_level_coins(db, user, full_total_xp)
+    db.refresh(user)
+    _li = calculate_level_from_xp(full_total_xp)
+
     return {
         "achievement_id": achievement_id,
         "reward_xp": reward_xp,
         "total_xp": full_total_xp,
         "current_level": user.current_level,
+        "level_progress": {
+            "current_level": _li["level"],
+            "current_xp": _li["current_xp"],
+            "xp_for_next_level": _li["xp_for_next_level"],
+            "progress_percent": _li["progress_percentage"],
+            "coins_awarded": level_coins,
+        },
     }

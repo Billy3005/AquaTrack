@@ -698,7 +698,8 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: hasText ? () => _sendMessage(_textController.text) : null,
+                  onTap:
+                      hasText ? () => _sendMessage(_textController.text) : null,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
                     width: 40,
@@ -716,7 +717,8 @@ class _CoachScreenRedesignState extends ConsumerState<CoachScreenRedesign>
                       boxShadow: hasText
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF0EA5E9).withValues(alpha: 0.4),
+                                color: const Color(0xFF0EA5E9)
+                                    .withValues(alpha: 0.4),
                                 blurRadius: 10,
                                 offset: const Offset(0, 3),
                               ),

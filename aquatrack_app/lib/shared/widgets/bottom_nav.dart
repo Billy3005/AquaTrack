@@ -15,9 +15,9 @@ class BottomNavigationWrapper extends StatelessWidget {
     (icon: Icons.water_drop, label: 'Nước', route: '/'),
     (icon: Icons.chat_bubble, label: 'Chat', route: '/coach'),
     (icon: Icons.track_changes, label: 'Nhiệm vụ', route: '/missions'),
-    (icon: Icons.show_chart, label: 'Thống kê', route: '/stats'),
-    (icon: Icons.people, label: 'Bạn bè', route: '/friends'),
-    (icon: Icons.emoji_events, label: 'Cấp độ', route: '/level'),
+    // (icon: Icons.show_chart, label: 'Thống kê', route: '/stats'),
+    // (icon: Icons.people, label: 'Bạn bè', route: '/friends'),
+    // (icon: Icons.emoji_events, label: 'Cấp độ', route: '/level'),
     (icon: Icons.person, label: 'Hồ sơ', route: '/profile'),
   ];
 
