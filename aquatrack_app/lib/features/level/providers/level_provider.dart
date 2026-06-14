@@ -27,6 +27,39 @@ LevelSyncRepository? levelSyncRepositoryNullable(Ref ref) {
   return null;
 }
 
+/// A level-up that just happened, carried on [LevelState] until the shell
+/// shows the celebration and clears it. Set by [LevelNotifier.syncFromServer]
+/// whenever the server's new level exceeds the previous one — so it fires for
+/// BOTH water logs and achievement claims, from one place.
+class LevelUpEvent {
+  final int fromLevel;
+  final int toLevel;
+  final int currentXp;
+  final int xpForNextLevel;
+  final int coinsAwarded;
+  final String rankName;
+
+  const LevelUpEvent({
+    required this.fromLevel,
+    required this.toLevel,
+    required this.currentXp,
+    required this.xpForNextLevel,
+    required this.coinsAwarded,
+    required this.rankName,
+  });
+}
+
+/// Vietnamese rank name per level — mirrors user_stats_provider._getLevelName.
+String levelNameFor(int level) {
+  if (level >= 50) return 'Thần nước';
+  if (level >= 40) return 'Chuyên gia hydration';
+  if (level >= 30) return 'Bậc thầy nước';
+  if (level >= 20) return 'Ninja hydration';
+  if (level >= 10) return 'Chiến binh nước';
+  if (level >= 5) return 'Người uống nước';
+  return 'Tân binh';
+}
+
 /// Level system state
 class LevelState {
   final int currentLevel;
@@ -41,6 +74,9 @@ class LevelState {
   final int totalVolume;
   final int daysWithGoal;
 
+  /// Pending celebration; null unless the last sync crossed a level boundary.
+  final LevelUpEvent? pendingLevelUp;
+
   const LevelState({
     required this.currentLevel,
     required this.currentXP,
@@ -53,6 +89,7 @@ class LevelState {
     required this.currentStreak,
     required this.totalVolume,
     required this.daysWithGoal,
+    this.pendingLevelUp,
   });
 
   LevelState copyWith({
@@ -67,6 +104,8 @@ class LevelState {
     int? currentStreak,
     int? totalVolume,
     int? daysWithGoal,
+    LevelUpEvent? pendingLevelUp,
+    bool clearPendingLevelUp = false,
   }) {
     return LevelState(
       currentLevel: currentLevel ?? this.currentLevel,
@@ -80,6 +119,8 @@ class LevelState {
       currentStreak: currentStreak ?? this.currentStreak,
       totalVolume: totalVolume ?? this.totalVolume,
       daysWithGoal: daysWithGoal ?? this.daysWithGoal,
+      pendingLevelUp:
+          clearPendingLevelUp ? null : (pendingLevelUp ?? this.pendingLevelUp),
     );
   }
 }
@@ -404,19 +445,65 @@ class LevelNotifier extends _$LevelNotifier {
     required int currentLevel,
     required int currentXp,
     required int nextLevelXp,
+    int coinsAwarded = 0,
   }) async {
     try {
       final currentState = await future;
+      final previousLevel = currentState.currentLevel;
+
+      // Detect a level-up here, in the one place every XP source funnels
+      // through, so the celebration fires for both water logs and claims.
+      final leveledUp = currentLevel > previousLevel;
+      final event = leveledUp
+          ? LevelUpEvent(
+              fromLevel: previousLevel,
+              toLevel: currentLevel,
+              currentXp: currentXp,
+              xpForNextLevel: nextLevelXp,
+              coinsAwarded: coinsAwarded,
+              rankName: levelNameFor(currentLevel),
+            )
+          : null;
+
       final updatedState = currentState.copyWith(
         currentLevel: currentLevel,
         currentXP: currentXp,
         nextLevelXP: nextLevelXp,
+        pendingLevelUp: event,
+        clearPendingLevelUp: !leveledUp,
       );
       final finalState = _updateAchievementsAndAvatars(updatedState);
       state = AsyncValue.data(finalState);
       await _saveToStorage();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Dismiss the pending level-up after the celebration has been shown.
+  Future<void> clearLevelUp() async {
+    try {
+      final currentState = await future;
+      state = AsyncValue.data(
+        currentState.copyWith(clearPendingLevelUp: true),
+      );
+    } catch (_) {
+      // Non-fatal: the listener simply won't re-fire on an identical state.
+    }
+  }
+
+  /// Re-pull authoritative level data from the API and replace state in place
+  /// (no loading flash). Called when the level-up celebration closes so the XP
+  /// bar always settles on the backend's persisted level — the same refresh a
+  /// logout/login produced, without the auth churn.
+  Future<void> reloadFromApi() async {
+    try {
+      _levelRepository ??= ref.read(levelRepositoryProvider);
+      final fresh = await _loadLevelDataFromApi();
+      state = AsyncValue.data(fresh);
+      await _saveToStorage();
+    } catch (e) {
+      debugPrint('⚠️ LevelNotifier: reloadFromApi failed: $e');
     }
   }
 
