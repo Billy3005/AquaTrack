@@ -1,4 +1,5 @@
 """Tests for intake log XP logic: flat 20 XP per log, 200 XP/day cap."""
+
 from app.crud.intake_log import intake_log_crud
 from app.models.intake_log import IntakeLog
 from app.schemas.intake_log import IntakeLogCreate
@@ -7,7 +8,9 @@ from app.schemas.intake_log import IntakeLogCreate
 def _log(db, user_id: str, volume: int = 250) -> IntakeLog:
     return intake_log_crud.create(
         db=db,
-        obj_in=IntakeLogCreate(volume_ml=volume, liquid_type="water", source="quick_log"),
+        obj_in=IntakeLogCreate(
+            volume_ml=volume, liquid_type="water", source="quick_log"
+        ),
         user_id=user_id,
     )
 
@@ -26,7 +29,7 @@ def test_xp_is_flat_regardless_of_volume(db, user):
 def test_daily_cap_at_200_xp(db, user):
     # 10 logs × 20 XP = 200 XP (last log that earns XP)
     logs = [_log(db, user.id) for _ in range(10)]
-    assert all(l.xp_earned == 20 for l in logs)
+    assert all(entry.xp_earned == 20 for entry in logs)
 
     # 11th log: cap reached → 0 XP
     over_cap = _log(db, user.id)
@@ -42,5 +45,5 @@ def test_cap_does_not_spill_to_next_log(db, user):
         .order_by(IntakeLog.logged_at)
         .all()
     )
-    capped = [l for l in logs if l.xp_earned == 0]
+    capped = [entry for entry in logs if entry.xp_earned == 0]
     assert len(capped) == 5  # last 5 earn nothing
