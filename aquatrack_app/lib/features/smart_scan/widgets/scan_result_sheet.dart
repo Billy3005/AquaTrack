@@ -5,39 +5,31 @@ import '../../../core/models/vision_result.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 
-/// Bottom sheet showing scan results with confirmation.
+/// Bottom sheet showing scan results — mirrors the design mock: a drink header
+/// with AI confidence, a two-tile stats grid (estimate + hydration value), an
+/// effective-contribution callout, and the edit / log actions.
 ///
 /// Pops the user-approved PHYSICAL volume (ml). The hydration coefficient is
-/// applied once at the log step — the preview line here is display-only.
-/// Low confidence never blocks: the result stays editable as a suggestion.
-class ScanResultSheet extends StatefulWidget {
+/// applied once at the log step; the values here are display-only. Both bottom
+/// actions route through Log Drink (the screen always opens it after a pop),
+/// so "Sửa lượng" lands on the editor and "Log" lands on the confirm step.
+class ScanResultSheet extends StatelessWidget {
   final VisionResult result;
 
   const ScanResultSheet({super.key, required this.result});
 
-  @override
-  State<ScanResultSheet> createState() => _ScanResultSheetState();
-}
+  int get _estimatedMl => result.estimatedVolumeMl.clamp(50, 2000);
 
-class _ScanResultSheetState extends State<ScanResultSheet> {
-  late double _adjustedVolume;
+  double get _coeff =>
+      AppConstants.hydrationCoeff[result.liquidType]?.toDouble() ?? 1.0;
 
-  bool get _isHighConfidence => widget.result.isHighConfidence;
+  int get _hydrationPercent => (_coeff * 100).round();
 
-  @override
-  void initState() {
-    super.initState();
-    _adjustedVolume =
-        widget.result.estimatedVolumeMl.clamp(50, 2000).toDouble();
-  }
+  int get _effectiveMl => (_estimatedMl * _coeff).round();
 
-  /// Display-only hydration preview (Log Drink owns the real calculation)
-  int get _effectivePreviewMl {
-    final coeff = AppConstants.hydrationCoeff[widget.result.liquidType] ?? 1.0;
-    return (_adjustedVolume * coeff).round();
-  }
+  int get _confidencePercent => (result.confidence * 100).round();
 
-  String _getLiquidDisplayName(String liquidType) {
+  String get _liquidName {
     const nameMap = {
       'water': 'Nước lọc',
       'tea': 'Trà',
@@ -45,304 +37,330 @@ class _ScanResultSheetState extends State<ScanResultSheet> {
       'juice': 'Nước trái cây',
       'smoothie': 'Sinh tố',
     };
-    return nameMap[liquidType] ?? liquidType;
+    return nameMap[result.liquidType] ?? result.liquidType;
   }
 
-  Color get _confidenceColor {
-    if (_isHighConfidence) return Colors.green;
-    if (widget.result.confidence >= 0.60) return Colors.orange;
-    return Colors.red;
+  IconData get _liquidIcon {
+    const iconMap = {
+      'water': Icons.water_drop,
+      'tea': Icons.emoji_food_beverage,
+      'coffee': Icons.coffee,
+      'juice': Icons.local_bar,
+      'smoothie': Icons.blender,
+    };
+    return iconMap[result.liquidType] ?? Icons.local_drink;
   }
 
-  String get _confidenceText {
-    if (_isHighConfidence) return 'Độ tin cậy cao';
-    if (widget.result.confidence >= 0.60) {
-      return 'Kiểm tra lại kết quả giúp mình nhé';
-    }
-    return 'Độ tin cậy thấp — hãy chỉnh lại thể tích';
+  Color get _hydrationColor {
+    if (_hydrationPercent >= 90) return const Color(0xFF86EFAC);
+    if (_hydrationPercent >= 70) return const Color(0xFF7DD3FC);
+    return const Color(0xFFFCD34D);
+  }
+
+  Color get _hydrationBarColor {
+    if (_hydrationPercent >= 90) return AppColors.success;
+    if (_hydrationPercent >= 70) return AppColors.cyanAccent;
+    return const Color(0xFFF59E0B);
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
       decoration: const BoxDecoration(
-        color: AppColors.surfaceColor,
+        color: Color(0xFF0B1120),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(
+          top: BorderSide(color: Color(0x2E38BDF8)),
+        ),
       ),
-      child: Column(
-        children: [
-          // Handle
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(top: 16),
-            decoration: BoxDecoration(
-              color: AppColors.textSecondary,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.camera_alt,
-                  color: AppColors.cyanAccent,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Kết quả quét',
-                    style: AppTextStyles.headlineMedium.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-          ),
+              ),
+              const SizedBox(height: 16),
 
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              // Header: icon + name + AI confidence + rescan
+              Row(
                 children: [
-                  // Confidence indicator
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: _confidenceColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _confidenceColor, width: 1),
+                      color: AppColors.cyanAccent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _isHighConfidence
-                              ? Icons.check_circle
-                              : Icons.warning,
-                          color: _confidenceColor,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            _confidenceText,
-                            style: AppTextStyles.labelMedium.copyWith(
-                              color: _confidenceColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: Icon(_liquidIcon,
+                        color: AppColors.cyanAccent, size: 24),
                   ),
-
-                  const SizedBox(height: 24),
-
-                  // Detection results
-                  _buildResultCard(
-                    icon: Icons.local_drink,
-                    title: 'Vật chứa',
-                    value: widget.result.containerLabel,
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  _buildResultCard(
-                    icon: Icons.opacity,
-                    title: 'Mức độ đầy',
-                    value:
-                        '${(widget.result.fillLevelPercent * 100).toStringAsFixed(0)}% '
-                        'của ~${widget.result.containerCapacityMl}ml',
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  _buildResultCard(
-                    icon: Icons.water_drop,
-                    title: 'Loại đồ uống',
-                    value: _getLiquidDisplayName(widget.result.liquidType),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Volume adjustment
-                  Text(
-                    _isHighConfidence
-                        ? 'Thể tích ước lượng'
-                        : 'Điều chỉnh thể tích',
-                    style: AppTextStyles.titleMedium.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Volume display
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppColors.cyanAccent.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: AppColors.cyanAccent.withValues(alpha: 0.3),
-                        width: 1,
-                      ),
-                    ),
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${_adjustedVolume.round()}ml',
-                          style: AppTextStyles.displaySmall.copyWith(
-                            color: AppColors.cyanAccent,
-                            fontWeight: FontWeight.bold,
+                          _liquidName,
+                          style: AppTextStyles.headlineMedium.copyWith(
+                            color: Colors.white,
+                            fontSize: 17,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '≈ ${_effectivePreviewMl}ml hydration',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            const Icon(Icons.auto_awesome,
+                                color: AppColors.cyanAccent, size: 12),
+                            const SizedBox(width: 4),
+                            Text(
+                              'AI · $_confidencePercent% chắc chắn',
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: AppColors.textBright,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // Slider is always available; below the auto-fill threshold
-                  // it is the focal point of the sheet
-                  Slider(
-                    value: _adjustedVolume,
-                    min: 50,
-                    max: 2000,
-                    divisions: 195,
-                    activeColor: AppColors.cyanAccent,
-                    inactiveColor: AppColors.textSecondary,
-                    onChanged: (value) {
-                      setState(() => _adjustedVolume = value);
-                    },
-                  ),
-
-                  const SizedBox(height: 80), // Space for buttons
-                ],
-              ),
-            ),
-          ),
-
-          // Action buttons — retake is always secondary, never forced
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceColor,
-              border: Border(
-                top: BorderSide(color: AppColors.borderColor, width: 1),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
+                  // Rescan: pop null so the screen keeps the camera open
+                  TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.cyanAccent),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.06),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
                     ),
                     child: Text(
                       'Quét lại',
-                      style: AppTextStyles.labelLarge.copyWith(
-                        color: AppColors.cyanAccent,
+                      style: AppTextStyles.labelMedium.copyWith(
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Pop the PHYSICAL volume; Log Drink applies the
-                      // hydration coefficient exactly once
-                      Navigator.of(context).pop(_adjustedVolume.round());
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.cyanAccent,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: Text(
-                      'Xác nhận ${_adjustedVolume.round()}ml',
-                      style: AppTextStyles.labelLarge.copyWith(
-                        color: Colors.white,
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Stats grid
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _StatTile(
+                      label: 'Lượng ước tính',
+                      child: RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '$_estimatedMl',
+                              style: AppTextStyles.displaySmall.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 24,
+                              ),
+                            ),
+                            TextSpan(
+                              text: ' ml',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _StatTile(
+                      label: 'Hydration value',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$_hydrationPercent%',
+                            style: AppTextStyles.displaySmall.copyWith(
+                              color: _hydrationColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 24,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: LinearProgressIndicator(
+                              value: _hydrationPercent / 100,
+                              minHeight: 4,
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.06),
+                              valueColor:
+                                  AlwaysStoppedAnimation(_hydrationBarColor),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // Effective contribution callout (only when not pure water)
+              if (_hydrationPercent < 90) ...[
+                const SizedBox(height: 14),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.thermostat,
+                          color: Color(0xFFF59E0B), size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: const Color(0xFFFED7AA),
+                              height: 1.4,
+                            ),
+                            children: [
+                              const TextSpan(text: 'Đóng góp thực tế: '),
+                              TextSpan(
+                                text: '+$_effectiveMl ml',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              const TextSpan(
+                                text: ' sau khi áp hệ số hydration',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
+
+              const SizedBox(height: 18),
+
+              // Actions
+              Row(
+                children: [
+                  OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(_estimatedMl),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.12)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 14),
+                    ),
+                    child: Text(
+                      'Sửa lượng',
+                      style: AppTextStyles.labelLarge.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(_estimatedMl),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0EA5E9),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Log thức uống này',
+                            style: AppTextStyles.labelLarge.copyWith(
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              '+20 XP',
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildResultCard({
-    required IconData icon,
-    required String title,
-    required String value,
-  }) {
+/// Small stat card used in the result grid.
+class _StatTile extends StatelessWidget {
+  final String label;
+  final Widget child;
+
+  const _StatTile({required this.label, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceColor,
+        color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderColor, width: 1),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.cyanAccent.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: AppColors.cyanAccent, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.labelMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: AppTextStyles.titleSmall.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
+          Text(
+            label.toUpperCase(),
+            style: AppTextStyles.labelMedium.copyWith(
+              color: AppColors.textSecondary,
+              fontSize: 10,
+              letterSpacing: 0.8,
+              fontWeight: FontWeight.w600,
             ),
           ),
+          const SizedBox(height: 6),
+          child,
         ],
       ),
     );
