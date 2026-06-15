@@ -80,6 +80,10 @@ class Settings(BaseSettings):
     VISION_MODEL: str = "claude-haiku-4-5"
     VISION_MAX_IMAGE_DIMENSION: int = 1568
 
+    # AI Coach model (env-configurable like VISION_MODEL). Shares ANTHROPIC_API_KEY
+    # with Vision; a retired model is then a config change, not a redeploy.
+    COACH_MODEL: str = "claude-haiku-4-5"
+
     # Email Settings (SMTP)
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587

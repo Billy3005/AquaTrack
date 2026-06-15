@@ -4,6 +4,8 @@ import random
 from datetime import datetime
 from typing import Dict, Optional, Tuple
 
+from app.core.config import settings
+
 try:
     import ollama
 except ImportError:
@@ -189,7 +191,7 @@ class AICoachService:
 
             response = await asyncio.to_thread(
                 self.anthropic_client.messages.create,
-                model="claude-3-haiku-20240307",  # Fast and cost-effective
+                model=settings.COACH_MODEL,  # env-configurable; default claude-haiku-4-5
                 max_tokens=200,
                 temperature=0.7,
                 system="""Bạn là AQUA AI - trợ lý hydration thông minh của app AquaTrack.
