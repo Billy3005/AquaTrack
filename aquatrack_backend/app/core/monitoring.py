@@ -375,10 +375,11 @@ class AlertManager:
         for metric, threshold in self.alert_thresholds.items():
             if f"{metric}_current" in system_stats:
                 current_value = system_stats[f"{metric}_current"]
+                # Bind alert_key before the branch — the `elif` below reads it
+                # on the not-above-threshold path too.
+                alert_key = f"high_{metric}"
 
                 if current_value > threshold:
-                    alert_key = f"high_{metric}"
-
                     if alert_key not in self.active_alerts:
                         alert = {
                             "type": alert_key,
