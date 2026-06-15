@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Release signing — NEVER commit these (lộ key = mất quyền update app)
+/android/key.properties
+**/*.jks
+**/*.keystore
