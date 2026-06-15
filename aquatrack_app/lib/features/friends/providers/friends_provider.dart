@@ -96,6 +96,21 @@ class FriendsState {
   }
 }
 
+/// How the friends list is ordered. Drives the "Sắp theo" control.
+enum FriendSort {
+  /// Who needs a hydration nudge first (status priority). Default.
+  needsNudge('Cần nhắc'),
+
+  /// Most recently active first (online now → latest `lastActive`).
+  recentActivity('Hoạt động gần đây'),
+
+  /// Most interactions with me first (incoming reminders + gifts, all-time).
+  mostInteractions('Tương tác nhiều');
+
+  const FriendSort(this.label);
+  final String label;
+}
+
 /// Friend status filter enumeration
 enum FriendStatusFilter {
   all,

@@ -11,6 +11,7 @@ import '../../core/providers/weather_provider.dart';
 import '../../shared/widgets/coin_badge.dart';
 import '../level/providers/level_provider.dart';
 import 'providers/home_provider.dart';
+import 'widgets/water_formula_info_sheet.dart';
 
 /// Home Screen - Complete redesign matching aquatrack/project/components/home.jsx
 class HomeScreenRedesign extends ConsumerStatefulWidget {
@@ -492,30 +493,75 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
       greetingText = 'Hãy cùng giữ nhịp uống nước';
     }
 
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          greetingTime,
-          style: TextStyle(
-            fontSize: 13,
-            color: const Color(0xFFBAE6FD).withValues(alpha: 0.7),
-            letterSpacing: 0.04,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'SF Pro Text',
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                greetingTime,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: const Color(0xFFBAE6FD).withValues(alpha: 0.7),
+                  letterSpacing: 0.04,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'SF Pro Text',
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                greetingText,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  letterSpacing: -0.02,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 2),
-        Text(
-          greetingText,
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-            letterSpacing: -0.02,
-          ),
-        ),
+        // Transparency: how the daily goal is computed (public formula).
+        _buildFormulaButton(),
       ],
+    );
+  }
+
+  /// Small "ⓘ Công thức" pill — opens the transparent water-formula sheet.
+  Widget _buildFormulaButton() {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        showWaterFormulaInfoSheet(context);
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: const Color(0xFF38BDF8).withValues(alpha: 0.3),
+          ),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.info_outline, size: 14, color: Color(0xFF7DD3FC)),
+            SizedBox(width: 5),
+            Text(
+              'Công thức',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF7DD3FC),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

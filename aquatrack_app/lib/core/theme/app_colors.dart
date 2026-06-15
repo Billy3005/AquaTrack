@@ -51,6 +51,8 @@ class AppColors {
 
   // Water Drop Colors (Updated to match design prototype)
   static const Color dropEmpty = Color(0xFF1E3A5F); // Empty drop (low state)
+  static const Color dropEmptySecondary =
+      Color(0xFF2C4F7A); // Low-state wave (drop.jsx secondary)
   static const Color dropFilled = cyanAccent; // Filled drop
   static const Color dropGradientStart = cyanLight; // Gradient start (glow)
   static const Color dropGradientEnd = cyanAccent; // Gradient end (primary)

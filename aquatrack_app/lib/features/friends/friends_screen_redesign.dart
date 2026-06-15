@@ -33,6 +33,14 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
   final Set<String> _remindedFriends = <String>{}; // Track reminded friends
   final Set<String> _requestedUsers = <String>{}; // Suggestions already invited
 
+  // How the friends list is ordered + whether it is collapsed.
+  FriendSort _currentSort = FriendSort.needsNudge;
+  bool _showAllFriends = false;
+
+  /// Long lists are collapsed to this many cards until "Xem tất cả" is tapped,
+  /// so a user with dozens of friends isn't hit with the whole list at once.
+  static const int _collapsedFriendCount = 8;
+
   // Helper methods to map backend data to UI
   Color _getFriendMoodColor(FriendStatus status) {
     switch (status) {
@@ -528,23 +536,17 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
   }
 
   Widget _buildFriendsTab(FriendsState friendsState) {
-    // Sort by who needs a nudge first: thirsty > dry > normal > others.
-    int priority(FriendStatus s) {
-      switch (s) {
-        case FriendStatus.thirsty:
-          return 0;
-        case FriendStatus.dry:
-          return 1;
-        case FriendStatus.normal:
-          return 2;
-        case FriendStatus.stressed:
-        case FriendStatus.offline:
-          return 3;
-      }
-    }
+    final sortedFriends = _sortFriends(
+      friendsState.filteredFriends,
+      friendsState.interactionLeaderboard,
+    );
 
-    final sortedFriends = List<Friend>.from(friendsState.filteredFriends)
-      ..sort((a, b) => priority(a.status).compareTo(priority(b.status)));
+    // Collapse long lists: show only the first N until "Xem tất cả" is tapped.
+    final total = sortedFriends.length;
+    final isCollapsed = !_showAllFriends && total > _collapsedFriendCount;
+    final visibleFriends = isCollapsed
+        ? sortedFriends.take(_collapsedFriendCount).toList()
+        : sortedFriends;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -555,14 +557,105 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
         const SizedBox(height: 12),
         _buildSectionHeader(),
         const SizedBox(height: 8),
-        ...sortedFriends.map(
+        ...visibleFriends.map(
           (friend) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: _buildFriendCard(friend),
           ),
         ),
+        if (total > _collapsedFriendCount)
+          _buildShowMoreToggle(total, isCollapsed),
         const SizedBox(height: 8),
       ],
+    );
+  }
+
+  /// Order [friends] by the active [_currentSort]. The interaction sort needs
+  /// the all-time [interactionLeaderboard] to resolve each friend's count.
+  List<Friend> _sortFriends(
+    List<Friend> friends,
+    List<InteractionEntry> interactionLeaderboard,
+  ) {
+    final sorted = List<Friend>.from(friends);
+
+    switch (_currentSort) {
+      case FriendSort.needsNudge:
+        // thirsty > dry > normal > others.
+        int priority(FriendStatus s) {
+          switch (s) {
+            case FriendStatus.thirsty:
+              return 0;
+            case FriendStatus.dry:
+              return 1;
+            case FriendStatus.normal:
+              return 2;
+            case FriendStatus.stressed:
+            case FriendStatus.offline:
+              return 3;
+          }
+        }
+
+        sorted.sort((a, b) => priority(a.status).compareTo(priority(b.status)));
+
+      case FriendSort.recentActivity:
+        // Online-now ranks above everyone; otherwise latest lastActive first,
+        // friends with no timestamp sink to the bottom.
+        int rank(Friend f) {
+          if (f.isOnline) return DateTime.now().millisecondsSinceEpoch;
+          return f.lastActive?.millisecondsSinceEpoch ?? 0;
+        }
+
+        sorted.sort((a, b) => rank(b).compareTo(rank(a)));
+
+      case FriendSort.mostInteractions:
+        final counts = {
+          for (final e in interactionLeaderboard) e.userId: e.interactionCount,
+        };
+        int countFor(Friend f) => counts[f.id] ?? 0;
+        sorted.sort((a, b) => countFor(b).compareTo(countFor(a)));
+    }
+
+    return sorted;
+  }
+
+  /// "Xem tất cả (N)" ⇄ "Thu gọn" toggle under a collapsed friends list.
+  Widget _buildShowMoreToggle(int total, bool isCollapsed) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          setState(() => _showAllFriends = !_showAllFriends);
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          decoration: BoxDecoration(
+            color: AppColors.nightSurface,
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                isCollapsed ? 'Xem tất cả ($total)' : 'Thu gọn',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF7DD3FC),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                isCollapsed ? Icons.expand_more : Icons.expand_less,
+                size: 18,
+                color: const Color(0xFF7DD3FC),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -997,17 +1090,30 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
               fontWeight: FontWeight.w600,
             ),
           ),
-          RichText(
-            text: TextSpan(
-              text: 'Sắp theo: ',
-              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+          // Tap to change ordering — opens the sort sheet.
+          GestureDetector(
+            onTap: _showSortSheet,
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                TextSpan(
-                  text: 'cần nhắc',
-                  style: TextStyle(
-                    color: const Color(0xFF7DD3FC),
+                const Text(
+                  'Sắp theo: ',
+                  style:
+                      TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                ),
+                Text(
+                  _currentSort.label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF7DD3FC),
                     fontWeight: FontWeight.w600,
                   ),
+                ),
+                const Icon(
+                  Icons.unfold_more,
+                  size: 14,
+                  color: Color(0xFF7DD3FC),
                 ),
               ],
             ),
@@ -1015,6 +1121,93 @@ class _FriendsScreenRedesignState extends ConsumerState<FriendsScreenRedesign>
         ],
       ),
     );
+  }
+
+  /// Bottom sheet to pick the friends-list ordering.
+  void _showSortSheet() {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.nightSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textSecondary.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 8, 20, 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Sắp xếp bạn bè',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 0.08,
+                  ),
+                ),
+              ),
+            ),
+            for (final sort in FriendSort.values)
+              ListTile(
+                leading: Icon(
+                  _sortIcon(sort),
+                  color: sort == _currentSort
+                      ? const Color(0xFF7DD3FC)
+                      : AppColors.textSecondary,
+                ),
+                title: Text(
+                  sort.label,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: sort == _currentSort
+                        ? const Color(0xFF7DD3FC)
+                        : AppColors.textBright,
+                  ),
+                ),
+                trailing: sort == _currentSort
+                    ? const Icon(Icons.check,
+                        color: Color(0xFF7DD3FC), size: 20)
+                    : null,
+                onTap: () {
+                  // Pop with the sheet's own context — it lives on the nested
+                  // shell navigator, not the root.
+                  Navigator.of(sheetContext).pop();
+                  if (sort != _currentSort) {
+                    setState(() => _currentSort = sort);
+                  }
+                },
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _sortIcon(FriendSort sort) {
+    switch (sort) {
+      case FriendSort.needsNudge:
+        return Icons.water_drop;
+      case FriendSort.recentActivity:
+        return Icons.schedule;
+      case FriendSort.mostInteractions:
+        return Icons.favorite;
+    }
   }
 
   Widget _buildFriendCard(Friend friend) {
