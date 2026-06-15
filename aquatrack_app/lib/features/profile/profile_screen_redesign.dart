@@ -943,8 +943,8 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
               child: Column(
                 children: [
                   if (slots.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 18),
                       child: Text(
                         'Chưa có mốc nhắc nào — thêm hoặc dùng gợi ý',
                         style: TextStyle(
@@ -1243,7 +1243,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
                     ),
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.edit,

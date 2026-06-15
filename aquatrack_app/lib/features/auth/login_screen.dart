@@ -117,6 +117,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       hero: const AuthHero(
         title: 'Chào mừng trở lại 👋',
         subtitle: 'Đăng nhập để tiếp tục hành trình hydrate',
+        dropPercent: 70,
+        dropSize: 110,
       ),
       children: [
         Form(

@@ -15,7 +15,7 @@ class AmountStepper extends StatelessWidget {
     required this.onAmountChanged,
   });
 
-  static const presets = [150, 250, 350, 500];
+  static const presets = [150, 250, 350];
   static const stepAmount = 50;
   static const minAmount = 50;
   static const maxAmount = 2000;

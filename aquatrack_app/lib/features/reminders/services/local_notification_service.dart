@@ -99,8 +99,17 @@ class LocalNotificationService {
         channelDescription: _channelDesc,
         importance: Importance.high,
         priority: Priority.high,
+        // Signature app sound. NOTE: on Android 8+ the sound is frozen to the
+        // channel at creation time — changing it later needs a NEW channel id
+        // (see ADR 0001). Pre-release: just uninstall + reinstall to refresh.
+        // File lives at android/app/src/main/res/raw/aquatrack_alert.wav
+        // (referenced WITHOUT extension).
+        sound: RawResourceAndroidNotificationSound('aquatrack_alert'),
       ),
-      iOS: DarwinNotificationDetails(),
+      // iOS: file must be added to the Runner target's "Copy Bundle Resources"
+      // (needs a Mac). Referenced WITH extension. Falls back to default sound
+      // silently if the file isn't bundled.
+      iOS: DarwinNotificationDetails(sound: 'aquatrack_alert.wav'),
     );
 
     var notificationId = 0;
