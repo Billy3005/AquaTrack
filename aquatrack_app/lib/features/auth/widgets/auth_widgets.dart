@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/living_drop.dart';
 
 /// Shared building blocks for the auth screens (Login / Register / Reset).
 ///
@@ -57,11 +58,18 @@ class AuthHero extends StatefulWidget {
   final String subtitle;
   final bool showBack;
 
+  /// Drop fill % and size — mirrors design (drop.jsx): login 70/110,
+  /// register 50/92. Defaults suit a generic auth screen.
+  final double dropPercent;
+  final double dropSize;
+
   const AuthHero({
     super.key,
     required this.title,
     required this.subtitle,
     this.showBack = false,
+    this.dropPercent = 60,
+    this.dropSize = 104,
   });
 
   @override
@@ -134,15 +142,16 @@ class _AuthHeroState extends State<AuthHero> with TickerProviderStateMixin {
                     final t = Curves.easeInOut.transform(_breath.value);
                     return Transform.scale(
                       scale: 1.0 + 0.04 * t,
-                      child: SizedBox(
-                        width: 110,
-                        height: 110 * 1.13,
-                        child: CustomPaint(
-                          painter: LivingDropPainter(percent: 66 + 8 * t),
-                        ),
-                      ),
+                      child: child,
                     );
                   },
+                  // The hero already draws its own glow halo, so the drop's
+                  // internal glow stays off to avoid doubling up.
+                  child: LivingDrop(
+                    percent: widget.dropPercent,
+                    size: widget.dropSize,
+                    showGlow: false,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 Text(
@@ -566,72 +575,4 @@ class AuthOrDivider extends StatelessWidget {
       ),
     );
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Living Drop painter (shared by all auth heroes)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class LivingDropPainter extends CustomPainter {
-  final double percent;
-
-  LivingDropPainter({this.percent = 50});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-
-    final dropPath = Path();
-    final w = size.width;
-    final h = size.height;
-
-    dropPath.moveTo(w * 0.5, h * 0.05);
-    dropPath.cubicTo(
-        w * 0.12, h * 0.55, w * 0.12, h * 0.76, w * 0.12, h * 0.76);
-    dropPath.cubicTo(w * 0.12, h * 0.96, w * 0.3, h * 1.08, w * 0.5, h * 1.08);
-    dropPath.cubicTo(w * 0.7, h * 1.08, w * 0.88, h * 0.96, w * 0.88, h * 0.76);
-    dropPath.cubicTo(w * 0.88, h * 0.55, w * 0.5, h * 0.05, w * 0.5, h * 0.05);
-    dropPath.close();
-
-    // Vessel (empty drop)
-    paint.color = AppColors.cyanDeeper.withValues(alpha: 0.5);
-    canvas.drawPath(dropPath, paint);
-
-    // Fill
-    if (percent > 0) {
-      final fillHeight = (percent / 100) * h * 0.8;
-      final fillY = h - fillHeight;
-
-      canvas.save();
-      canvas.clipPath(dropPath);
-      paint.shader = const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [AppColors.glow, AppColors.primary],
-      ).createShader(Rect.fromLTWH(0, fillY, w, fillHeight));
-      canvas.drawRect(Rect.fromLTWH(0, fillY, w, fillHeight), paint);
-      canvas.restore();
-    }
-
-    // Outline
-    paint
-      ..shader = null
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..color = Colors.white.withValues(alpha: 0.4);
-    canvas.drawPath(dropPath, paint);
-
-    // Highlight
-    paint
-      ..strokeWidth = 2
-      ..color = Colors.white.withValues(alpha: 0.35);
-    final highlightPath = Path();
-    highlightPath.moveTo(w * 0.3, h * 0.3);
-    highlightPath.quadraticBezierTo(w * 0.26, h * 0.55, w * 0.38, h * 0.72);
-    canvas.drawPath(highlightPath, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant LivingDropPainter oldDelegate) =>
-      oldDelegate.percent != percent;
 }

@@ -63,18 +63,20 @@ class _LivingDropState extends State<LivingDrop> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // Color tiers mirror drop.jsx exactly:
+  //   < 31  → dark (low / cracked)   31–69 → default cyan   ≥ 70 → bright
   Color _getFillColor() {
     final pct = math.max(0.0, math.min(100.0, widget.percent));
-    if (pct < 31) return AppColors.dropEmpty;
-    if (pct >= 70) return AppColors.cyanLight;
-    return AppColors.cyanAccent;
+    if (pct < 31) return AppColors.dropEmpty; // #1E3A5F
+    if (pct >= 70) return AppColors.glow; // #38BDF8
+    return AppColors.primary; // #0EA5E9
   }
 
   Color _getSecondaryColor() {
     final pct = math.max(0.0, math.min(100.0, widget.percent));
-    if (pct < 31) return const Color(0xFF2C4F7A);
-    if (pct >= 70) return const Color(0xFF7DD3FC);
-    return AppColors.cyanLight;
+    if (pct < 31) return AppColors.dropEmptySecondary; // #2C4F7A
+    if (pct >= 70) return AppColors.cyanLight; // #7DD3FC
+    return AppColors.glow; // #38BDF8
   }
 
   @override
@@ -182,128 +184,163 @@ class LivingDropPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
+    final w = size.width;
+    final h = size.height;
+    // drop.jsx authors in a 100 × 113 viewBox. The widget sizes the canvas as
+    // (size, size * 1.13), so a single uniform factor maps both axes exactly.
+    final k = w / 100.0;
+    final pct = math.max(0.0, math.min(100.0, percent));
 
-    // Drop shape path
-    final dropPath = Path();
-    final center = Offset(size.width / 2, size.height / 2);
-    final dropWidth = size.width * 0.76;
-    final dropHeight = size.height * 0.95;
+    // Exact teardrop bezier from drop.jsx:
+    // M50,5 C50,5 12,55 12,76 C12,96 30,108 50,108
+    //       C70,108 88,96 88,76 C88,55 50,5 50,5 Z
+    final dropPath = Path()
+      ..moveTo(50 * k, 5 * k)
+      ..cubicTo(50 * k, 5 * k, 12 * k, 55 * k, 12 * k, 76 * k)
+      ..cubicTo(12 * k, 96 * k, 30 * k, 108 * k, 50 * k, 108 * k)
+      ..cubicTo(70 * k, 108 * k, 88 * k, 96 * k, 88 * k, 76 * k)
+      ..cubicTo(88 * k, 55 * k, 50 * k, 5 * k, 50 * k, 5 * k)
+      ..close();
 
-    // Create drop shape (teardrop)
-    dropPath.moveTo(center.dx, size.height * 0.05); // Top point
-
-    // Right curve
-    dropPath.quadraticBezierTo(
-      center.dx + dropWidth * 0.38,
-      center.dy - dropHeight * 0.25,
-      center.dx + dropWidth * 0.38,
-      center.dy + dropHeight * 0.25,
+    // Vessel (empty shell) — rgba(8,30,56,0.5)
+    canvas.drawPath(
+      dropPath,
+      Paint()..color = const Color.fromRGBO(8, 30, 56, 0.5),
     );
 
-    // Bottom curve
-    dropPath.quadraticBezierTo(
-      center.dx + dropWidth * 0.38,
-      center.dy + dropHeight * 0.45,
-      center.dx,
-      center.dy + dropHeight * 0.45,
-    );
+    // Water surface height: drop.jsx uses waveY = 100 - pct (viewBox units).
+    final waveYvb = 100.0 - pct;
+    final waveY = waveYvb * k;
 
-    // Left curve
-    dropPath.quadraticBezierTo(
-      center.dx - dropWidth * 0.38,
-      center.dy + dropHeight * 0.45,
-      center.dx - dropWidth * 0.38,
-      center.dy + dropHeight * 0.25,
-    );
-
-    dropPath.quadraticBezierTo(
-      center.dx - dropWidth * 0.38,
-      center.dy - dropHeight * 0.25,
-      center.dx,
-      size.height * 0.05, // Back to top
-    );
-
-    // Draw empty drop outline
-    paint.color = const Color(0xFF082F5C).withValues(alpha: 0.5);
-    canvas.drawPath(dropPath, paint);
-
-    // Draw drop outline
-    final strokePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..shader = LinearGradient(
-        colors: [
-          Colors.white.withValues(alpha: 0.4),
-          Colors.white.withValues(alpha: 0.1),
-        ],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-
-    canvas.drawPath(dropPath, strokePaint);
-
-    // Calculate water fill level
-    final fillLevel = size.height - (size.height * (percent / 100));
-
-    if (percent > 0) {
-      // Clip to drop shape for water content
+    if (pct > 0) {
       canvas.save();
       canvas.clipPath(dropPath);
 
-      // Create wave path
-      final wavePath = Path();
-      const waveHeight = 8.0;
-      final waveWidth = size.width / 4;
+      // Base gradient fill (secondary at the surface → fill at the bottom).
+      final fillRect = Rect.fromLTWH(0, waveY, w, h - waveY);
+      canvas.drawRect(
+        fillRect,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [secondaryColor, fillColor],
+          ).createShader(fillRect),
+      );
 
-      wavePath.moveTo(-waveWidth, fillLevel);
+      // Two animated wave layers (drop.jsx: opacity 0.55 + 0.35).
+      _drawWave(canvas, w, h,
+          surfaceY: waveY,
+          amplitude: 2.6 * k,
+          waveLen: w * 0.5,
+          phase: waveOffset,
+          color: secondaryColor.withValues(alpha: 0.55));
+      _drawWave(canvas, w, h,
+          surfaceY: waveY + 2 * k,
+          amplitude: 2.0 * k,
+          waveLen: w * 0.62,
+          phase: waveOffset * 1.3 + 1.0,
+          color: secondaryColor.withValues(alpha: 0.35));
 
-      for (double x = -waveWidth; x <= size.width + waveWidth; x += 1) {
-        final y = fillLevel +
-            waveHeight * math.sin((x / waveWidth) * 2 * math.pi + waveOffset) +
-            waveHeight *
-                0.5 *
-                math.sin(
-                  (x / (waveWidth * 0.7)) * 2 * math.pi + waveOffset * 1.3,
-                );
-        wavePath.lineTo(x, y);
+      // Highlight bubbles inside the water.
+      if (pct > 35) {
+        canvas.drawCircle(
+          Offset(38 * k, math.max(waveYvb + 12, 30.0) * k),
+          2.3 * k,
+          Paint()..color = Colors.white.withValues(alpha: 0.5),
+        );
       }
-
-      wavePath.lineTo(size.width + waveWidth, size.height);
-      wavePath.lineTo(-waveWidth, size.height);
-      wavePath.close();
-
-      // Draw water with gradient
-      final waterPaint = Paint()
-        ..shader = LinearGradient(
-          colors: [secondaryColor, fillColor],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-
-      canvas.drawPath(wavePath, waterPaint);
-
-      // Add subtle highlight wave
-      final highlightPath = Path();
-      highlightPath.moveTo(-waveWidth, fillLevel - 2);
-
-      for (double x = -waveWidth; x <= size.width + waveWidth; x += 1) {
-        final y = fillLevel -
-            2 +
-            (waveHeight * 0.3) *
-                math.sin((x / waveWidth) * 2 * math.pi + waveOffset);
-        highlightPath.lineTo(x, y);
+      if (pct > 50) {
+        canvas.drawCircle(
+          Offset(62 * k, math.max(waveYvb + 22, 40.0) * k),
+          1.4 * k,
+          Paint()..color = Colors.white.withValues(alpha: 0.4),
+        );
       }
-
-      final highlightPaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.2)
-        ..strokeWidth = 2.0
-        ..style = PaintingStyle.stroke;
-
-      canvas.drawPath(highlightPath, highlightPaint);
 
       canvas.restore();
     }
+
+    // Outline — white gradient stroke (0.4 → 0.1).
+    canvas.drawPath(
+      dropPath,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2 * k
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.white.withValues(alpha: 0.4),
+            Colors.white.withValues(alpha: 0.1),
+          ],
+        ).createShader(Rect.fromLTWH(0, 0, w, h)),
+    );
+
+    // Gloss highlight on the shell — M30,30 Q26,55 38,72
+    canvas.drawPath(
+      Path()
+        ..moveTo(30 * k, 30 * k)
+        ..quadraticBezierTo(26 * k, 55 * k, 38 * k, 72 * k),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2 * k
+        ..strokeCap = StrokeCap.round
+        ..color = Colors.white.withValues(alpha: 0.35),
+    );
+
+    // Crack overlay when the drop is running low.
+    if (pct < 31) {
+      final crack = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.6 * k
+        ..color = const Color(0xFF1E293B).withValues(alpha: 0.45);
+      canvas
+        ..drawPath(
+            Path()
+              ..moveTo(55 * k, 30 * k)
+              ..lineTo(52 * k, 45 * k)
+              ..lineTo(58 * k, 55 * k)
+              ..lineTo(54 * k, 70 * k),
+            crack)
+        ..drawPath(
+            Path()
+              ..moveTo(40 * k, 40 * k)
+              ..lineTo(45 * k, 52 * k)
+              ..lineTo(41 * k, 62 * k),
+            crack)
+        ..drawPath(
+            Path()
+              ..moveTo(65 * k, 55 * k)
+              ..lineTo(70 * k, 68 * k),
+            crack);
+    }
+  }
+
+  /// Filled sine wave from [surfaceY] down to the canvas bottom, extended past
+  /// both edges so the clipped drop shows no gaps.
+  void _drawWave(
+    Canvas canvas,
+    double w,
+    double h, {
+    required double surfaceY,
+    required double amplitude,
+    required double waveLen,
+    required double phase,
+    required Color color,
+  }) {
+    final ext = waveLen;
+    final path = Path()..moveTo(-ext, surfaceY);
+    for (double x = -ext; x <= w + ext; x += 2) {
+      final y =
+          surfaceY + amplitude * math.sin((x / waveLen) * 2 * math.pi + phase);
+      path.lineTo(x, y);
+    }
+    path
+      ..lineTo(w + ext, h)
+      ..lineTo(-ext, h)
+      ..close();
+    canvas.drawPath(path, Paint()..color = color);
   }
 
   @override

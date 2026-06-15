@@ -130,6 +130,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         title: 'Tạo một cuộc đời nhiều nước',
         subtitle: 'Vài giây thôi — đồng hành cùng bạn mỗi ngụm',
         showBack: true,
+        dropPercent: 50,
+        dropSize: 92,
       ),
       children: [
         Form(
