@@ -943,8 +943,8 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
               child: Column(
                 children: [
                   if (slots.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 18),
                       child: Text(
                         'Chưa có mốc nhắc nào — thêm hoặc dùng gợi ý',
                         style: TextStyle(
