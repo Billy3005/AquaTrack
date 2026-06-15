@@ -3,12 +3,18 @@ class AppConfig {
   // Private constructor to prevent instantiation
   AppConfig._();
 
-  // API Configuration (updated to match running backend port)
-  static const String apiBaseUrl = 'http://localhost:8001';
+  // API Configuration.
+  // Debug builds hit the local backend; release/profile builds (the APK we
+  // ship to users) hit the deployed Railway backend over HTTPS. isDebug is
+  // true only in debug builds (asserts are stripped from release/profile).
+  static const String _devApiBaseUrl = 'http://localhost:8001';
+  static const String _prodApiBaseUrl =
+      'https://aquatrack-production-62b3.up.railway.app';
+  static String get apiBaseUrl => isDebug ? _devApiBaseUrl : _prodApiBaseUrl;
   static const String apiVersion = 'v1';
 
   // Simple endpoints for CORS testing
-  static const String simpleLoginUrl = 'http://localhost:8001/simple-login';
+  static String get simpleLoginUrl => '$apiBaseUrl/simple-login';
   static const Duration apiTimeout =
       Duration(seconds: 90); // Increased for AI responses
   static const Duration connectTimeout = Duration(seconds: 15);
