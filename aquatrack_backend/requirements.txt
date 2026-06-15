@@ -20,7 +20,9 @@ python-multipart==0.0.6
 # AI Integration
 openai==1.6.1
 anthropic==0.7.8
-ollama==0.3.0  # Free local AI
+# ollama (local dev AI) intentionally omitted: it pins httpx>=0.27 which clashes
+# with httpx==0.25.2. ai_coach_service imports it under try/except (ollama=None)
+# and guards every call with `if ollama:`, so production runs fine without it.
 
 # Production Features
 psutil==5.9.6  # System monitoring
