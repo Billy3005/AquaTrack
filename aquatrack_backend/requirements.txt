@@ -11,7 +11,7 @@ alembic==1.13.1
 
 # Authentication
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+passlib[bcrypt,argon2]==1.7.4  # security.py hashes with argon2 -> needs argon2-cffi
 python-multipart==0.0.6
 
 # CORS handled by Starlette's built-in CORSMiddleware (ships with FastAPI) —
