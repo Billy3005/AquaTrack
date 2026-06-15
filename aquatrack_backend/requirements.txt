@@ -35,6 +35,8 @@ httpx==0.25.2
 # Image processing
 Pillow==10.1.0
 
-# Google Sign-In ID token verification (ADR 0006)
-google-auth>=2.35.0
+# Google Sign-In ID token verification (ADR 0006).
+# [requests] extra pulls the `requests` lib that google.auth.transport.requests
+# needs at verify time — without it token verification raises and login 401s.
+google-auth[requests]>=2.35.0
 
