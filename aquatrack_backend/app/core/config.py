@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     ]
 
     # Database Settings
+    # Managed hosts (Railway, Render, …) inject a single DATABASE_URL — prefer it.
+    # The DB_* parts below stay as a fallback for hand-rolled Postgres setups.
+    DATABASE_URL: str = ""
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
     DB_USER: str = "aquatrack_user"
@@ -38,15 +41,23 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        """Construct database URL - SQLite for testing, PostgreSQL for production"""
-        # Use SQLite for testing when PostgreSQL is not available
+        """Resolve the SQLAlchemy URL.
+
+        Priority: explicit DATABASE_URL (managed Postgres) > SQLite in
+        development > DB_* parts assembled into a Postgres URL.
+        """
+        if self.DATABASE_URL:
+            # Railway/Heroku style "postgres://" is rejected by SQLAlchemy 2.x —
+            # normalise to the "postgresql://" driver scheme it expects.
+            if self.DATABASE_URL.startswith("postgres://"):
+                return self.DATABASE_URL.replace("postgres://", "postgresql://", 1)
+            return self.DATABASE_URL
         if self.ENVIRONMENT == "development":
             return "sqlite:///./aquatrack_water_formula.db"
-        else:
-            return (
-                f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}"
-                f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
-            )
+        return (
+            f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}"
+            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        )
 
     # Security Settings
     SECRET_KEY: str = "your-super-secret-key-change-this-in-production"
