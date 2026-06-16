@@ -64,8 +64,9 @@ class LogDrinkNotifier extends _$LogDrinkNotifier {
     state = state.copyWith(amountMl: amount);
   }
 
-  /// Submit log directly to IntakeRepository
-  Future<void> submitLog() async {
+  /// Submit log directly to IntakeRepository.
+  /// [source] tags where the log came from ('manual_log', 'smart_scan', ...).
+  Future<void> submitLog({String source = 'manual_log'}) async {
     if (state.amountMl <= 0) return;
 
     state = state.copyWith(isLoading: true);
@@ -77,7 +78,7 @@ class LogDrinkNotifier extends _$LogDrinkNotifier {
       final result = await intakeRepository.createIntakeLog(
         volumeMl: state.amountMl,
         liquidType: state.selectedDrinkType,
-        source: 'manual_log',
+        source: source,
       );
 
       // Log achievements if any

@@ -10,7 +10,6 @@ import '../../../core/network/api_client.dart';
 import '../../../core/repositories/vision_repository.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../log_drink/screens/log_drink_screen.dart';
 import '../../log_drink/providers/log_drink_provider.dart';
 import '../widgets/scan_overlay.dart';
 import '../widgets/scan_controls.dart';
@@ -19,8 +18,9 @@ import '../widgets/scan_result_sheet.dart';
 /// Smart Scan screen for automatic volume detection.
 ///
 /// Backend is the single source of truth (ADR-0005): the image goes to
-/// /vision/estimate-volume, the scan is persisted server-side, and the
-/// user's confirmation/correction is sent back as training data.
+/// /vision/estimate-volume and the scan is persisted server-side. On detect,
+/// the camera keeps a green "đã nhận diện" overlay and an inline result panel
+/// slides up; "Log thức uống này" records the intake directly (no detour).
 class SmartScanScreen extends ConsumerStatefulWidget {
   const SmartScanScreen({super.key});
 
@@ -36,7 +36,11 @@ class _SmartScanScreenState extends ConsumerState<SmartScanScreen>
   List<CameraDescription> _cameras = [];
   bool _isInitialized = false;
   bool _isScanning = false;
+  bool _isLogging = false;
   String? _errorMessage;
+
+  /// Non-null once a scan returns — switches the UI to the detected state.
+  VisionResult? _result;
 
   @override
   void initState() {
@@ -62,9 +66,7 @@ class _SmartScanScreenState extends ConsumerState<SmartScanScreen>
       _cameras = await availableCameras();
       if (_cameras.isEmpty) {
         if (mounted) {
-          setState(() {
-            _errorMessage = 'Không tìm thấy camera';
-          });
+          setState(() => _errorMessage = 'Không tìm thấy camera');
         }
         return;
       }
@@ -77,15 +79,11 @@ class _SmartScanScreenState extends ConsumerState<SmartScanScreen>
 
       await _controller!.initialize();
       if (mounted) {
-        setState(() {
-          _isInitialized = true;
-        });
+        setState(() => _isInitialized = true);
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _errorMessage = 'Lỗi khởi động camera: $e';
-        });
+        setState(() => _errorMessage = 'Lỗi khởi động camera: $e');
       }
     }
   }
@@ -93,24 +91,17 @@ class _SmartScanScreenState extends ConsumerState<SmartScanScreen>
   Future<void> _takePicture() async {
     if (_controller == null || !_controller!.value.isInitialized) return;
 
-    setState(() {
-      _isScanning = true;
-    });
+    setState(() => _isScanning = true);
 
     try {
-      // Haptic feedback
       HapticFeedback.mediumImpact();
-
       final XFile image = await _controller!.takePicture();
-
       await _processImage(File(image.path));
     } catch (e) {
       debugPrint('Lỗi chụp ảnh: $e');
     } finally {
       if (mounted) {
-        setState(() {
-          _isScanning = false;
-        });
+        setState(() => _isScanning = false);
       }
     }
   }
@@ -118,70 +109,66 @@ class _SmartScanScreenState extends ConsumerState<SmartScanScreen>
   Future<void> _processImage(File imageFile) async {
     try {
       final result = await _visionRepository.estimateVolume(imageFile.path);
-
       if (!mounted) return;
-      _showResultSheet(result);
+      HapticFeedback.selectionClick();
+      setState(() => _result = result);
     } on ApiException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Không thể phân tích ảnh: ${e.message}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showError('Không thể phân tích ảnh: ${e.message}');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi xử lý ảnh: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showError('Lỗi xử lý ảnh: $e');
     }
   }
 
-  void _showResultSheet(VisionResult result) {
-    showModalBottomSheet<int>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => ScanResultSheet(result: result),
-    ).then((confirmedVolume) {
-      if (confirmedVolume != null && mounted) {
-        _navigateToLogDrink(result, confirmedVolume);
-      }
-    });
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
-  /// Record the user's decision on the backend (training data for the
-  /// hybrid phase), then continue to Log Drink with the physical volume.
-  void _navigateToLogDrink(VisionResult result, int confirmedVolumeMl) {
+  /// Back to the live scanning state.
+  void _rescan() => setState(() => _result = null);
+
+  /// Record the user's decision (training data), then log the intake directly
+  /// and close Smart Scan. [ml] is the PHYSICAL volume; the hydration
+  /// coefficient is applied once inside the log step.
+  Future<void> _logSelected(int ml) async {
+    final result = _result;
+    if (result == null) return;
+
+    setState(() => _isLogging = true);
+    HapticFeedback.mediumImpact();
+
+    // Fire-and-forget validation: never block the log flow
     if (result.scanId != null) {
-      final isCorrection = confirmedVolumeMl != result.estimatedVolumeMl;
-      // Fire-and-forget: validation must never block the log flow
+      final isCorrection = ml != result.estimatedVolumeMl;
       _visionRepository.submitValidation(
         scanId: result.scanId!,
-        correctedVolumeMl: isCorrection ? confirmedVolumeMl : null,
+        correctedVolumeMl: isCorrection ? ml : null,
       );
     }
 
-    // Pre-set the PHYSICAL amount; Log Drink applies the hydration
-    // coefficient exactly once
-    ref.read(logDrinkNotifierProvider.notifier).setAmount(confirmedVolumeMl);
-    ref
-        .read(logDrinkNotifierProvider.notifier)
-        .selectDrinkType(result.liquidType);
+    try {
+      final notifier = ref.read(logDrinkNotifierProvider.notifier);
+      notifier.selectDrinkType(result.liquidType);
+      notifier.setAmount(ml);
+      await notifier.submitLog(source: 'smart_scan');
 
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (context) => const LogDrinkScreen()))
-        .then((_) {
-      // Close Smart Scan screen when returning from Log Drink
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đã ghi $ml ml 💧  +20 XP'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.of(context).pop();
+    } catch (e) {
       if (mounted) {
-        Navigator.of(context).pop();
+        setState(() => _isLogging = false);
+        _showError('Lỗi ghi nước: $e');
       }
-    });
+    }
   }
 
   @override
@@ -193,6 +180,8 @@ class _SmartScanScreenState extends ConsumerState<SmartScanScreen>
 
   @override
   Widget build(BuildContext context) {
+    final detected = _result != null;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -206,17 +195,12 @@ class _SmartScanScreenState extends ConsumerState<SmartScanScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: Colors.white,
-                    size: 64,
-                  ),
+                  const Icon(Icons.error_outline,
+                      color: Colors.white, size: 64),
                   const SizedBox(height: 16),
                   Text(
                     _errorMessage!,
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: Colors.white,
-                    ),
+                    style: AppTextStyles.bodyLarge.copyWith(color: Colors.white),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -229,18 +213,51 @@ class _SmartScanScreenState extends ConsumerState<SmartScanScreen>
               ),
             ),
 
-          // Scanning overlay
-          if (_isInitialized) const ScanOverlay(),
-
-          // Controls
+          // Framing / detected overlay
           if (_isInitialized)
+            ScanOverlay(detectedConfidence: _result?.confidence),
+
+          // Shutter + close (scanning state only)
+          if (_isInitialized && !detected)
             ScanControls(
               isScanning: _isScanning,
               onCapture: _takePicture,
               onClose: () => Navigator.of(context).pop(),
             ),
 
-          // Scanning indicator
+          // Close button stays reachable in the detected state too
+          if (_isInitialized && detected)
+            SafeArea(
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: IconButton(
+                    onPressed: _isLogging
+                        ? null
+                        : () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.black.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          // Inline result panel
+          if (detected)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: ScanResultPanel(
+                result: _result!,
+                isLogging: _isLogging,
+                onRescan: _rescan,
+                onLog: _logSelected,
+              ),
+            ),
+
+          // Analyzing overlay
           if (_isScanning)
             Container(
               color: Colors.black54,
@@ -249,9 +266,8 @@ class _SmartScanScreenState extends ConsumerState<SmartScanScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppColors.cyanAccent,
-                      ),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(AppColors.cyanAccent),
                     ),
                     SizedBox(height: 16),
                     Text(

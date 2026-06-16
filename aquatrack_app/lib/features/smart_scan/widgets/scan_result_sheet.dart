@@ -5,29 +5,58 @@ import '../../../core/models/vision_result.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 
-/// Bottom sheet showing scan results — mirrors the design mock: a drink header
-/// with AI confidence, a two-tile stats grid (estimate + hydration value), an
-/// effective-contribution callout, and the edit / log actions.
+/// Inline result panel anchored at the bottom of the Smart Scan screen
+/// (camera + "đã nhận diện" overlay stay visible above it), matching the
+/// camera.jsx design: drink header with AI confidence + rescan, a two-tile
+/// stats grid (estimate + hydration value), an effective-contribution callout,
+/// an inline amount stepper ("Sửa lượng"), and a direct "Log" action.
 ///
-/// Pops the user-approved PHYSICAL volume (ml). The hydration coefficient is
-/// applied once at the log step; the values here are display-only. Both bottom
-/// actions route through Log Drink (the screen always opens it after a pop),
-/// so "Sửa lượng" lands on the editor and "Log" lands on the confirm step.
-class ScanResultSheet extends StatelessWidget {
+/// The shown ml is the PHYSICAL volume; the hydration coefficient is applied
+/// once downstream at the log step. [onLog] receives the (possibly edited) ml.
+class ScanResultPanel extends StatefulWidget {
   final VisionResult result;
+  final bool isLogging;
+  final VoidCallback onRescan;
+  final void Function(int volumeMl) onLog;
 
-  const ScanResultSheet({super.key, required this.result});
+  const ScanResultPanel({
+    super.key,
+    required this.result,
+    required this.isLogging,
+    required this.onRescan,
+    required this.onLog,
+  });
 
-  int get _estimatedMl => result.estimatedVolumeMl.clamp(50, 2000);
+  @override
+  State<ScanResultPanel> createState() => _ScanResultPanelState();
+}
+
+class _ScanResultPanelState extends State<ScanResultPanel> {
+  static const int _step = 50;
+  static const int _minMl = 50;
+  static const int _maxMl = 2000;
+
+  late int _ml;
+  bool _editing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ml = widget.result.estimatedVolumeMl.clamp(_minMl, _maxMl);
+  }
 
   double get _coeff =>
-      AppConstants.hydrationCoeff[result.liquidType]?.toDouble() ?? 1.0;
+      AppConstants.hydrationCoeff[widget.result.liquidType]?.toDouble() ?? 1.0;
 
   int get _hydrationPercent => (_coeff * 100).round();
 
-  int get _effectiveMl => (_estimatedMl * _coeff).round();
+  int get _effectiveMl => (_ml * _coeff).round();
 
-  int get _confidencePercent => (result.confidence * 100).round();
+  int get _confidencePercent => (widget.result.confidence * 100).round();
+
+  void _bump(int delta) {
+    setState(() => _ml = (_ml + delta).clamp(_minMl, _maxMl));
+  }
 
   String get _liquidName {
     const nameMap = {
@@ -37,7 +66,7 @@ class ScanResultSheet extends StatelessWidget {
       'juice': 'Nước trái cây',
       'smoothie': 'Sinh tố',
     };
-    return nameMap[result.liquidType] ?? result.liquidType;
+    return nameMap[widget.result.liquidType] ?? widget.result.liquidType;
   }
 
   IconData get _liquidIcon {
@@ -48,7 +77,7 @@ class ScanResultSheet extends StatelessWidget {
       'juice': Icons.local_bar,
       'smoothie': Icons.blender,
     };
-    return iconMap[result.liquidType] ?? Icons.local_drink;
+    return iconMap[widget.result.liquidType] ?? Icons.local_drink;
   }
 
   Color get _hydrationColor {
@@ -69,31 +98,16 @@ class ScanResultSheet extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Color(0xFF0B1120),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(
-          top: BorderSide(color: Color(0x2E38BDF8)),
-        ),
+        border: Border(top: BorderSide(color: Color(0x2E38BDF8))),
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Drag handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
               // Header: icon + name + AI confidence + rescan
               Row(
                 children: [
@@ -136,9 +150,8 @@ class ScanResultSheet extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Rescan: pop null so the screen keeps the camera open
                   TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: widget.isLogging ? null : widget.onRescan,
                     style: TextButton.styleFrom(
                       backgroundColor: Colors.white.withValues(alpha: 0.06),
                       shape: RoundedRectangleBorder(
@@ -163,26 +176,7 @@ class ScanResultSheet extends StatelessWidget {
                   Expanded(
                     child: _StatTile(
                       label: 'Lượng ước tính',
-                      child: RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: '$_estimatedMl',
-                              style: AppTextStyles.displaySmall.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 24,
-                              ),
-                            ),
-                            TextSpan(
-                              text: ' ml',
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      child: _editing ? _buildStepper() : _buildMlDisplay(),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -249,12 +243,11 @@ class ScanResultSheet extends StatelessWidget {
                               const TextSpan(text: 'Đóng góp thực tế: '),
                               TextSpan(
                                 text: '+$_effectiveMl ml',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
+                                style:
+                                    const TextStyle(fontWeight: FontWeight.bold),
                               ),
                               const TextSpan(
-                                text: ' sau khi áp hệ số hydration',
-                              ),
+                                  text: ' sau khi áp hệ số hydration'),
                             ],
                           ),
                         ),
@@ -270,55 +263,72 @@ class ScanResultSheet extends StatelessWidget {
               Row(
                 children: [
                   OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(_estimatedMl),
+                    onPressed: widget.isLogging
+                        ? null
+                        : () => setState(() => _editing = !_editing),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.12)),
+                          color: _editing
+                              ? AppColors.cyanAccent
+                              : Colors.white.withValues(alpha: 0.12)),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 18, vertical: 14),
                     ),
                     child: Text(
-                      'Sửa lượng',
+                      _editing ? 'Xong' : 'Sửa lượng',
                       style: AppTextStyles.labelLarge.copyWith(
-                        color: AppColors.textPrimary,
+                        color: _editing
+                            ? AppColors.cyanAccent
+                            : AppColors.textPrimary,
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(_estimatedMl),
+                      onPressed:
+                          widget.isLogging ? null : () => widget.onLog(_ml),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF0EA5E9),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Log thức uống này',
-                            style: AppTextStyles.labelLarge.copyWith(
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              '+20 XP',
-                              style: AppTextStyles.labelMedium.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                      child: widget.isLogging
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Log thức uống này',
+                                  style: AppTextStyles.labelLarge.copyWith(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    '+20 XP',
+                                    style: AppTextStyles.labelMedium.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 ],
@@ -326,6 +336,69 @@ class ScanResultSheet extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Read-only ml number (default view).
+  Widget _buildMlDisplay() {
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: '$_ml',
+            style: AppTextStyles.displaySmall.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 24,
+            ),
+          ),
+          TextSpan(
+            text: ' ml',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Inline +/- stepper shown after tapping "Sửa lượng".
+  Widget _buildStepper() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _stepBtn(Icons.remove, () => _bump(-_step)),
+        Flexible(
+          child: FittedBox(
+            child: Text(
+              '$_ml',
+              style: AppTextStyles.displaySmall.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+              ),
+            ),
+          ),
+        ),
+        _stepBtn(Icons.add, () => _bump(_step)),
+      ],
+    );
+  }
+
+  Widget _stepBtn(IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          color: AppColors.cyanAccent.withValues(alpha: 0.15),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: AppColors.cyanAccent, size: 18),
       ),
     );
   }
