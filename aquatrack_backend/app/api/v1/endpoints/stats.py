@@ -1,9 +1,15 @@
+import asyncio
+import json
+import logging
+import re
+import time
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud.intake_log import intake_log_crud
@@ -11,6 +17,134 @@ from app.crud.user import user_crud
 from app.models.intake_log import IntakeLog
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+# In-memory insight cache to cap Claude calls (cost control). Keyed by
+# user+period; a result is reused while the data "signature" is unchanged and
+# the entry is younger than the TTL. Resets on redeploy — acceptable, the goal
+# is just to avoid calling Claude on every Stats screen open.
+_INSIGHT_CACHE: dict = {}
+_INSIGHT_TTL_SECONDS = 6 * 3600
+
+
+def _insight_signature(num_logs: int, avg_daily: float, top_liquid: str) -> str:
+    """Changes only when the stats meaningfully change (avg bucketed to 50ml)."""
+    return f"{num_logs}:{round(avg_daily / 50) * 50}:{top_liquid}"
+
+
+def _generate_insights_via_claude(
+    *,
+    avg_daily: float,
+    days: int,
+    num_logs: int,
+    liquid_types: dict,
+    most_common_hour,
+    daily_goal_ml: int,
+) -> list | None:
+    """Ask the cheapest Claude model for 2-3 personalised insights.
+
+    Returns None on any failure so the caller can fall back to rules.
+    """
+    if not settings.ANTHROPIC_API_KEY:
+        return None
+    try:
+        import anthropic
+
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        water_share = liquid_types.get("water", 0) / max(num_logs, 1)
+        prompt = (
+            "Dữ liệu hydration của người dùng:\n"
+            f"- Trung bình: {avg_daily:.0f}ml/ngày (mục tiêu {daily_goal_ml}ml)\n"
+            f"- Số lần uống trong {days} ngày: {num_logs}\n"
+            f"- Tỉ lệ nước lọc: {water_share * 100:.0f}%\n"
+            f"- Giờ uống nhiều nhất: {most_common_hour}h\n"
+            f"- Phân bố loại nước: {liquid_types}\n\n"
+            "Tạo 2-3 insight cá nhân hoá, NGẮN GỌN, tiếng Việt tự nhiên. "
+            'Trả về DUY NHẤT một mảng JSON, mỗi phần tử: {"type","title","message","priority"}. '
+            "type ∈ warning|suggestion|achievement|motivational; "
+            "priority ∈ high|medium|low. title ≤ 6 từ, message ≤ 1 câu. "
+            "Không thêm chữ nào ngoài JSON."
+        )
+        resp = client.messages.create(
+            model=settings.INSIGHTS_MODEL,
+            max_tokens=400,
+            temperature=0.5,
+            system=(
+                "Bạn là chuyên gia hydration của AquaTrack. Phân tích số liệu và "
+                "đưa lời khuyên thực tế, động viên, bằng tiếng Việt. Chỉ trả JSON."
+            ),
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = resp.content[0].text.strip()
+        # Tolerate code fences / stray prose around the JSON array
+        match = re.search(r"\[.*\]", text, re.DOTALL)
+        if not match:
+            return None
+        parsed = json.loads(match.group(0))
+        insights = []
+        for item in parsed[:3]:
+            if not isinstance(item, dict) or "message" not in item:
+                continue
+            insights.append(
+                {
+                    "type": str(item.get("type", "suggestion")),
+                    "title": str(item.get("title", "Gợi ý"))[:60],
+                    "message": str(item["message"])[:200],
+                    "priority": str(item.get("priority", "medium")),
+                }
+            )
+        return insights or None
+    except Exception:
+        logger.exception("Claude insight generation failed — falling back to rules")
+        return None
+
+
+def _rule_based_insights(
+    *,
+    avg_daily: float,
+    num_logs: int,
+    most_common_hour,
+    liquid_types: dict,
+) -> list:
+    """Deterministic fallback when Claude is unavailable."""
+    insights = []
+    if avg_daily < 1500:
+        insights.append(
+            {
+                "type": "warning",
+                "title": "Cần uống nhiều nước hơn",
+                "message": f"Trung bình {avg_daily:.0f}ml/ngày, thấp hơn khuyến nghị 2000ml.",
+                "priority": "high",
+            }
+        )
+    elif avg_daily > 3000:
+        insights.append(
+            {
+                "type": "achievement",
+                "title": "Hydration xuất sắc!",
+                "message": f"Trung bình {avg_daily:.0f}ml/ngày - rất tốt cho sức khỏe!",
+                "priority": "medium",
+            }
+        )
+    if most_common_hour and most_common_hour >= 22:
+        insights.append(
+            {
+                "type": "suggestion",
+                "title": "Uống nước sớm hơn",
+                "message": "Uống nước muộn có thể ảnh hưởng giấc ngủ. Thử hydrate sớm hơn trong ngày.",
+                "priority": "low",
+            }
+        )
+    if liquid_types.get("water", 0) / max(num_logs, 1) < 0.7:
+        insights.append(
+            {
+                "type": "suggestion",
+                "title": "Tăng lượng nước lọc",
+                "message": "Nước lọc là lựa chọn tốt nhất cho hydration hiệu quả.",
+                "priority": "medium",
+            }
+        )
+    return insights
 
 
 @router.get("/dashboard")
@@ -472,50 +606,38 @@ async def get_ai_insights(
     for log in week_logs:
         liquid_types[log.liquid_type] = liquid_types.get(log.liquid_type, 0) + 1
 
-    insights = []
+    # Real AI insights via the cheapest Claude model, cached per user+period and
+    # only regenerated when the data signature changes or the TTL lapses — so
+    # repeatedly opening Stats does NOT keep spending tokens.
+    top_liquid = max(liquid_types, key=liquid_types.get) if liquid_types else "water"
+    sig = _insight_signature(len(week_logs), avg_daily, top_liquid)
+    cache_key = f"{current_user_id}:{days}"
+    cached = _INSIGHT_CACHE.get(cache_key)
+    now = time.monotonic()
+    if cached and cached["sig"] == sig and (now - cached["ts"]) < _INSIGHT_TTL_SECONDS:
+        return {"insights": cached["insights"]}
 
-    # Volume insights
-    if avg_daily < 1500:
-        insights.append(
-            {
-                "type": "warning",
-                "title": "Cần uống nhiều nước hơn",
-                "message": f"Trung bình {avg_daily:.0f}ml/ngày, thấp hơn khuyến nghị 2000ml.",
-                "priority": "high",
-            }
-        )
-    elif avg_daily > 3000:
-        insights.append(
-            {
-                "type": "achievement",
-                "title": "Hydration xuất sắc!",
-                "message": f"Trung bình {avg_daily:.0f}ml/ngày - rất tốt cho sức khỏe!",
-                "priority": "medium",
-            }
-        )
+    user = user_crud.get(db, id=current_user_id)
+    daily_goal_ml = user.daily_goal_ml if user else 2000
 
-    # Timing insights
-    if most_common_hour and most_common_hour >= 22:
-        insights.append(
-            {
-                "type": "suggestion",
-                "title": "Uống nước sớm hơn",
-                "message": "Uống nước muộn có thể ảnh hưởng giấc ngủ. Thử hydrate sớm hơn trong ngày.",
-                "priority": "low",
-            }
+    insights = await asyncio.to_thread(
+        _generate_insights_via_claude,
+        avg_daily=avg_daily,
+        days=days,
+        num_logs=len(week_logs),
+        liquid_types=liquid_types,
+        most_common_hour=most_common_hour,
+        daily_goal_ml=daily_goal_ml,
+    )
+    if not insights:
+        insights = _rule_based_insights(
+            avg_daily=avg_daily,
+            num_logs=len(week_logs),
+            most_common_hour=most_common_hour,
+            liquid_types=liquid_types,
         )
 
-    # Liquid type insights
-    if liquid_types.get("water", 0) / len(week_logs) < 0.7:
-        insights.append(
-            {
-                "type": "suggestion",
-                "title": "Tăng lượng nước lọc",
-                "message": "Nước lọc là lựa chọn tốt nhất cho hydration hiệu quả.",
-                "priority": "medium",
-            }
-        )
-
+    _INSIGHT_CACHE[cache_key] = {"insights": insights, "ts": now, "sig": sig}
     return {"insights": insights}
 
 

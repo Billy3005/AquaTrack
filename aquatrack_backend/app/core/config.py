@@ -84,6 +84,10 @@ class Settings(BaseSettings):
     # with Vision; a retired model is then a config change, not a redeploy.
     COACH_MODEL: str = "claude-haiku-4-5"
 
+    # Stats insights model — cheapest tier on purpose (low-stakes, cost-sensitive,
+    # heavily cached). Env-configurable. Shares ANTHROPIC_API_KEY.
+    INSIGHTS_MODEL: str = "claude-3-5-haiku-latest"
+
     # Email Settings.
     # Cloud hosts (Railway, Render...) block outbound SMTP ports (25/465/587),
     # so production sends via Brevo's HTTPS API when BREVO_API_KEY is set; SMTP
