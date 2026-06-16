@@ -85,8 +85,9 @@ class Settings(BaseSettings):
     COACH_MODEL: str = "claude-haiku-4-5"
 
     # Stats insights model — cheapest tier on purpose (low-stakes, cost-sensitive,
-    # heavily cached). Env-configurable. Shares ANTHROPIC_API_KEY.
-    INSIGHTS_MODEL: str = "claude-3-5-haiku-latest"
+    # heavily cached). Dated id (not a "-latest" alias) to avoid resolution
+    # issues. Env-configurable. Shares ANTHROPIC_API_KEY.
+    INSIGHTS_MODEL: str = "claude-3-5-haiku-20241022"
 
     # Email Settings.
     # Cloud hosts (Railway, Render...) block outbound SMTP ports (25/465/587),

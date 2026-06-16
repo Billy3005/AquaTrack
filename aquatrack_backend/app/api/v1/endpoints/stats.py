@@ -615,7 +615,7 @@ async def get_ai_insights(
     cached = _INSIGHT_CACHE.get(cache_key)
     now = time.monotonic()
     if cached and cached["sig"] == sig and (now - cached["ts"]) < _INSIGHT_TTL_SECONDS:
-        return {"insights": cached["insights"]}
+        return {"insights": cached["insights"], "source": cached["source"]}
 
     user = user_crud.get(db, id=current_user_id)
     daily_goal_ml = user.daily_goal_ml if user else 2000
@@ -629,6 +629,8 @@ async def get_ai_insights(
         most_common_hour=most_common_hour,
         daily_goal_ml=daily_goal_ml,
     )
+    # "source" lets clients/tests tell AI output from the rule fallback.
+    source = "ai" if insights else "rules"
     if not insights:
         insights = _rule_based_insights(
             avg_daily=avg_daily,
@@ -637,8 +639,13 @@ async def get_ai_insights(
             liquid_types=liquid_types,
         )
 
-    _INSIGHT_CACHE[cache_key] = {"insights": insights, "ts": now, "sig": sig}
-    return {"insights": insights}
+    _INSIGHT_CACHE[cache_key] = {
+        "insights": insights,
+        "ts": now,
+        "sig": sig,
+        "source": source,
+    }
+    return {"insights": insights, "source": source}
 
 
 # Helper functions
