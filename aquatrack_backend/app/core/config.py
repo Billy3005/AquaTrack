@@ -84,10 +84,10 @@ class Settings(BaseSettings):
     # with Vision; a retired model is then a config change, not a redeploy.
     COACH_MODEL: str = "claude-haiku-4-5"
 
-    # Stats insights model — cheapest tier on purpose (low-stakes, cost-sensitive,
-    # heavily cached). Dated id (not a "-latest" alias) to avoid resolution
-    # issues. Env-configurable. Shares ANTHROPIC_API_KEY.
-    INSIGHTS_MODEL: str = "claude-3-5-haiku-20241022"
+    # Stats insights model — the Haiku tier (cheap, fast); reuse the exact id
+    # proven to work here (coach/vision) rather than 3.x snapshots that this
+    # key/SDK failed to call. Low-stakes + heavily cached. Env-configurable.
+    INSIGHTS_MODEL: str = "claude-haiku-4-5"
 
     # Email Settings.
     # Cloud hosts (Railway, Render...) block outbound SMTP ports (25/465/587),
