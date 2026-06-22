@@ -1,0 +1,11 @@
+# AquaTrack Coach Agent dependencies.
+#
+# One venv runs BOTH the agent and the MCP server it launches as a subprocess,
+# so it needs the agent's deps (anthropic) plus the server's (mcp, httpx). Keep
+# this venv separate from the backend (mcp pulls a newer Starlette that
+# conflicts with the backend's FastAPI pin):
+#   cd agent && python -m venv .venv && . .venv/Scripts/activate   # (Windows)
+#   pip install -r requirements.txt
+anthropic>=0.69
+mcp[cli]>=1.2.0
+httpx>=0.25
