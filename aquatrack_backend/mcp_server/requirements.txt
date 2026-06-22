@@ -1,0 +1,15 @@
+# AquaTrack MCP Server dependencies.
+#
+# This server is a standalone MCP <-> HTTP bridge: it talks to the AquaTrack
+# REST API over HTTP and does NOT import the backend app, so it has no FastAPI /
+# database dependencies and avoids the backend's pinned-deps constraints.
+#
+# Use a SEPARATE virtualenv from the backend (mcp pulls a newer Starlette that
+# conflicts with the backend's FastAPI pin). Create it inside mcp_server/ so it
+# is covered by the repo's .venv/ gitignore rule:
+#   cd mcp_server && python -m venv .venv && . .venv/Scripts/activate  # (Windows)
+#   pip install -r requirements.txt
+#
+# The [cli] extra provides `mcp dev` (the MCP Inspector UI) for local testing.
+mcp[cli]>=1.2.0
+httpx>=0.25
