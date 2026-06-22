@@ -120,6 +120,32 @@ class Settings(BaseSettings):
     ALLOWED_FILE_TYPES: List[str] = ["image/jpeg", "image/png", "image/webp"]
     UPLOAD_DIRECTORY: str = "./uploads"
 
+    # Object storage (Cloudflare R2) — persistent scan-image storage.
+    # The container disk is ephemeral; training images must outlive redeploys.
+    # When these are unset (local dev), images fall back to UPLOAD_DIRECTORY.
+    R2_ACCOUNT_ID: str = ""
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
+    R2_BUCKET: str = ""
+    R2_ENDPOINT_URL: str = ""  # optional; derived from account id when empty
+
+    @property
+    def r2_endpoint(self) -> str:
+        """R2 S3 API endpoint (explicit override, else derived from account id)."""
+        if self.R2_ENDPOINT_URL:
+            return self.R2_ENDPOINT_URL
+        return f"https://{self.R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+    @property
+    def r2_enabled(self) -> bool:
+        """True only when R2 credentials and bucket are fully configured."""
+        return bool(
+            self.R2_ACCESS_KEY_ID
+            and self.R2_SECRET_ACCESS_KEY
+            and self.R2_BUCKET
+            and (self.R2_ENDPOINT_URL or self.R2_ACCOUNT_ID)
+        )
+
     # Rate Limiting Settings
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = 60
     RATE_LIMIT_BURST: int = 100

@@ -26,6 +26,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.crud.scan_history import scan_history_crud
 from app.schemas.vision import ScanHistoryCreate, VisionEstimateResponse
+from app.services.storage_service import storage_service
 
 logger = logging.getLogger(__name__)
 
@@ -258,7 +259,19 @@ class VisionService:
         return scan_record.id
 
     def _save_image(self, jpeg_data: bytes, user_id: str) -> Optional[str]:
-        """Write the resized JPEG to disk; a failed write must not block the scan"""
+        """Persist the resized JPEG; a failed write must not block the scan.
+
+        Prefers Cloudflare R2 (durable across redeploys) in production; falls
+        back to local disk when R2 is not configured (local dev). Returns the
+        stored reference (R2 object key or local path), or None on failure.
+        """
+        key = f"scans/{user_id}/{uuid.uuid4()}.jpg"
+
+        if storage_service.enabled:
+            # Returns the key on success, None on failure (already logged).
+            return storage_service.upload_bytes(jpeg_data, key, "image/jpeg")
+
+        # Local-disk fallback (development only — ephemeral in production)
         try:
             scan_dir = os.path.join(settings.UPLOAD_DIRECTORY, "scans", user_id)
             os.makedirs(scan_dir, exist_ok=True)

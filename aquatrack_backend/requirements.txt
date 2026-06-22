@@ -20,6 +20,9 @@ python-multipart==0.0.6
 # AI Integration
 openai==1.6.1
 anthropic==0.109.1  # >=0.69 needed for structured outputs (output_config) in vision_service; compatible with httpx>=0.25.0,<1
+
+# Object storage (Cloudflare R2, S3-compatible) — durable scan-image storage
+boto3==1.35.49
 # ollama (local dev AI) intentionally omitted: it pins httpx>=0.27 which clashes
 # with httpx==0.25.2. ai_coach_service imports it under try/except (ollama=None)
 # and guards every call with `if ollama:`, so production runs fine without it.
