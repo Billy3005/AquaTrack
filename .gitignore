@@ -4,7 +4,8 @@ CLAUDE.local.md
 
 # Secrets
 .env
-.env.local
+.env.*
+!.env.example
 *.local.*
 firebase-adminsdk.json
 
