@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-/// Level-up celebration — a Dart port of `aquatrack/project/components/levelup.jsx`.
+/// Level-up celebration — a Dart port of `docs/prototype/project/components/levelup.jsx`.
 ///
 /// Water-themed: navy radial backdrop, rotating sunburst rays, expanding ripple
 /// rings, teardrop confetti, a hexagon level badge with glow + conic shine, the

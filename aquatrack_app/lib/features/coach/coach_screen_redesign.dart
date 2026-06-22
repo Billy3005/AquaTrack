@@ -9,7 +9,7 @@ import '../home/providers/home_provider.dart';
 import 'models/chat_message.dart';
 import 'providers/coach_chat_provider.dart';
 
-/// Coach Screen - Complete redesign matching aquatrack/project/components/coach.jsx
+/// Coach Screen - Complete redesign matching docs/prototype/project/components/coach.jsx
 class CoachScreenRedesign extends ConsumerStatefulWidget {
   const CoachScreenRedesign({super.key});
 

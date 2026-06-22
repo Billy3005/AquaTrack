@@ -16,7 +16,7 @@ import '../reminders/widgets/reminder_sheets.dart';
 import 'providers/profile_provider.dart';
 import 'edit_body_info_screen.dart';
 
-/// Profile Screen - Complete redesign matching aquatrack/project/components/profile.jsx
+/// Profile Screen - Complete redesign matching docs/prototype/project/components/profile.jsx
 class ProfileScreenRedesign extends ConsumerStatefulWidget {
   const ProfileScreenRedesign({super.key});
 

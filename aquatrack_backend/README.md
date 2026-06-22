@@ -47,25 +47,30 @@ API sẽ chạy tại: http://localhost:8000
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/v1/auth/register` - Đăng ký user mới
 - `POST /api/v1/auth/login` - Đăng nhập
 - `POST /api/v1/auth/refresh` - Refresh token
 
 ### Intake Logging
+
 - `POST /api/v1/intake/log` - Log water intake
 - `GET /api/v1/intake/today` - Today's intake summary
 - `GET /api/v1/intake/history` - Intake history
 
 ### Stats & Analytics
+
 - `GET /api/v1/stats/dashboard` - Dashboard summary
 - `GET /api/v1/stats/weekly` - Weekly statistics
 - `GET /api/v1/stats/trends` - Hydration trends
 
 ### AI Coach
+
 - `POST /api/v1/coach/chat` - Chat với AQUA AI
 - `GET /api/v1/coach/suggestions` - Daily suggestions
 
 ### Levels & Achievements
+
 - `GET /api/v1/levels/current` - Current level info
 - `GET /api/v1/levels/achievements` - User achievements
 - `POST /api/v1/levels/claim` - Claim achievement
@@ -117,3 +122,7 @@ Xem `.env.example` để biết full list configuration options.
 - **Pydantic**: Data validation
 - **JWT**: Authentication
 - **OpenAI/Anthropic**: AI integration
+
+## Commit streak
+
+One

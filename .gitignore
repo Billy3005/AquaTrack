@@ -19,6 +19,16 @@ __pycache__/
 build/
 *.g.dart
 *.freezed.dart
+**/android/local.properties
+**/flutter/ephemeral/
+
+# IDE
+.idea/
+*.iml
+
+# Backend runtime / collected data (kept on disk, not committed)
+aquatrack_backend/uploads/
+aquatrack_backend/eval_photos/
 
 # ML
 *.tflite

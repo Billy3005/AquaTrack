@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AquaTrack — Bộ avatar</title>
+  <link rel="preconnect" href="https://rsms.me/" />
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+  <style>
+    html, body { margin: 0; padding: 0; background: #0B1120; color: #F1F5F9; }
+    body { font-family: "SF Pro Display", -apple-system, "Inter", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    * { box-sizing: border-box; }
+    button { font-family: inherit; }
+  </style>
+
+  <template id="__bundler_thumbnail">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" fill="#0B1120"/>
+      <path d="M50,28 C50,28 30,52 30,64 C30,73 39,80 50,80 C61,80 70,73 70,64 C70,52 50,28 50,28 Z" fill="#38BDF8"/>
+      <circle cx="44" cy="62" r="3" fill="#0A1B33"/><circle cx="56" cy="62" r="3" fill="#0A1B33"/>
+      <path d="M45,69 Q50,73 55,69" stroke="#0A1B33" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </svg>
+  </template>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="avatars/avatar-data.jsx"></script>
+  <script type="text/babel" src="avatars/avatar-engine.jsx"></script>
+  <script type="text/babel" src="avatars/avatar-cards.jsx"></script>
+  <script type="text/babel" src="avatars/collection-screen.jsx"></script>
+  <script type="text/babel" src="avatars/celebration.jsx"></script>
+  <script type="text/babel" src="avatars/gallery.jsx"></script>
+</body>
+</html>

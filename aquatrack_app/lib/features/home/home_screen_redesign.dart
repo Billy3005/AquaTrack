@@ -13,7 +13,7 @@ import '../level/providers/level_provider.dart';
 import 'providers/home_provider.dart';
 import 'widgets/water_formula_info_sheet.dart';
 
-/// Home Screen - Complete redesign matching aquatrack/project/components/home.jsx
+/// Home Screen - Complete redesign matching docs/prototype/project/components/home.jsx
 class HomeScreenRedesign extends ConsumerStatefulWidget {
   const HomeScreenRedesign({super.key});
 
