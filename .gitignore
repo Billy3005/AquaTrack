@@ -40,6 +40,12 @@ data/processed/
 wandb/
 mlruns/
 
+# Local databases (dev only — production uses managed Postgres; contain test
+# user data and must never be public)
+*.db
+*.sqlite
+*.sqlite3
+
 # OS
 .DS_Store
 Thumbs.db
