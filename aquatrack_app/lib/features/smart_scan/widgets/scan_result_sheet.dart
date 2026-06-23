@@ -128,6 +128,8 @@ class _ScanResultPanelState extends State<ScanResultPanel> {
                       children: [
                         Text(
                           _liquidName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: AppTextStyles.headlineMedium.copyWith(
                             color: Colors.white,
                             fontSize: 17,
@@ -139,10 +141,14 @@ class _ScanResultPanelState extends State<ScanResultPanel> {
                             const Icon(Icons.auto_awesome,
                                 color: AppColors.cyanAccent, size: 12),
                             const SizedBox(width: 4),
-                            Text(
-                              'AI · $_confidencePercent% chắc chắn',
-                              style: AppTextStyles.labelMedium.copyWith(
-                                color: AppColors.textBright,
+                            Flexible(
+                              child: Text(
+                                'AI · $_confidencePercent% chắc chắn',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.labelMedium.copyWith(
+                                  color: AppColors.textBright,
+                                ),
                               ),
                             ),
                           ],
@@ -169,10 +175,14 @@ class _ScanResultPanelState extends State<ScanResultPanel> {
               ),
               const SizedBox(height: 16),
 
-              // Stats grid
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+              // Stats grid — IntrinsicHeight bounds the Row's height so the
+              // CrossAxisAlignment.stretch tiles don't inherit the Column's
+              // unbounded vertical constraints (which crashed in debug and
+              // ballooned the panel in release, pushing the buttons off-screen).
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   Expanded(
                     child: _StatTile(
                       label: 'Lượng ước tính',
@@ -184,6 +194,7 @@ class _ScanResultPanelState extends State<ScanResultPanel> {
                     child: _StatTile(
                       label: 'Hydration value',
                       child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -210,7 +221,8 @@ class _ScanResultPanelState extends State<ScanResultPanel> {
                       ),
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
 
               // Effective contribution callout (only when not pure water)
@@ -303,12 +315,17 @@ class _ScanResultPanelState extends State<ScanResultPanel> {
                               ),
                             )
                           : Row(
+                              mainAxisSize: MainAxisSize.min,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(
-                                  'Log thức uống này',
-                                  style: AppTextStyles.labelLarge.copyWith(
-                                    color: Colors.white,
+                                Flexible(
+                                  child: Text(
+                                    'Log thức uống này',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.labelLarge.copyWith(
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -421,6 +438,7 @@ class _StatTile extends StatelessWidget {
         border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
