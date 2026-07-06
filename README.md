@@ -4,6 +4,8 @@
 
 **Kaggle "AI Agents: Intensive Vibe Coding" Capstone — Track: Concierge Agents.**
 
+🎥 **[Watch the 5-minute demo](https://www.youtube.com/watch?v=MvgcazEsXjw)**
+
 AquaTrack is a hydration app whose centrepiece is the **Coach Agent**: a personal
 concierge that reasons over your hydration data, checks the weather, reads a
 photo of your drink, and *takes actions on your behalf* — logging water,
@@ -173,4 +175,4 @@ MCP Inspector — see [`aquatrack_backend/mcp_server/README.md`](aquatrack_backe
 
 - Capstone writeup: [`docs/CAPSTONE_WRITEUP.md`](docs/CAPSTONE_WRITEUP.md)
 - Architecture decisions: [`docs/adr/`](docs/adr/)
-- Demo video: _(YouTube link — added at submission)_
+- Demo video: https://www.youtube.com/watch?v=MvgcazEsXjw
