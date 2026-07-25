@@ -53,8 +53,8 @@ class CoachingSuggestion(BaseModel):
 @router.post("/chat", response_model=CoachResponse)
 async def chat_with_coach(
     chat_request: ChatMessageRequest,
-    # current_user_id: str = Depends(get_current_user_id),  # Temporarily bypass auth
-    # db: Session = Depends(get_db),  # Temporarily bypass DB
+    current_user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
 ):
     """
     Chat interface with AI Coach - context-aware responses
@@ -62,29 +62,22 @@ async def chat_with_coach(
     user_message = chat_request.content.lower().strip()
     context = chat_request.context or {}
 
-    # Get user's recent data for context
-    # TODO: Replace with real auth (current_user_id, db) when re-enabling auth
-    # today_stats = intake_log_crud.get_daily_stats(db, current_user_id, today)
-
-    # Analyze user's current state
+    # Real hydration context for the acting user (JWT-derived id, never client-supplied)
+    today_stats = intake_log_crud.get_daily_stats(db, current_user_id, date.today())
     current_hour = datetime.now().hour
-    total_today = 500  # today_stats["total_effective_ml"] - dummy data
-    log_count_today = 3  # today_stats["log_count"] - dummy data
 
     # Generate contextual response using Enhanced AI Coach service with analytics
-    print(f"[ENDPOINT DEBUG] Calling ai_coach_service with message: {user_message}")
     response = await ai_coach_service.generate_coach_response(
         user_message=user_message,
         user_context=context,
         hydration_data={
-            "total_today": total_today,
-            "log_count": log_count_today,
+            "total_today": today_stats["total_effective_ml"],
+            "log_count": today_stats["log_count"],
             "current_hour": current_hour,
         },
-        user_id=None,  # Bypass user lookup for testing
-        db=None,  # Bypass database for testing
+        user_id=current_user_id,
+        db=db,
     )
-    print("[ENDPOINT DEBUG] ai_coach_service returned response successfully")
 
     return response
 
