@@ -27,6 +27,11 @@ build/
 .idea/
 *.iml
 
+# Claude Design handoff bundle (aquatrack/) — HTML/JSX prototypes exported from
+# claude.ai/design. Kept locally as the visual reference for aquatrack_admin/,
+# but never committed: it is not source, and it duplicates the app UI.
+/aquatrack/
+
 # Backend runtime / collected data (kept on disk, not committed)
 aquatrack_backend/uploads/
 aquatrack_backend/eval_photos/

@@ -1,5 +1,6 @@
 # Export all models for easy imports
 from .achievement import Achievement, AchievementClaim
+from .audit_log import AuditLog
 from .challenge import Challenge, ChallengeStatus
 from .coin_gift import CoinGift
 from .conversation import Conversation, ConversationSession
@@ -36,4 +37,5 @@ __all__ = [
     "QuestClaim",
     "ReminderLog",
     "Referral",
+    "AuditLog",
 ]

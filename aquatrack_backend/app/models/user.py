@@ -26,6 +26,10 @@ class User(Base):
     google_sub = Column(String, unique=True, nullable=True, index=True)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
+    # Admin Console access ladder — see app/core/admin_roles.py. Ordinary app
+    # users stay at "user" and are rejected by require_admin. Never settable
+    # through any public endpoint; only the seed script / a super admin.
+    role = Column(String, nullable=False, default="user", index=True)
     # Password Reset: 6-digit code (hash only), short TTL, attempt-limited.
     reset_code_hash = Column(String, nullable=True)
     reset_code_expires_at = Column(DateTime, nullable=True)

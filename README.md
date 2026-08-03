@@ -108,6 +108,7 @@ aquatrack_backend/
   mcp_server/     MCP server — exposes the API as agent tools   ← MCP Server concept
   agent/          Coach Agent — Claude tool-use loop over MCP   ← Agent concept
 aquatrack_app/    Flutter client
+aquatrack_admin/  Admin Console — staff web dashboard (Vite + React + TS)
 aquatrack_ml/     ML experiments (training data pipeline)
 docs/             ADRs, capstone writeup, design prototype
 ```
@@ -149,6 +150,26 @@ cd .. && python -m agent.coach_agent "Mình vừa uống 1 ly 300ml, hôm nay đ
 Run with no argument for an interactive chat. Tool calls are printed inline so you
 can watch the agent reason and act. To inspect the MCP tools directly, use the
 MCP Inspector — see [`aquatrack_backend/mcp_server/README.md`](aquatrack_backend/mcp_server/README.md).
+
+### 3. Admin Console (staff dashboard)
+
+A web console for the people who run AquaTrack, not for its users: hydration
+analytics, user administration, and an append-only audit trail of every
+sensitive action.
+
+```bash
+cd aquatrack_backend
+python scripts/seed_admin_demo.py      # staff logins + 200 sample users
+
+cd ../aquatrack_admin
+npm install && npm run dev             # http://localhost:5173
+```
+
+Staff sign in with an ordinary app account whose `users.role` is not `user`;
+`/api/v1/admin/me` decides access and ships the caller's capability map so the
+UI disables exactly what the API would refuse. Full details, including the
+permission matrix and which screens are still stubs, are in
+[`aquatrack_admin/README.md`](aquatrack_admin/README.md).
 
 ## Deployment
 

@@ -75,6 +75,23 @@ Language    : Tiếng Việt (UI) + English (code/comment)
 - Social features → Requires /friends/* APIs (Phase 2)
 ```
 
+## Admin Console (aquatrack_admin/)
+```
+Stack   : Vite + React 18 + TypeScript · không dùng thư viện UI/chart nào
+Chạy    : cd aquatrack_admin && npm run dev  → :5173 (proxy /api → :8000)
+Seed    : cd aquatrack_backend && python scripts/seed_admin_demo.py
+Login   : hung.le@aquatrack.vn / Admin@12345 (super_admin) + 3 vai trò khác
+
+✅ THẬT   : Tổng quan · Người dùng · Chi tiết người dùng · Nhật ký thao tác
+⏳ SẮP CÓ : Gamification · Thử thách & nội dung · Báo cáo · Thông báo đẩy · Phân quyền
+            (mỗi trang liệt kê rõ việc cần làm trước — KHÔNG dùng mock data)
+
+Phân quyền: app/core/admin_roles.py là nguồn duy nhất. Server chặn bằng
+require_cap(), console nhận map qua /admin/me để disable nút. Sửa 1 chỗ.
+Kiểm toán : mọi thao tác nhạy cảm ghi vào bảng audit_logs, commit cùng transaction.
+Chi tiết  : aquatrack_admin/README.md
+```
+
 ## Agents
 | Làm việc về | Agent |
 |---|---|

@@ -40,6 +40,7 @@ def init_db() -> None:
     """
     # Import all models here to ensure they're registered
 
+    from app.models import AuditLog  # noqa: F401
     from app.models import Challenge  # noqa: F401
     from app.models import CoinGift  # noqa: F401
     from app.models import Conversation  # noqa: F401
@@ -186,3 +187,39 @@ def _ensure_user_columns() -> None:
                     ),
                     {"lvl": level, "uid": uid},
                 )
+        if "role" not in existing:
+            # Admin Console rollout: staff access ladder (app/core/admin_roles).
+            # Every existing row becomes a plain "user" — staff must be promoted
+            # deliberately via scripts/seed_admin_demo.py, never by a migration.
+            conn.execute(
+                text("ALTER TABLE users ADD COLUMN role VARCHAR DEFAULT 'user'")
+            )
+            conn.execute(text("UPDATE users SET role = 'user' WHERE role IS NULL"))
+            conn.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_users_role ON users (role)")
+            )
+
+    _ensure_indexes(inspector)
+
+
+def _ensure_indexes(inspector) -> None:
+    """Add indexes that create_all() cannot: it never touches a table that
+    already exists, so an index introduced later needs an explicit CREATE."""
+    if "intake_logs" not in inspector.get_table_names():
+        return
+    with engine.begin() as conn:
+        # Every dashboard aggregate and the app's own stats endpoints scan
+        # intake_logs by time range; without this they are sequential scans.
+        conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_intake_logs_logged_at "
+                "ON intake_logs (logged_at)"
+            )
+        )
+        # Per-user time ranges (user detail, 7-day averages, streaks).
+        conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_intake_logs_user_logged_at "
+                "ON intake_logs (user_id, logged_at)"
+            )
+        )

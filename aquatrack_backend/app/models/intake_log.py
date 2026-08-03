@@ -1,7 +1,6 @@
 import uuid
 
-from sqlalchemy import (Boolean, Column, DateTime, Float, ForeignKey, Integer,
-                        String)
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -34,7 +33,9 @@ class IntakeLog(Base):
     bonus_xp = Column(Integer, default=0)  # Extra XP from achievements, streaks, etc.
 
     # Metadata
-    logged_at = Column(DateTime(timezone=True), server_default=func.now())
+    # Indexed: every Admin Console analytic and the app's own daily/weekly stats
+    # scan this table by time range, and it is the fastest-growing table here.
+    logged_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Optional tracking

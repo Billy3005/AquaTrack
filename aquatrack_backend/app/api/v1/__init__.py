@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 # Import individual routers
-from app.api.v1.endpoints import (auth, avatars, coach, friends, intake,
+from app.api.v1.endpoints import (admin, auth, avatars, coach, friends, intake,
                                   levels, quests, shop, stats, users, vision,
                                   water_profile)
 
@@ -23,6 +23,7 @@ api_router.include_router(shop.router, prefix="/shop", tags=["shop"])
 api_router.include_router(
     water_profile.router, prefix="/water-profile", tags=["water-calculation"]
 )
+api_router.include_router(admin.router, prefix="/admin", tags=["admin-console"])
 
 
 # Health check endpoint

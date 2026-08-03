@@ -1,0 +1,112 @@
+/* Global chrome + keyframes, ported from the prototype's <style> block. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #f3f7fb;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  min-width: 1280px;
+}
+
+button {
+  font-family: inherit;
+}
+
+a {
+  color: #0284c7;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #0ea5e9;
+  text-decoration: underline;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd8e4;
+  border-radius: 6px;
+  border: 3px solid #f3f7fb;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes ad-shim {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes ad-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ad-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ad-toast {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 14px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes ad-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes ad-dash {
+  to {
+    stroke-dashoffset: var(--to);
+  }
+}
+
+@keyframes ad-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* The login screen is the one page that is not a 1280px-wide console. */
+body.ad-auth {
+  min-width: 0;
+}
