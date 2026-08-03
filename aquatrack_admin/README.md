@@ -59,6 +59,46 @@ Mọi lần đổi vai trò — kể cả do script — đều ghi vào `audit_l
 
 ---
 
+## Hai chế độ chạy
+
+Console **luôn chạy trên máy bạn**. Thứ duy nhất thay đổi là nó đọc API nào —
+không có gì được deploy, không có URL công khai nào tồn tại.
+
+```bash
+# Nghịch / demo — backend local + 200 user giả. Làm gì cũng không sao.
+npm run dev
+
+# Vận hành thật — dữ liệu người dùng thật trên Railway.
+VITE_API_TARGET=https://<railway-url> npm run dev
+```
+
+Vite proxy gọi API từ Node chứ không phải từ trình duyệt, nên chế độ thứ hai
+**không dính CORS** — không cần đụng `ALLOWED_ORIGINS`.
+
+Ở chế độ thật, mọi thao tác là thật và không hoàn tác được. "Reset dữ liệu" xoá
+thật lịch sử uống nước của một người thật; audit log ghi lại nhưng không phục
+hồi được.
+
+### Tạo tài khoản nhân sự trên production
+
+`seed_admin_demo.py` từ chối chạy ngoài môi trường dev, nên production cần một
+script riêng. Nó **không tạo tài khoản mới** — chỉ nâng/hạ quyền một tài khoản
+đã đăng ký qua ứng dụng:
+
+```bash
+cd aquatrack_backend
+# PowerShell — trỏ vào database production trước
+$env:DATABASE_URL="postgresql://..."
+
+python scripts/promote_admin.py --list                    # ai đang là nhân sự
+python scripts/promote_admin.py ban@example.com           # nâng lên super_admin
+python scripts/promote_admin.py ai_do@example.com --role user   # thu hồi quyền
+```
+
+Script in ra database đang nhắm tới, bắt gõ `YES` để xác nhận, ghi vào
+`audit_logs`, và từ chối hạ quyền super admin đang hoạt động cuối cùng. Đăng
+nhập console bằng chính mật khẩu ứng dụng của tài khoản đó.
+
 ## Đăng nhập & phân quyền
 
 Console dùng chung `POST /api/v1/auth/login` với ứng dụng di động — không có kho
@@ -135,7 +175,7 @@ biểu đồ giờ lệch đúng 7 tiếng.
 
 ```bash
 npm run build      # -> dist/
-npm run preview    # xem thử bản build tại :4173
+npm run preview    # xem thử bản build tại :4173 (cũng proxy /api như dev)
 ```
 
 `dist/` là static thuần, deploy được lên Vercel/Netlify/Cloudflare Pages, hoặc

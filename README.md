@@ -167,7 +167,10 @@ npm install && npm run dev             # http://localhost:5173
 
 Staff sign in with an ordinary app account whose `users.role` is not `user`;
 `/api/v1/admin/me` decides access and ships the caller's capability map so the
-UI disables exactly what the API would refuse. Full details, including the
+UI disables exactly what the API would refuse. The console is a local operator
+tool — it is never deployed, and points at whichever API `VITE_API_TARGET`
+names. To grant access on a real database, `scripts/promote_admin.py` promotes
+one existing account (it cannot create one). Full details, including the
 permission matrix and which screens are still stubs, are in
 [`aquatrack_admin/README.md`](aquatrack_admin/README.md).
 

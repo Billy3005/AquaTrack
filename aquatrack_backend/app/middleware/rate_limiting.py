@@ -5,7 +5,7 @@ Production-ready với monitoring, analytics và flexible configuration
 
 import time
 from collections import defaultdict, deque
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
@@ -255,10 +255,27 @@ def get_client_identifier(request: Request) -> str:
     """
     Generate client identifier for rate limiting
     Priority: user_id > API key > IP address
+
+    Identifying by user matters more than it looks. Vietnamese mobile carriers
+    put large numbers of subscribers behind the same NAT address, so a purely
+    IP-keyed limiter would let one heavy user exhaust the budget of everyone on
+    their network — and would leave a per-account abuser free to rotate IPs.
+    The token is decoded, not looked up: no database hit on every request.
     """
-    # Try to get authenticated user ID
-    if hasattr(request.state, "user_id") and request.state.user_id:
-        return f"user:{request.state.user_id}"
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        # Local import: this middleware is imported at app start-up, before
+        # settings-dependent modules are safe to pull in at module scope.
+        from app.core.security import verify_token
+
+        try:
+            user_id = verify_token(auth[7:])
+            if user_id:
+                return f"user:{user_id}"
+        except Exception:
+            # An unreadable token is not a rate-limiting decision; fall through
+            # to IP and let the auth dependency reject it properly.
+            pass
 
     # Try API key from headers
     api_key = request.headers.get("X-API-Key")
@@ -282,9 +299,17 @@ class RateLimitConfig:
     GENERAL_LIMIT = 1000
     GENERAL_WINDOW = 3600
 
-    # Authentication limits (per 15 minutes) - strict to prevent brute force
-    AUTH_LIMIT = 5
+    # Credential-submitting endpoints (per 15 minutes) - strict, brute force.
+    # Applies ONLY to login/register/google/password-reset. It must never cover
+    # /auth/me or /auth/refresh: those are ordinary session traffic that the app
+    # fires on every resume and every token expiry, and lumping them in here
+    # would lock real users out within minutes of opening the app.
+    AUTH_LIMIT = 15
     AUTH_WINDOW = 900
+
+    # Session endpoints (/auth/me, /auth/refresh, /auth/logout) - generous.
+    SESSION_LIMIT = 120
+    SESSION_WINDOW = 3600
 
     # AI Coach limits (per minute) - moderate for real-time chat
     AI_COACH_LIMIT = 20
@@ -293,6 +318,14 @@ class RateLimitConfig:
     # Vision/Smart Scan limits (per minute) - limited due to ML processing cost
     VISION_LIMIT = 10
     VISION_WINDOW = 60
+
+    # Daily caps for the endpoints that spend real money on the Anthropic API.
+    # The per-minute limits above stop bursts but do nothing about sustained
+    # use: 10 scans/minute is 14,400 scans/day from a single account. These
+    # second-tier windows are what actually bounds the monthly bill.
+    VISION_DAILY_LIMIT = 120
+    AI_COACH_DAILY_LIMIT = 300
+    AI_DAILY_WINDOW = 86400
 
     # Search limits (per minute) - moderate
     SEARCH_LIMIT = 30
@@ -310,8 +343,11 @@ class RateLimitConfig:
     ANALYTICS_LIMIT = 100
     ANALYTICS_WINDOW = 3600
 
-    # Admin endpoints (per hour) - very strict
-    ADMIN_LIMIT = 50
+    # Admin Console (per hour). Not "very strict": these routes are already
+    # gated by require_cap, and a single console session legitimately fires
+    # dozens of reads while an operator browses. Too tight a limit here locks
+    # out the person investigating an incident, which is when they need it most.
+    ADMIN_LIMIT = 600
     ADMIN_WINDOW = 3600
 
 
@@ -329,14 +365,27 @@ async def rate_limit_middleware(request: Request, call_next):
         # Get client identifier
         client_id = get_client_identifier(request)
 
-        # Determine rate limit based on endpoint
+        # Determine rate limits based on endpoint. A path may carry several
+        # tiers (e.g. a burst window plus a daily cap); all must pass.
         path = request.url.path
-        max_requests, window = _get_rate_limit_for_path(path)
+        tiers = _get_rate_limit_tiers(path)
 
-        # Check rate limit với analytics
-        is_allowed, headers = rate_limiter.is_allowed(
-            client_id, max_requests, window, path
-        )
+        is_allowed = True
+        headers: Dict[str, str] = {}
+        max_requests, window = tiers[0][0], tiers[0][1]
+
+        for tier_max, tier_window, bucket in tiers:
+            # Each tier keeps its own bucket: the limiter prunes a client's
+            # deque to whatever window it is called with, so a shared key would
+            # let the 60s tier erase the 24h tier's history.
+            allowed, tier_headers = rate_limiter.is_allowed(
+                f"{client_id}|{bucket}", tier_max, tier_window, path
+            )
+            headers = tier_headers
+            if not allowed:
+                is_allowed = False
+                max_requests, window = tier_max, tier_window
+                break
 
         if not is_allowed:
             # Enhanced error response với helpful info
@@ -392,25 +441,73 @@ async def rate_limit_middleware(request: Request, call_next):
         return response
 
 
+# Credential-submitting auth routes. Everything else under /auth/ is ordinary
+# session traffic and must not share the brute-force budget.
+CREDENTIAL_AUTH_PATHS = (
+    "/auth/login",
+    "/auth/register",
+    "/auth/google",
+    "/auth/forgot-password",
+    "/auth/reset-password",
+)
+
+
+def _get_rate_limit_tiers(path: str) -> List[Tuple[int, int, str]]:
+    """Rate limit tiers that apply to a path.
+
+    Returns a list of (max_requests, window_seconds, bucket_label). A request
+    must satisfy every tier. Multiple tiers let a path have both a burst limit
+    and a long-window cap — the AI endpoints need both, because a per-minute
+    limit says nothing about what a single account can spend in a day.
+
+    Each tier gets its own bucket label because the limiter stores one
+    timestamp deque per key and prunes it to the window it was called with;
+    sharing a key between a 60s and an 86400s tier would have the short window
+    silently delete the long window's history.
+    """
+    # Credential endpoints - strict, brute force protection
+    if any(path.endswith(p) or p in path for p in CREDENTIAL_AUTH_PATHS):
+        return [(RateLimitConfig.AUTH_LIMIT, RateLimitConfig.AUTH_WINDOW, "auth")]
+
+    # Remaining /auth/ routes (/me, /refresh, /logout) - normal session traffic
+    if "/auth/" in path:
+        return [
+            (RateLimitConfig.SESSION_LIMIT, RateLimitConfig.SESSION_WINDOW, "session")
+        ]
+
+    # AI Coach - burst limit plus a daily spend cap
+    if "/coach/" in path:
+        return [
+            (RateLimitConfig.AI_COACH_LIMIT, RateLimitConfig.AI_COACH_WINDOW, "burst"),
+            (
+                RateLimitConfig.AI_COACH_DAILY_LIMIT,
+                RateLimitConfig.AI_DAILY_WINDOW,
+                "daily",
+            ),
+        ]
+
+    # Vision/Smart Scan - the most expensive call in the product
+    if "/vision/" in path or "estimate-volume" in path:
+        return [
+            (RateLimitConfig.VISION_LIMIT, RateLimitConfig.VISION_WINDOW, "burst"),
+            (
+                RateLimitConfig.VISION_DAILY_LIMIT,
+                RateLimitConfig.AI_DAILY_WINDOW,
+                "daily",
+            ),
+        ]
+
+    return [(*_get_rate_limit_for_path(path), "general")]
+
+
 def _get_rate_limit_for_path(path: str) -> Tuple[int, int]:
     """
-    Get appropriate rate limit for AquaTrack API paths
+    Single-tier limits for the remaining paths.
+    Auth, Coach and Vision are handled by _get_rate_limit_tiers above.
     Returns (max_requests, window_seconds)
     """
-    # Authentication endpoints - strict for security
-    if "/auth/" in path:
-        return RateLimitConfig.AUTH_LIMIT, RateLimitConfig.AUTH_WINDOW
-
-    # AI Coach endpoints - moderate for real-time interaction
-    elif "/coach/" in path:
-        return RateLimitConfig.AI_COACH_LIMIT, RateLimitConfig.AI_COACH_WINDOW
-
-    # Vision/Smart Scan endpoints - limited due to ML costs
-    elif "/vision/" in path or "estimate-volume" in path:
-        return RateLimitConfig.VISION_LIMIT, RateLimitConfig.VISION_WINDOW
-
     # Social features - generous for user interaction
-    elif "/friends/" in path or "/social/" in path:
+    if "/friends/" in path or "/social/" in path:
         return RateLimitConfig.SOCIAL_LIMIT, RateLimitConfig.SOCIAL_WINDOW
 
     # Search endpoints - moderate
@@ -425,7 +522,7 @@ def _get_rate_limit_for_path(path: str) -> Tuple[int, int]:
     elif "/stats" in path or "/analytics" in path or "/insights" in path:
         return RateLimitConfig.ANALYTICS_LIMIT, RateLimitConfig.ANALYTICS_WINDOW
 
-    # Admin endpoints - very strict
+    # Admin Console
     elif "/admin/" in path or "/rate-limit" in path:
         return RateLimitConfig.ADMIN_LIMIT, RateLimitConfig.ADMIN_WINDOW
 

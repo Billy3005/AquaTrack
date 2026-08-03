@@ -1,5 +1,6 @@
 from typing import List
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -113,7 +114,13 @@ class Settings(BaseSettings):
     )
 
     # Security Settings (Production)
-    ENABLE_RATE_LIMITING: bool = False  # Disabled for development testing
+    # Left unset, this follows ENVIRONMENT: off in development (so repeated
+    # login testing does not lock you out), on everywhere else. Setting the env
+    # var explicitly always wins. It used to default to False unconditionally,
+    # which meant production shipped with no rate limiting at all — the app
+    # calls Claude on three separate features, so that was an uncapped bill as
+    # much as it was a brute-force hole.
+    ENABLE_RATE_LIMITING: bool = False
     BCRYPT_ROUNDS: int = 12
     SESSION_COOKIE_SECURE: bool = False  # Set True in production with HTTPS
     SESSION_COOKIE_HTTPONLY: bool = True
@@ -172,6 +179,17 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=True
     )
+
+    @model_validator(mode="after")
+    def _derive_environment_defaults(self) -> "Settings":
+        """Turn on rate limiting outside development unless told otherwise.
+
+        `model_fields_set` only contains fields that were actually supplied (by
+        env var or .env), so an explicit ENABLE_RATE_LIMITING=false still wins.
+        """
+        if "ENABLE_RATE_LIMITING" not in self.model_fields_set:
+            self.ENABLE_RATE_LIMITING = self.ENVIRONMENT != "development"
+        return self
 
 
 # Global settings instance
