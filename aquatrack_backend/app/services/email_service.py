@@ -469,10 +469,14 @@ class EmailService:
         # Update user as verified
         user = user_crud.get(db, token_data["user_id"])
         if user and user.email == token_data["email"]:
-            # Mark email as verified
-            user_crud.update_preferences(
-                db, user_id=user.id, preferences={"email_verified": True}
-            )
+            # Mark email as verified. This used to go through
+            # update_preferences({"email_verified": True}) — a column that does
+            # not exist, so verification silently never took effect. The flag is
+            # `is_verified`, and it is written here rather than through the
+            # preferences path because users must not be able to set it.
+            user.is_verified = True
+            db.add(user)
+            db.commit()
 
             # Send welcome email
             await self.notification_service.send_welcome_email(

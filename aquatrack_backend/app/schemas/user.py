@@ -73,6 +73,27 @@ class UserUpdate(BaseModel):
         return v
 
 
+class UserPreferencesUpdate(BaseModel):
+    """Settings a user may change about themselves.
+
+    Deliberately a closed schema (``extra="forbid"``): this endpoint used to
+    accept a free-form dict and ``setattr`` every matching column, which meant a
+    request body of ``{"role": "super_admin"}`` promoted the caller to full
+    Admin Console access — and ``{"coins": 999999}`` or ``{"is_active": true}``
+    worked just as well. Anything not listed here is not a preference.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    daily_goal_ml: Optional[int] = Field(None, ge=1000, le=5000)
+    notifications_enabled: Optional[bool] = None
+    theme_preference: Optional[str] = Field(None, pattern="^(light|dark|auto)$")
+    language_preference: Optional[str] = Field(None, pattern="^(vi|en)$")
+    sound_enabled: Optional[bool] = None
+    timezone: Optional[str] = Field(None, max_length=50)
+    push_token: Optional[str] = Field(None, max_length=512)
+
+
 class UserResponse(BaseModel):
     """Schema for user data response"""
 

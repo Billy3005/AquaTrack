@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud import user_crud
-from app.schemas.user import UserResponse, UserStats, UserUpdate
+from app.schemas.user import (UserPreferencesUpdate, UserResponse, UserStats,
+                              UserUpdate)
 from app.services.avatar_service import AvatarService
 from app.services.onboarding_service import OnboardingService
 from app.services.streak_service import StreakService
@@ -153,17 +154,20 @@ async def get_user_stats(
 
 @router.post("/preferences")
 async def update_user_preferences(
-    preferences: dict,
+    preferences: UserPreferencesUpdate,
     current_user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """
     Update user preferences (batch update).
 
-    Accepts a dictionary of preference updates for flexible settings management.
+    Takes a closed schema, not a free-form dict: an unknown key is a 422 rather
+    than a silent write to whatever column happens to share its name.
     """
     user = user_crud.update_preferences(
-        db, user_id=current_user_id, preferences=preferences
+        db,
+        user_id=current_user_id,
+        preferences=preferences.model_dump(exclude_unset=True),
     )
     if not user:
         raise HTTPException(

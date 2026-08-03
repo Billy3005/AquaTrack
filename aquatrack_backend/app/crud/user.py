@@ -118,16 +118,38 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         db.refresh(user)
         return user
 
+    # The only columns a user is allowed to change about themselves through the
+    # preferences endpoint. Anything outside this set — `role`, `is_active`,
+    # `coins`, `total_xp`, `hashed_password`, `email` — is either privileged or
+    # earned, and must go through its own endpoint with its own checks.
+    PREFERENCE_FIELDS = frozenset(
+        {
+            "daily_goal_ml",
+            "notifications_enabled",
+            "theme_preference",
+            "language_preference",
+            "sound_enabled",
+            "timezone",
+            "push_token",
+        }
+    )
+
     def update_preferences(
         self, db: Session, *, user_id: str, preferences: dict
     ) -> User:
-        """Update user preferences (settings)"""
+        """Update user preferences (settings).
+
+        Second line of defence behind ``UserPreferencesUpdate``: even if a
+        caller reaches this method with a raw dict, only allow-listed columns
+        can be written. The previous `hasattr` check accepted every column on
+        the model and made self-promotion to super_admin a one-line request.
+        """
         user = self.get(db, user_id)
         if not user:
             return None
 
         for key, value in preferences.items():
-            if hasattr(user, key) and value is not None:
+            if key in self.PREFERENCE_FIELDS and value is not None:
                 setattr(user, key, value)
 
         db.add(user)

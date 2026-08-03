@@ -189,7 +189,9 @@ async def login(request: UserLogin, db: Session = Depends(get_db)):
     password = request.password
 
     # Debug logging
-    print(f"DEBUG: Login attempt - email: {email}, password: {password}")
+    # Never log the password — Railway retains stdout, and the Admin Console
+    # now shares this endpoint, so a leak here would expose staff credentials.
+    print(f"DEBUG: Login attempt - email: {email}")
 
     # Simple validation to avoid 500 errors
     if not email or not password:
