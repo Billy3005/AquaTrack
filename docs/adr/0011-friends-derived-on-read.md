@@ -1,4 +1,4 @@
-# ADR-0003: Friends feature — reshape backend to the frontend contract, derive social data on read
+# ADR-0011: Friends feature — reshape backend to the frontend contract, derive social data on read
 
 ## Status
 

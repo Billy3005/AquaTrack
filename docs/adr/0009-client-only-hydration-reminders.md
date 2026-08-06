@@ -1,4 +1,4 @@
-# 0001 — Client-only Hydration Reminders
+# 0009 — Client-only Hydration Reminders
 
 - Status: Accepted
 - Date: 2026-06-05

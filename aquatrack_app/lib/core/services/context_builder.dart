@@ -1,6 +1,5 @@
 import 'package:aquatrack_app/core/services/insight_engine.dart';
 import 'package:aquatrack_app/core/services/weather_repository.dart';
-import 'package:aquatrack_app/core/services/location_service.dart';
 
 /// Input data from app for context building
 class StatsData {

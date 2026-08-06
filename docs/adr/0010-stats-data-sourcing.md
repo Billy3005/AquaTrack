@@ -1,4 +1,4 @@
-# 0002 — Stats screen data sourcing
+# 0010 — Stats screen data sourcing
 
 - Status: Accepted
 - Date: 2026-06-05

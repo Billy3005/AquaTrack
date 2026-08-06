@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:aquatrack_app/core/services/context_builder.dart';
 import 'package:aquatrack_app/core/services/insight_engine.dart';
 import 'package:aquatrack_app/core/services/weather_repository.dart';
-import 'package:aquatrack_app/core/services/location_service.dart';
 
 void main() {
   group('ContextBuilder', () {
