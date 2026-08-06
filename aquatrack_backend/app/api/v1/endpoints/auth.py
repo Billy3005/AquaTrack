@@ -157,36 +157,6 @@ async def register_user(user_create: UserCreate, db: Session = Depends(get_db)):
         )
 
 
-@router.post("/test-login")
-async def test_login(request: UserLogin):
-    """
-    Test endpoint to debug schema parsing
-    """
-    return {"email": request.email, "password": request.password, "status": "received"}
-
-
-@router.post("/test-db")
-async def test_db_connection(db: Session = Depends(get_db)):
-    """
-    Test database connection
-    """
-    try:
-        # Try to query user table
-        result = db.execute("SELECT COUNT(*) FROM users")
-        count = result.scalar()
-        return {"status": "success", "user_count": count}
-    except Exception as e:
-        return {"status": "error", "error": str(e)}
-
-
-@router.get("/test-simple")
-async def test_simple():
-    """
-    Simple test endpoint
-    """
-    return {"status": "working", "message": "Endpoint is accessible"}
-
-
 @router.post("/login")
 async def login(request: UserLogin, db: Session = Depends(get_db)):
     """
