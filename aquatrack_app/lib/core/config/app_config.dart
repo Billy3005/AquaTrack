@@ -13,8 +13,6 @@ class AppConfig {
   static String get apiBaseUrl => isDebug ? _devApiBaseUrl : _prodApiBaseUrl;
   static const String apiVersion = 'v1';
 
-  // Simple endpoints for CORS testing
-  static String get simpleLoginUrl => '$apiBaseUrl/simple-login';
   static const Duration apiTimeout =
       Duration(seconds: 90); // Increased for AI responses
   static const Duration connectTimeout = Duration(seconds: 15);

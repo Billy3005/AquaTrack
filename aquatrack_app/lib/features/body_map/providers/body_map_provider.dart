@@ -2,8 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../core/repositories/body_map_repository.dart';
-import '../../../core/sync/body_map_sync_repository.dart';
-import '../../../shared/storage/hive_storage_service.dart';
 import '../models/organ_model.dart';
 
 part 'body_map_provider.g.dart';
