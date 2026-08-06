@@ -28,9 +28,10 @@ them embarrass you on the leaderboard?
 import argparse
 import json
 import os
+import re
 import sys
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -55,6 +56,35 @@ TEST_EMAIL_MARKERS = (
     "asd",
     "qwe",
 )
+
+# `aquatrack.com` is not a domain this project owns — the real one is
+# aquatrack.vn. Anything addressed there was invented by a script or typed to
+# get past a signup form.
+FOREIGN_BRAND_DOMAINS = ("@aquatrack.com",)
+
+# A run of digits this long in the local part is a timestamp, not a person:
+# integration tests mint unique addresses like cv1781556080118250500@… .
+# The substring list above misses these entirely, because nothing in them says
+# "test".
+MACHINE_DIGIT_RUN = re.compile(r"\d{8,}")
+
+
+def looks_machine_made(email: str, name: str) -> bool:
+    """Best-effort guess that a row came from a script or a throwaway signup.
+
+    Deliberately errs towards flagging: this feeds a report a human reads
+    before deleting anything, and a false positive costs one glance while a
+    false negative leaves a weak-credential account live on a public app.
+    """
+    email = (email or "").lower()
+    if any(marker in email for marker in TEST_EMAIL_MARKERS):
+        return True
+    if email.endswith(FOREIGN_BRAND_DOMAINS):
+        return True
+    if MACHINE_DIGIT_RUN.search(email.split("@")[0]):
+        return True
+    return "test" in (name or "").lower()
+
 
 # Accounts created by scripts/seed_admin_demo.py — synthetic, removable with
 # that script's own --wipe, and reported separately so they do not drown out
@@ -168,8 +198,8 @@ def audit(metadata: MetaData) -> None:
                 seeded += 1
                 continue
 
-            name = f"{record.get('username') or ''} {record.get('full_name') or ''}".lower()
-            if any(m in email for m in TEST_EMAIL_MARKERS) or "test" in name:
+            name = f"{record.get('username') or ''} {record.get('full_name') or ''}"
+            if looks_machine_made(email, name):
                 record["_logs"] = log_counts.get(record.get("id"), 0)
                 suspects.append(record)
 
@@ -244,7 +274,7 @@ def main() -> None:
             out_path = os.path.join(out_dir, f"aquatrack-backup-{stamp}.json")
 
         payload = {
-            "exported_at": datetime.utcnow().isoformat(),
+            "exported_at": datetime.now(timezone.utc).isoformat(),
             "source": describe_target(),
             "tables": data,
         }
