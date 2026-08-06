@@ -72,3 +72,6 @@ ollama_response.txt
 test_ollama_*.py
 
 .task
+# Database exports from scripts/backup_db.py — contain emails and password
+# hashes. Personal data, never committed.
+aquatrack_backend/backups/
