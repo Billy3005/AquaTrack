@@ -373,6 +373,7 @@ async def rate_limit_middleware(request: Request, call_next):
         is_allowed = True
         headers: Dict[str, str] = {}
         max_requests, window = tiers[0][0], tiers[0][1]
+        tightest = None  # (remaining, headers, max, window)
 
         for tier_max, tier_window, bucket in tiers:
             # Each tier keeps its own bucket: the limiter prunes a client's
@@ -381,11 +382,25 @@ async def rate_limit_middleware(request: Request, call_next):
             allowed, tier_headers = rate_limiter.is_allowed(
                 f"{client_id}|{bucket}", tier_max, tier_window, path
             )
-            headers = tier_headers
+
             if not allowed:
                 is_allowed = False
+                headers = tier_headers
                 max_requests, window = tier_max, tier_window
                 break
+
+            # Report the tier closest to exhaustion, not whichever happened to
+            # run last. A caller reading "120 remaining" off the daily cap while
+            # the minute burst allows 3 more cannot back off correctly.
+            try:
+                remaining = int(tier_headers.get("X-RateLimit-Remaining", tier_max))
+            except (TypeError, ValueError):
+                remaining = tier_max
+            if tightest is None or remaining < tightest[0]:
+                tightest = (remaining, tier_headers, tier_max, tier_window)
+
+        if is_allowed and tightest is not None:
+            _, headers, max_requests, window = tightest
 
         if not is_allowed:
             # Enhanced error response với helpful info

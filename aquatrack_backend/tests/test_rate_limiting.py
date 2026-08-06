@@ -8,12 +8,9 @@ resource. Both are regressions worth catching.
 
 import pytest
 
-from app.middleware.rate_limiting import (
-    CREDENTIAL_AUTH_PATHS,
-    RateLimitConfig,
-    RateLimiter,
-    _get_rate_limit_tiers,
-)
+from app.middleware.rate_limiting import (CREDENTIAL_AUTH_PATHS,
+                                          RateLimitConfig, RateLimiter,
+                                          _get_rate_limit_tiers)
 
 
 class TestPathClassification:
@@ -166,3 +163,42 @@ class TestEnvironmentDefault:
         monkeypatch.setenv("ENVIRONMENT", "production")
         monkeypatch.setenv("ENABLE_RATE_LIMITING", "false")
         assert Settings(_env_file=None).ENABLE_RATE_LIMITING is False
+
+
+class TestReportedHeaders:
+    """The X-RateLimit-* headers a client sees must describe the tier that will
+    actually stop them next, not whichever tier the loop evaluated last."""
+
+    def _limits(self, path, calls=1):
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
+        from app.middleware import rate_limiting as module
+        from app.middleware.rate_limiting import (RateLimiter,
+                                                  rate_limit_middleware)
+
+        module.rate_limiter = RateLimiter()  # isolate from other tests
+        app = FastAPI()
+        app.middleware("http")(rate_limit_middleware)
+
+        @app.post(path)
+        @app.get(path)
+        async def _handler():
+            return {"ok": True}
+
+        client = TestClient(app)
+        for _ in range(calls):
+            res = client.post(path) if path != "/api/v1/ping" else client.get(path)
+        return res.headers
+
+    def test_burst_tier_is_reported_not_the_daily_one(self):
+        """Vision carries a 10/min burst and a 120/day cap. After one call the
+        burst has 9 left and the daily 119, so the burst is what a well-behaved
+        client needs to see."""
+        headers = self._limits("/api/v1/vision/estimate-volume")
+        assert headers["X-RateLimit-Limit"] == str(RateLimitConfig.VISION_LIMIT)
+        assert headers["X-RateLimit-Window"] == str(RateLimitConfig.VISION_WINDOW)
+
+    def test_single_tier_paths_report_that_tier(self):
+        headers = self._limits("/api/v1/ping")
+        assert headers["X-RateLimit-Limit"] == str(RateLimitConfig.GENERAL_LIMIT)
