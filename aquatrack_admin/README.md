@@ -10,24 +10,36 @@ Giao diện được port 1:1 từ bản thiết kế trong `aquatrack/project/a
 
 ## Chạy local
 
-Cần backend chạy trước:
+Console chọn backend qua `VITE_API_TARGET`, đặt trong `aquatrack_admin/.env.local`
+(file này đã gitignored). Mặc định khi không có file: `http://localhost:8000`.
+
+### Cách 1 — dùng backend production trên Railway (không cần chạy backend)
 
 ```bash
-# terminal 1 — backend
-cd aquatrack_backend
-python -m uvicorn app.main:app --reload --port 8000
-
-# terminal 2 — admin console
 cd aquatrack_admin
 npm install
+echo "VITE_API_TARGET=https://aquatrack-production-62b3.up.railway.app" > .env.local
 npm run dev          # http://localhost:5173
 ```
 
-Vite proxy `/api` sang `http://localhost:8000`. Nếu backend chạy cổng khác:
+### Cách 2 — dùng backend local
 
 ```bash
-VITE_API_TARGET=http://localhost:8010 npm run dev
+# terminal 1 — backend (phải là port 8000; chạy `python app/main.py` sẽ ra 8001)
+cd aquatrack_backend
+python -m uvicorn app.main:app --reload --port 8000
+
+# terminal 2 — console (không cần .env.local, mặc định đã trỏ localhost:8000)
+cd aquatrack_admin
+npm run dev
 ```
+
+> ⚠️ **Đừng đặt biến ngay trên dòng lệnh.** `VITE_API_TARGET=... npm run dev` là
+> cú pháp bash — trên PowerShell nó không set biến và cũng không báo lỗi, vite
+> lặng lẽ rơi về `localhost:8000` rồi đổ một loạt `ECONNREFUSED` khó lần ra
+> nguyên nhân. Dùng `.env.local` cho mọi shell.
+
+Sửa `.env.local` xong phải **khởi động lại** vite thì mới có hiệu lực.
 
 ### Tạo tài khoản nhân sự + dữ liệu mẫu
 
