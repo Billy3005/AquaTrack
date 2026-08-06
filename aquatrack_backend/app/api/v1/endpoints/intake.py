@@ -11,8 +11,7 @@ from app.core.security import get_current_user_id
 from app.crud.intake_log import intake_log_crud
 from app.models.daily_summary import DailySummary
 from app.models.intake_log import IntakeLog
-from app.schemas.intake_log import (IntakeLogCreate, IntakeLogResponse,
-                                    IntakeLogUpdate)
+from app.schemas.intake_log import IntakeLogCreate, IntakeLogResponse, IntakeLogUpdate
 
 
 # Response schemas
@@ -76,8 +75,7 @@ async def create_intake_log(
     """
     # Import services here to avoid circular imports
     # Create intake log (temporarily disable streak for testing)
-    from app.core.leveling import (calculate_level_from_xp,
-                                   reconcile_level_coins)
+    from app.core.leveling import calculate_level_from_xp, reconcile_level_coins
     from app.crud.user import user_crud
 
     # Create simple intake log

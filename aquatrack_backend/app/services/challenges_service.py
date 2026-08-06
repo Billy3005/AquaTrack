@@ -14,8 +14,14 @@ from typing import List, Optional
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import (Challenge, ChallengeStatus, CoinGift, DailySummary,
-                        ReminderLog, User)
+from app.models import (
+    Challenge,
+    ChallengeStatus,
+    CoinGift,
+    DailySummary,
+    ReminderLog,
+    User,
+)
 from app.models.friend import Friend
 
 # How far back the notifications inbox looks for reminders / finished races.

@@ -4,8 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud import user_crud
-from app.schemas.user import (UserPreferencesUpdate, UserResponse, UserStats,
-                              UserUpdate)
+from app.schemas.user import UserPreferencesUpdate, UserResponse, UserStats, UserUpdate
 from app.services.avatar_service import AvatarService
 from app.services.onboarding_service import OnboardingService
 from app.services.streak_service import StreakService

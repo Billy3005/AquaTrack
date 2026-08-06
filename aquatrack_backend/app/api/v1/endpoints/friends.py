@@ -9,15 +9,28 @@ from app.core.security import get_current_user_id
 from app.crud.friend import friend_crud, friend_request_crud
 from app.crud.leaderboard import leaderboard_crud
 from app.crud.user import user_crud
-from app.schemas.challenges import (ChallengeCreate, ChallengeRespond,
-                                    ChallengesResponse, NotificationsResponse)
-from app.schemas.friends_view import (FriendRequestsResponse, FriendsResponse,
-                                      InteractionLeaderboardOut,
-                                      SocialStatsOut, WeeklyLeaderboardOut)
+from app.schemas.challenges import (
+    ChallengeCreate,
+    ChallengeRespond,
+    ChallengesResponse,
+    NotificationsResponse,
+)
+from app.schemas.friends_view import (
+    FriendRequestsResponse,
+    FriendsResponse,
+    InteractionLeaderboardOut,
+    SocialStatsOut,
+    WeeklyLeaderboardOut,
+)
 from app.schemas.gifts import CoinGiftCreate, CoinGiftResponse
-from app.schemas.social import (FriendReminderRequest, FriendReminderResponse,
-                                FriendRequestResponse, FriendResponse,
-                                SuggestedUser, UserSearchResult)
+from app.schemas.social import (
+    FriendReminderRequest,
+    FriendReminderResponse,
+    FriendRequestResponse,
+    FriendResponse,
+    SuggestedUser,
+    UserSearchResult,
+)
 from app.services import challenges_service as ch
 from app.services import friends_view_service as fvs
 from app.services import gifts_service as gifts

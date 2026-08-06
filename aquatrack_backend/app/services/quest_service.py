@@ -16,8 +16,15 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.leveling import calculate_level_from_xp, reconcile_level_coins
-from app.models import (Conversation, DailySummary, QuestClaim, Referral,
-                        ReminderLog, ScanHistory, User)
+from app.models import (
+    Conversation,
+    DailySummary,
+    QuestClaim,
+    Referral,
+    ReminderLog,
+    ScanHistory,
+    User,
+)
 
 CHEST_COIN_MIN = 50
 CHEST_COIN_MAX = 150

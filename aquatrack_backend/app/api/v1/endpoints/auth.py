@@ -6,12 +6,19 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import (create_access_token, create_refresh_token,
-                               get_current_user_id)
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    get_current_user_id,
+)
 from app.crud import user_crud
-from app.schemas.auth import (ForgotPasswordRequest, GoogleLoginRequest,
-                              RefreshToken, ResetPasswordRequest,
-                              TokenRefreshResponse)
+from app.schemas.auth import (
+    ForgotPasswordRequest,
+    GoogleLoginRequest,
+    RefreshToken,
+    ResetPasswordRequest,
+    TokenRefreshResponse,
+)
 from app.schemas.user import UserCreate, UserLogin, UserResponse
 from app.services import password_reset_service
 from app.services.mailer import Mailer

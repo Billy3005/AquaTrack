@@ -48,7 +48,9 @@ def _request(method: str, path: str, payload: dict | None = None) -> dict:
         with urllib.request.urlopen(req, timeout=20) as resp:
             return json.loads(resp.read())
     except urllib.error.HTTPError as exc:
-        sys.exit(f"API error {exc.code} on {method} {path}: {exc.read().decode()[:200]}")
+        sys.exit(
+            f"API error {exc.code} on {method} {path}: {exc.read().decode()[:200]}"
+        )
     except urllib.error.URLError as exc:
         sys.exit(f"Could not reach API at {BASE}: {exc}")
 

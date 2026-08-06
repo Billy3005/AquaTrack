@@ -2,12 +2,20 @@ from datetime import datetime
 
 import pytest
 
-from app.models import (Conversation, ConversationSession, Friend, IntakeLog,
-                        QuestClaim, ScanHistory)
+from app.models import (
+    Conversation,
+    ConversationSession,
+    Friend,
+    IntakeLog,
+    QuestClaim,
+    ScanHistory,
+)
 from app.services import achievement_service
-from app.services.achievement_service import (AchievementAlreadyClaimed,
-                                              AchievementNotDone,
-                                              AchievementNotFound)
+from app.services.achievement_service import (
+    AchievementAlreadyClaimed,
+    AchievementNotDone,
+    AchievementNotFound,
+)
 
 WHEN = datetime(2026, 6, 7, 12, 0)
 

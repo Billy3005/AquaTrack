@@ -8,9 +8,12 @@ resource. Both are regressions worth catching.
 
 import pytest
 
-from app.middleware.rate_limiting import (CREDENTIAL_AUTH_PATHS,
-                                          RateLimitConfig, RateLimiter,
-                                          _get_rate_limit_tiers)
+from app.middleware.rate_limiting import (
+    CREDENTIAL_AUTH_PATHS,
+    RateLimitConfig,
+    RateLimiter,
+    _get_rate_limit_tiers,
+)
 
 
 class TestPathClassification:
@@ -174,8 +177,7 @@ class TestReportedHeaders:
         from fastapi.testclient import TestClient
 
         from app.middleware import rate_limiting as module
-        from app.middleware.rate_limiting import (RateLimiter,
-                                                  rate_limit_middleware)
+        from app.middleware.rate_limiting import RateLimiter, rate_limit_middleware
 
         module.rate_limiter = RateLimiter()  # isolate from other tests
         app = FastAPI()

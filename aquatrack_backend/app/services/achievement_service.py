@@ -15,8 +15,16 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.leveling import calculate_level_from_xp
-from app.models import (AchievementClaim, ConversationSession, DailySummary,
-                        Friend, IntakeLog, QuestClaim, ScanHistory, User)
+from app.models import (
+    AchievementClaim,
+    ConversationSession,
+    DailySummary,
+    Friend,
+    IntakeLog,
+    QuestClaim,
+    ScanHistory,
+    User,
+)
 
 # --- errors -------------------------------------------------------------
 

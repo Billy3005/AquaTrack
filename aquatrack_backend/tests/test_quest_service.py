@@ -2,8 +2,14 @@ from datetime import datetime, timezone
 
 import pytest
 
-from app.models import (Conversation, DailySummary, QuestClaim, Referral,
-                        ScanHistory, User)
+from app.models import (
+    Conversation,
+    DailySummary,
+    QuestClaim,
+    Referral,
+    ScanHistory,
+    User,
+)
 from app.services import quest_service
 from app.services import referral_service as rs
 from app.services.quest_service import QuestAlreadyClaimed, QuestNotDone

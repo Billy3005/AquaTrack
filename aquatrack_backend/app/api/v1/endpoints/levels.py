@@ -12,9 +12,11 @@ from app.core.security import get_current_user_id
 from app.crud.user import user_crud
 from app.models.intake_log import IntakeLog
 from app.services import achievement_service
-from app.services.achievement_service import (AchievementAlreadyClaimed,
-                                              AchievementNotDone,
-                                              AchievementNotFound)
+from app.services.achievement_service import (
+    AchievementAlreadyClaimed,
+    AchievementNotDone,
+    AchievementNotFound,
+)
 from app.services.avatar_service import AVATAR_CATALOG, AvatarService
 
 router = APIRouter()

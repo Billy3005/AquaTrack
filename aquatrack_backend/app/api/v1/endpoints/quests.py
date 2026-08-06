@@ -8,8 +8,7 @@ from app.core.security import get_current_user_id
 from app.crud.user import user_crud
 from app.schemas.quest import ClaimResponse, QuestsResponse, WeekDayStatus
 from app.services import quest_service
-from app.services.quest_service import (QuestAlreadyClaimed, QuestNotDone,
-                                        QuestNotFound)
+from app.services.quest_service import QuestAlreadyClaimed, QuestNotDone, QuestNotFound
 
 router = APIRouter()
 
