@@ -12,6 +12,7 @@ from app.core.database import init_db
 from app.core.monitoring import (HealthChecker, metrics, monitoring_middleware,
                                  system_monitoring_task)
 from app.middleware.rate_limiting import rate_limit_middleware
+from app.middleware.security_headers import security_headers_middleware
 from app.services.email_service import cleanup_expired_tokens_task
 
 # Background task references for cleanup
@@ -75,6 +76,10 @@ if settings.ENABLE_MONITORING:
 # Rate limiting middleware
 if settings.ENABLE_RATE_LIMITING:
     app.middleware("http")(rate_limit_middleware)
+
+# Security response headers. Registered after rate limiting so it wraps it and
+# the 429 responses carry the headers too; CORS stays outermost.
+app.middleware("http")(security_headers_middleware)
 
 # CORS middleware cho Flutter app
 app.add_middleware(
@@ -149,33 +154,6 @@ async def get_metrics():
         "system_stats": metrics.get_system_stats(),
         "recent_errors": metrics.get_recent_errors(10),
     }
-
-
-@app.get("/cors-test", response_class=JSONResponse)
-async def cors_test():
-    """CORS test endpoint"""
-    return {
-        "message": "CORS working! Frontend can call backend APIs",
-        "allowed_origins": settings.ALLOWED_ORIGINS,
-        "timestamp": "2026-05-04",
-    }
-
-
-@app.post("/simple-login", response_class=JSONResponse)
-async def simple_login(request: dict):
-    """Simple login endpoint for CORS testing"""
-    email = request.get("email", "")
-    password = request.get("password", "")
-
-    if email == "demo@aquatrack.com" and password == "demo123":
-        return {
-            "success": True,
-            "message": "Login successful!",
-            "access_token": "demo_token_123",
-            "user": {"email": email, "name": "Demo User"},
-        }
-    else:
-        return {"success": False, "message": "Invalid credentials"}
 
 
 if __name__ == "__main__":
