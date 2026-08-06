@@ -59,6 +59,12 @@ CAPABILITIES: Dict[str, Tuple[bool, bool, bool, bool]] = {
     "user.grant": (True, True, False, False),
     "user.lock": (True, True, False, True),
     "user.reset": (True, False, False, False),
+    # Not from the design bundle. Added because transactional email needs an
+    # authenticated sending domain the project does not own yet, so a user who
+    # forgets their password has no self-service way back in. Same row as
+    # `user.lock`: the roles that already handle account trouble. Marketing has
+    # no business near credentials.
+    "user.password_reset": (True, True, False, True),
     "gamify.config": (True, False, False, False),
     "members.manage": (True, False, False, False),
     "audit.view": (True, True, True, True),

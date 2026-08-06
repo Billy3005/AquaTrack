@@ -30,6 +30,12 @@ class ResetUserRequest(ReasonedAction):
     confirm: str = Field(..., description="Phải bằng đúng 'RESET'")
 
 
+class IssueResetCodeRequest(ReasonedAction):
+    """No confirmation word: the action is reversible by simply waiting 10
+    minutes for the code to expire, and a typed word would only slow down the
+    support call it exists to serve."""
+
+
 class GrantRequest(ReasonedAction):
     coins: int = Field(0, ge=0, le=100_000)
     xp: int = Field(0, ge=0, le=100_000)

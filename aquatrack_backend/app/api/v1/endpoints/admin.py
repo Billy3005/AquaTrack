@@ -18,6 +18,7 @@ from app.core.database import get_db
 from app.models.user import User
 from app.schemas.admin import (
     GrantRequest,
+    IssueResetCodeRequest,
     LockUserRequest,
     ResetUserRequest,
     UnlockUserRequest,
@@ -193,6 +194,29 @@ async def reset_user(
     target = _load_target(db, user_id)
     try:
         return admin_service.reset_user_data(
+            db, admin, target, payload.reason, ip=_client_ip(request)
+        )
+    except AdminActionError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+
+
+@router.post("/users/{user_id}/password-reset")
+async def issue_password_reset(
+    user_id: str,
+    payload: IssueResetCodeRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_cap("user.password_reset")),
+):
+    """Mint a reset code for a user who cannot receive the emailed one.
+
+    The response body carries the plaintext code — it is the only copy, and the
+    only route on this API that returns a credential. Nothing else logs or
+    stores it; see admin_service.issue_password_reset_code.
+    """
+    target = _load_target(db, user_id)
+    try:
+        return admin_service.issue_password_reset_code(
             db, admin, target, payload.reason, ip=_client_ip(request)
         )
     except AdminActionError as exc:

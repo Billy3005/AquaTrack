@@ -117,10 +117,36 @@ phép — người dùng vẫn thấy chức năng tồn tại và biết mình 
 | Khoá / mở khoá tài khoản | ✅ | ✅ | ❌ | ✅ |
 | Tặng xu / XP thủ công | ✅ | ✅ | ❌ | ❌ |
 | Reset dữ liệu người dùng | ✅ | ❌ | ❌ | ❌ |
+| Cấp mã đặt lại mật khẩu | ✅ | ✅ | ❌ | ✅ |
 
-Bảng này khớp đúng với `PERMS` trong file thiết kế gốc. Nó **không** phải thang
-bậc lồng nhau: Support được khoá tài khoản (xử lý vi phạm tuyến đầu) trong khi
-Marketing thì không.
+Bảng này khớp đúng với `PERMS` trong file thiết kế gốc, trừ dòng cuối — xem
+mục dưới. Nó **không** phải thang bậc lồng nhau: Support được khoá tài khoản
+(xử lý vi phạm tuyến đầu) trong khi Marketing thì không.
+
+### Cấp mã đặt lại mật khẩu
+
+`POST /auth/forgot-password` gửi mã 6 số qua email, nhưng email giao dịch cần
+domain gửi đã xác thực (Gmail và Yahoo bắt buộc DKIM từ 02/2024, Brevo thay
+luôn địa chỉ gửi nếu dùng domain miễn phí). Dự án chưa có domain, nên mã sinh
+ra không tới tay ai và người quên mật khẩu **không có đường nào quay lại**.
+
+Nút *Cấp mã đặt lại mật khẩu* trong Chi tiết người dùng là đường thủ công: sinh
+đúng mã đó, hiện **một lần duy nhất** trên màn hình, nhân sự đọc cho người dùng
+qua kênh hỗ trợ, người dùng tự nhập ở màn hình *Quên mật khẩu* trong app. Không
+có luồng mật khẩu thứ hai — vẫn là mã dùng một lần, 10 phút, sai 5 lần thì huỷ.
+
+Hai điều cố ý:
+
+* **Mã không ghi vào `audit_logs`.** Mọi vai trò nhân sự đều có `audit.view`,
+  nên lưu mã lại đồng nghĩa với việc ai cũng đọc được mã người khác vừa cấp và
+  chiếm tài khoản. Nhật ký chỉ ghi *đã cấp mã*, ai cấp, vì lý do gì.
+* **Chặn theo cấp bậc như khoá tài khoản.** Cấp mã là chiếm tài khoản chỉ trong
+  một bước, nên Support không cấp mã được cho tài khoản Operations — nếu không,
+  thay vì chỉ khoá được cấp trên, họ sẽ chiếm được cấp trên.
+
+Khi mua domain và cấu hình DKIM cho Brevo, email tự chạy trở lại — **không cần
+sửa code**, chỉ đặt `BREVO_API_KEY` và `FROM_EMAIL` thuộc domain đó. Nút này
+vẫn hữu ích cho các ca hỗ trợ lẻ.
 
 ---
 

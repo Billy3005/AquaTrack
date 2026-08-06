@@ -101,6 +101,19 @@ export function UserDetailScreen() {
             >
               Tặng xu / XP
             </ABtn>
+            <ABtn
+              full
+              icon={A.lock(AD.ink3)}
+              disabled={!can('user.password_reset')}
+              title={
+                can('user.password_reset')
+                  ? 'Sinh mã 6 số để đọc cho người dùng qua kênh hỗ trợ'
+                  : 'Vai trò của bạn không được phép cấp mã đặt lại mật khẩu'
+              }
+              onClick={() => act('passwordReset', target)}
+            >
+              Cấp mã đặt lại mật khẩu
+            </ABtn>
             <div style={{ display: 'flex', gap: 8 }}>
               <ABtn
                 kind="danger"

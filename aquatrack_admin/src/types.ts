@@ -9,6 +9,7 @@ export type Capability =
   | 'user.grant'
   | 'user.lock'
   | 'user.reset'
+  | 'user.password_reset'
   | 'gamify.config'
   | 'members.manage'
   | 'audit.view';
@@ -20,6 +21,15 @@ export interface AdminProfile {
   role: string;
   roleLabel: string;
   capabilities: Record<Capability, boolean>;
+}
+
+/** Response of POST /admin/users/:id/password-reset. `code` is a live secret. */
+export interface ResetCodeResult {
+  code: string;
+  email: string;
+  ttlMinutes: number;
+  expiresAt: string;
+  locked: boolean;
 }
 
 export interface Kpi {

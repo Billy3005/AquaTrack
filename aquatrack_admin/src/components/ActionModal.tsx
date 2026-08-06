@@ -7,13 +7,13 @@
 
 import { useEffect, useState } from 'react';
 import { A } from '../icons';
-import { AD } from '../theme';
+import { AD, NUM } from '../theme';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { ABtn, AInput, ALabel, AModal, ATextarea } from './ui';
-import type { UserRow } from '../types';
+import type { ResetCodeResult, UserRow } from '../types';
 
-export type ActionKind = 'lock' | 'unlock' | 'reset' | 'grant';
+export type ActionKind = 'lock' | 'unlock' | 'reset' | 'grant' | 'passwordReset';
 
 export interface ActionTarget {
   id: string;
@@ -27,6 +27,8 @@ interface ActionConfig {
   danger: boolean;
   confirmWord?: string;
   grant?: boolean;
+  /** Keeps the dialog open to show something the server returned exactly once. */
+  showsResult?: boolean;
   successToast: string;
 }
 
@@ -53,6 +55,14 @@ export const ACTIONS: Record<ActionKind, ActionConfig> = {
     danger: true,
     confirmWord: 'RESET',
     successToast: 'Đã reset dữ liệu người dùng',
+  },
+  passwordReset: {
+    title: 'Cấp mã đặt lại mật khẩu',
+    desc: 'Sinh mã 6 số hiệu lực 10 phút. Đọc mã cho người dùng qua kênh hỗ trợ, họ tự nhập ở màn hình "Quên mật khẩu" trong app. Bạn không nhìn thấy và không đặt được mật khẩu mới của họ.',
+    cta: 'Sinh mã',
+    danger: false,
+    showsResult: true,
+    successToast: 'Đã cấp mã đặt lại · ghi vào nhật ký thao tác',
   },
   grant: {
     title: 'Tặng xu / XP thủ công',
@@ -82,9 +92,12 @@ export function ActionModal({
   const [xp, setXp] = useState('500');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<ResetCodeResult | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Reset the form whenever a new action opens, so a previously typed reason
-  // can never be reused by accident on a different user.
+  // can never be reused by accident on a different user — and so a reset code
+  // minted for one account is never left on screen while another is open.
   useEffect(() => {
     setReason('');
     setTyped('');
@@ -92,6 +105,8 @@ export function ActionModal({
     setXp('500');
     setError(null);
     setBusy(false);
+    setResult(null);
+    setCopied(false);
   }, [kind, target?.id]);
 
   if (!kind || !target) return null;
@@ -110,6 +125,12 @@ export function ActionModal({
       if (kind === 'unlock') await api.unlockUser(target.id, reason.trim());
       if (kind === 'reset') await api.resetUser(target.id, reason.trim(), typed);
       if (kind === 'grant') await api.grant(target.id, Number(coins) || 0, Number(xp) || 0, reason.trim());
+      if (kind === 'passwordReset') {
+        // Hold the dialog open: this is the only time the code is ever shown.
+        setResult(await api.issueResetCode(target.id, reason.trim()));
+        setBusy(false);
+        return;
+      }
       onDone(cfg.successToast, 'success');
       onClose();
     } catch (err) {
@@ -146,6 +167,25 @@ export function ActionModal({
         </button>
       </div>
 
+      {result ? (
+        <ResetCodePanel
+          result={result}
+          copied={copied}
+          onCopy={async () => {
+            try {
+              await navigator.clipboard.writeText(result.code);
+              setCopied(true);
+            } catch {
+              setCopied(false); // clipboard blocked — the code is on screen anyway
+            }
+          }}
+          onFinish={() => {
+            onDone(cfg.successToast, 'success');
+            onClose();
+          }}
+        />
+      ) : (
+        <>
       <div style={{ padding: '18px 22px' }}>
         <div style={{ fontSize: 13, color: AD.ink2, lineHeight: 1.6 }}>{cfg.desc}</div>
 
@@ -218,6 +258,73 @@ export function ActionModal({
           {busy ? 'Đang xử lý…' : cfg.cta}
         </ABtn>
       </div>
+        </>
+      )}
     </AModal>
+  );
+}
+
+/**
+ * Shown once, after the server mints a reset code. The code lives only in this
+ * component's props — it is never written to localStorage, never put in a URL,
+ * and the audit log deliberately does not record it either, so this dialog is
+ * the single copy. Closing it means asking for a new one.
+ */
+function ResetCodePanel({
+  result,
+  copied,
+  onCopy,
+  onFinish,
+}: {
+  result: ResetCodeResult;
+  copied: boolean;
+  onCopy: () => void;
+  onFinish: () => void;
+}) {
+  return (
+    <>
+      <div style={{ padding: '20px 22px' }}>
+        <div style={{ fontSize: 13, color: AD.ink2, lineHeight: 1.6 }}>
+          Đọc mã này cho <b style={{ color: AD.ink }}>{result.email}</b>. Họ mở app → Đăng nhập → <b style={{ color: AD.ink }}>Quên mật khẩu</b> → nhập
+          đúng email đó → bấm <b style={{ color: AD.ink }}>Gửi mã</b> → nhập mã dưới đây và mật khẩu mới.
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            padding: '18px 20px',
+            background: AD.accentTint,
+            border: `1px solid ${AD.accent}`,
+            borderRadius: 12,
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ fontSize: 11, fontWeight: 700, color: AD.accentDeep, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            Mã đặt lại · hiệu lực {result.ttlMinutes} phút
+          </div>
+          <div style={{ fontSize: 34, fontWeight: 750, color: AD.ink, letterSpacing: '0.16em', margin: '10px 0 12px', ...NUM }}>{result.code}</div>
+          <ABtn onClick={onCopy} icon={copied ? A.check(AD.green, 14) : A.doc(AD.ink3, 14)}>
+            {copied ? 'Đã sao chép' : 'Sao chép mã'}
+          </ABtn>
+        </div>
+
+        {result.locked && (
+          <div style={{ marginTop: 14, padding: '10px 12px', background: AD.redTint, border: '1px solid #F8D2DA', borderRadius: 9, fontSize: 12.5, color: AD.red, lineHeight: 1.5 }}>
+            Tài khoản này đang bị khoá — đặt lại mật khẩu xong họ vẫn chưa đăng nhập được. Mở khoá trước nếu đó là điều bạn muốn.
+          </div>
+        )}
+
+        <div style={{ marginTop: 14, padding: '10px 12px', background: AD.panelAlt, border: `1px solid ${AD.border}`, borderRadius: 9, fontSize: 11.5, color: AD.ink3, lineHeight: 1.5 }}>
+          Mã chỉ hiện một lần và không được lưu vào nhật ký thao tác. Đóng cửa sổ là mất — cấp lại nếu cần. Sai 5 lần hoặc quá {result.ttlMinutes} phút thì mã tự huỷ.
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, padding: '14px 22px', borderTop: `1px solid ${AD.border}`, background: AD.panelAlt }}>
+        <div style={{ flex: 1 }} />
+        <ABtn kind="primary" onClick={onFinish}>
+          Đã đọc mã cho người dùng
+        </ABtn>
+      </div>
+    </>
   );
 }

@@ -29,14 +29,14 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from app.core.admin_roles import (ROLE_LABELS, ROLE_RANK, ROLE_SUPER_ADMIN,
-                                  ROLE_USER)
+from app.core.admin_roles import ROLE_LABELS, ROLE_RANK, ROLE_SUPER_ADMIN, ROLE_USER
 from app.core.leveling import calculate_level_from_xp
 from app.models.achievement import Achievement
 from app.models.audit_log import AuditLog
 from app.models.intake_log import IntakeLog
 from app.models.scan_history import ScanHistory
 from app.models.user import User
+from app.services import password_reset_service
 
 # A user is "inactive" once this many days pass with no logged drink.
 INACTIVE_AFTER_DAYS = 14
@@ -855,6 +855,7 @@ ACTION_META = {
     "user.lock": ("Khoá tài khoản", "red"),
     "user.unlock": ("Mở khoá tài khoản", "green"),
     "user.reset": ("Reset dữ liệu", "red"),
+    "user.password_reset": ("Cấp mã đặt lại mật khẩu", "amber"),
     "user.grant": ("Tặng xu / XP", "purple"),
     "user.export": ("Xuất dữ liệu CSV", "amber"),
     "users.export": ("Xuất CSV người dùng", "amber"),
@@ -1098,6 +1099,59 @@ def reset_user_data(
     )
     db.commit()
     return {"deletedLogs": int(deleted)}
+
+
+def issue_password_reset_code(
+    db: Session, actor: User, target: User, reason: str, ip: str = None
+) -> dict:
+    """Hand a stranded user a reset code through a support channel.
+
+    `POST /auth/forgot-password` emails the same code, but transactional email
+    needs a sending domain the project does not own yet (Gmail and Yahoo have
+    required DKIM alignment since February 2024, and Brevo rewrites senders on
+    free domains). Until that domain exists, the emailed code goes nowhere and a
+    user who forgot their password has no way back into the app at all.
+
+    This is the manual fallback: staff read the code out over whatever channel
+    they already use, and the user finishes in the app's ordinary "Quên mật
+    khẩu" screen. It is the same one-shot, 10-minute, 5-attempt code — no second
+    credential path exists, so there is nothing extra to get wrong.
+
+    The code is returned to the caller and deliberately NOT stored in the audit
+    row: `audit.view` is granted to every staff role, so writing it down would
+    let any staff member read a code minted by someone else and take the account
+    themselves. The log records that a code was issued, by whom, and why.
+    """
+    if target.id == actor.id:
+        raise AdminActionError(
+            "Dùng màn hình Quên mật khẩu trong app để đổi mật khẩu của chính bạn"
+        )
+    # Handing out a reset code is account takeover in one step, so it needs the
+    # same rank guard as locking — otherwise Support could seize an Operations
+    # account instead of merely locking it.
+    _assert_outranks(actor, target)
+    if not target.email:
+        raise AdminActionError("Tài khoản này không có email nên không đặt lại được")
+
+    code, expires_at = password_reset_service.issue_code(db, target)
+    record_audit(
+        db,
+        actor,
+        "user.password_reset",
+        target_id=target.id,
+        target_label=f"{target.id} · {target.full_name or target.username}",
+        reason=reason,
+        meta={"ttlMinutes": password_reset_service.CODE_TTL_MINUTES},
+        ip_address=ip,
+    )
+    db.commit()
+    return {
+        "code": code,
+        "email": target.email,
+        "ttlMinutes": password_reset_service.CODE_TTL_MINUTES,
+        "expiresAt": expires_at.isoformat() + "Z",
+        "locked": not target.is_active,
+    }
 
 
 def grant_rewards(

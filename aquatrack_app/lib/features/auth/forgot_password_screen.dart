@@ -136,9 +136,18 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     color: AppColors.glow.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  // The banner names a fallback on purpose. Transactional email
+                  // needs an authenticated sending domain the project does not
+                  // own yet, so the code may not arrive at all — and a screen
+                  // that only says "check your spam folder" would leave the user
+                  // waiting forever with nothing else to try.
                   child: Text(
                     'Nếu email tồn tại, mã 6 số đã được gửi '
-                    '(hiệu lực 10 phút). Kiểm tra cả mục Spam nhé.',
+                    '(hiệu lực 10 phút). Kiểm tra cả mục Spam nhé.\n\n'
+                    'Chưa nhận được sau vài phút? Nếu bạn từng đăng nhập bằng '
+                    'Google thì hãy dùng nút "Đăng nhập với Google" — không cần '
+                    'mật khẩu. Hoặc liên hệ email hỗ trợ ở trang ứng dụng trên '
+                    'Google Play để được cấp mã trực tiếp.',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textBright,
                     ),

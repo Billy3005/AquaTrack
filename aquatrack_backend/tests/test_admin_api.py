@@ -192,6 +192,78 @@ def test_support_cannot_unlock_a_higher_ranked_account(as_role, db, members):
     assert res.status_code == 409
 
 
+def test_issued_reset_code_actually_resets_the_password(as_role, db, members):
+    """The whole point of the feature: a user who cannot receive the emailed
+    code gets one from support and finishes in the app's normal screen."""
+    plain = members["plain"]
+    client = as_role("support")
+
+    res = client.post(
+        f"/api/v1/admin/users/{plain.id}/password-reset",
+        json={"reason": "người dùng báo không nhận được email"},
+    )
+    assert res.status_code == 200
+    code = res.json()["code"]
+    assert len(code) == 6 and code.isdigit()
+
+    done = client.post(
+        "/api/v1/auth/reset-password",
+        json={
+            "email": plain.email,
+            "code": code,
+            "new_password": "MatKhauMoi@123",
+        },
+    )
+    assert done.status_code == 200
+
+    db.refresh(plain)
+    from app.core.security import verify_password
+
+    assert verify_password("MatKhauMoi@123", plain.hashed_password)
+    # One shot: the same code must not work twice.
+    assert plain.reset_code_hash is None
+
+
+def test_marketing_cannot_issue_a_reset_code(as_role, members):
+    res = as_role("marketing").post(
+        f"/api/v1/admin/users/{members['plain'].id}/password-reset",
+        json={"reason": "thử vượt quyền cấp mã"},
+    )
+    assert res.status_code == 403
+
+
+def test_support_cannot_seize_a_higher_ranked_account(as_role, members):
+    """Issuing a code is account takeover in one step. Without the rank guard,
+    Support could take an Operations account instead of merely locking it."""
+    res = as_role("support").post(
+        f"/api/v1/admin/users/{members['ops'].id}/password-reset",
+        json={"reason": "cố chiếm tài khoản cấp trên"},
+    )
+    assert res.status_code == 409
+
+
+def test_reset_code_is_never_written_to_the_audit_log(as_role, db, members):
+    """`audit.view` is granted to every staff role, so a code stored in the log
+    would let any staff member replay a reset someone else issued."""
+    res = as_role("super").post(
+        f"/api/v1/admin/users/{members['plain'].id}/password-reset",
+        json={"reason": "hỗ trợ qua điện thoại"},
+    )
+    code = res.json()["code"]
+
+    entry = db.query(AuditLog).filter(AuditLog.action == "user.password_reset").one()
+    haystack = f"{entry.reason} {entry.target_label} {entry.meta}"
+    assert code not in haystack
+
+
+def test_cannot_issue_a_reset_code_for_yourself(as_role, members):
+    res = as_role("super").post(
+        f"/api/v1/admin/users/{members['super'].id}/password-reset",
+        json={"reason": "tự đặt lại mật khẩu của mình"},
+    )
+    assert res.status_code == 409
+
+
 def test_super_admins_can_lock_each_other(as_role, db, members):
     """A departing or compromised super admin must be removable by a peer —
     the equal-rank rule is relaxed only for this tier."""

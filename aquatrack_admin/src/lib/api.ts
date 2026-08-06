@@ -5,7 +5,7 @@
 // scheme the mobile app already uses. The trade-off is XSS exposure — which is
 // why this app has no user-generated HTML rendering anywhere.
 
-import type { AuditListResponse, AdminProfile, Overview, UserDetail, UserListResponse } from '../types';
+import type { AuditListResponse, AdminProfile, Overview, ResetCodeResult, UserDetail, UserListResponse } from '../types';
 
 const TOKEN_KEY = 'aquatrack.admin.token';
 
@@ -105,6 +105,17 @@ export const api = {
 
   resetUser: (id: string, reason: string, confirm: string) =>
     request<{ deletedLogs: number }>(`/admin/users/${id}/reset`, { method: 'POST', body: JSON.stringify({ reason, confirm }) }),
+
+  /**
+   * Returns a live 6-digit reset code — the only response on this API that
+   * carries a credential. It is shown once in the modal and never persisted:
+   * do not log it, store it in state longer than the dialog, or put it in a URL.
+   */
+  issueResetCode: (id: string, reason: string) =>
+    request<ResetCodeResult>(`/admin/users/${id}/password-reset`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
 
   grant: (id: string, coins: number, xp: number, reason: string) =>
     request<{ coins: number; totalXp: number }>(`/admin/users/${id}/grant`, {

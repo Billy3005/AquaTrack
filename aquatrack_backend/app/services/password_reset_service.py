@@ -30,6 +30,25 @@ def _hash_code(code: str, user_id: str) -> str:
     return hashlib.sha256(f"{user_id}:{code}".encode()).hexdigest()
 
 
+def issue_code(db: Session, user) -> tuple:
+    """Mint a code, store only its hash on `user`, and return (code, expiry).
+
+    Staged on the session but NOT committed: the Admin Console commits it in the
+    same transaction as its audit row, so a code can never exist without the log
+    entry saying who handed it out.
+
+    Split out of `request_reset` so a code can also be delivered by a channel
+    other than email — same one-shot, 10-minute, MAX_ATTEMPTS code either way.
+    """
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    expires_at = datetime.utcnow() + timedelta(minutes=CODE_TTL_MINUTES)
+    user.reset_code_hash = _hash_code(code, user.id)
+    user.reset_code_expires_at = expires_at
+    user.reset_code_attempts = 0
+    db.add(user)
+    return code, expires_at
+
+
 def request_reset(db: Session, *, email: str, mailer) -> bool:
     """Generate, store (hashed) and email a fresh reset code.
 
@@ -39,11 +58,7 @@ def request_reset(db: Session, *, email: str, mailer) -> bool:
     if not user:
         return False
 
-    code = f"{secrets.randbelow(1_000_000):06d}"
-    user.reset_code_hash = _hash_code(code, user.id)
-    user.reset_code_expires_at = datetime.utcnow() + timedelta(minutes=CODE_TTL_MINUTES)
-    user.reset_code_attempts = 0
-    db.add(user)
+    code, _ = issue_code(db, user)
     db.commit()
 
     sent = mailer.send(
