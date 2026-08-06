@@ -4,83 +4,76 @@
 ```
 App     : AquaTrack — hydration app that feels alive
 Tagline : Chụp ảnh ly nước → AI đếm ml → Sống khoẻ hơn mỗi ngày
-Stage   : Flutter UI Complete (8 screens) → Backend Expansion Phase
-Stack   : Flutter (Riverpod) · FastAPI (Python 3.11) · SQLite · TFLite (planned)
+Stage   : Sắp nộp Google Play (app v1.0.0+1) · backend đã live trên Railway
+Stack   : Flutter (Riverpod) · FastAPI (Python 3.11) · Postgres (prod) / SQLite (dev)
+          Claude API — Vision cho Smart Scan, chat cho AI Coach
 Solo    : 1 dev + researcher (sinh viên)
-Repo    : monorepo → aquatrack_app/ · aquatrack_backend/ · aquatrack_ml/
+Repo    : monorepo → aquatrack_app/ · aquatrack_backend/ · aquatrack_admin/ · aquatrack_ml/
 ```
 
-## Progress Status (Hiện tại)
+## Trạng thái thật (cập nhật 06/08/2026)
 ```
-✅ COMPLETE:
-- Flutter UI: 8 screens với sophisticated design system
-- Authentication: Register + Login + JWT tokens + Navigation
-- Core Backend: FastAPI foundation + User management + Basic API
-- Integration: Flutter ↔ Backend authentication flow working
+✅ CHẠY THẬT trên production:
+- Backend Railway (gói trả phí) · 110 route · rate limiting ĐANG BẬT · /docs tắt
+- Auth: email/mật khẩu + Google Sign-In + JWT + đặt lại mật khẩu bằng mã 6 số
+- Smart Scan · AI Coach · Stats · Levels/Achievements · Friends · Quests · Shop
+- Admin console 4 màn hình thật (chỉ chạy local)
+- 183 test backend pass · 14 file test Flutter
 
-🔄 IN PROGRESS:
-- Backend Expansion: Following 8-phase implementation plan
-- Current Phase: Phase 1 - Smart Scan ML Service setup
-
-📋 PLANNED:
-- Phase 1: Smart Scan ML Service (Vision API)
-- Phase 2: Social Features (Friends + Leaderboards) 
-- Phase 3: Advanced AI Coach (Context-aware responses)
-- Phase 4: Production Readiness (Rate limiting + Email verification)
-```
-
-## Backend API Status
-```
-✅ Working Endpoints:
-- POST /auth/register   → Create user + auto-login + JWT
-- POST /auth/login      → Login + JWT tokens
-- GET /auth/me         → Get current user info
-- Basic CORS + middleware setup
-
-🔄 Missing (Per Plan):
-- POST /vision/estimate-volume     → Smart Scan ML
-- GET/POST /friends/*              → Social features
-- GET /friends/leaderboard/weekly  → Weekly rankings  
-- Enhanced /coach/* endpoints      → Context-aware AI
+⚠️ BIẾT MÀ CHƯA SỬA ĐƯỢC:
+- Email KHÔNG gửi được. Brevo cần domain đã xác thực DKIM (Gmail/Yahoo bắt buộc
+  từ 02/2024) mà dự án chưa mua domain. Railway chặn SMTP trên gói Hobby nên
+  không thay bằng Gmail SMTP được.
+  → Lưới an toàn: admin console có nút "Cấp mã đặt lại mật khẩu" (đọc mã qua
+    kênh hỗ trợ). Mua domain xong email tự chạy, KHÔNG phải sửa code.
+- aquatrack_ml/models/ còn rỗng. Smart Scan chạy 100% server-side bằng Claude
+  Vision (settings.VISION_MODEL = claude-haiku-4-5), CHƯA có TFLite on-device.
+- Backend URL bị bake cứng vào release build (app_config.dart). Đổi host là
+  phải build lại + nộp lại chợ → nên mua domain trỏ api.<domain> về Railway.
 ```
 
-## Design System (từ Hi-Fi Prototype)
+## Backend — bản đồ route
+```
+auth          register · login · google · me · refresh · forgot/reset-password
+users         profile · preferences · stats · account (xoá/kích hoạt lại)
+intake        ghi nước · today · recent · summary · sửa/xoá
+vision        estimate-volume (Claude Vision) · scan-history + thống kê độ chính xác
+coach         chat · context · suggestions · quick-reply
+stats         dashboard · insights · trends daily|hourly · streaks · goals
+levels        current · achievements · leaderboard · unlocked-avatars · rewards
+friends       27 route: kết bạn · leaderboard tuần · thách đấu · quà · referral
+quests · shop · water-profile · admin (11 route, staff-only)
+
+Không có Alembic. Migration nhẹ bằng _ensure_user_columns() / _ensure_indexes()
+trong app/core/database.py — create_all() KHÔNG sửa bảng đã tồn tại.
+
+AI Coach có thang dự phòng 4 tầng (ai_coach_service.py):
+Anthropic Claude > OpenAI > Ollama qwen2.5:3b (local) > rule-based.
+→ Production có ANTHROPIC_API_KEY nên dùng Claude. Máy dev không có key sẽ rơi
+  xuống Ollama hoặc rule-based — câu trả lời khác hẳn production, đừng tưởng bug.
+```
+
+## Design System
 ```
 Theme       : Dark navy (#0D1B2A background) · Cyan accent (#00B4D8) · Purple XP (#7B5EA7)
 Typography  : Inter / SF Pro — Bold heading, Regular body
 Drop widget : SVG water drop, fill level = hydration %, breathing animation
-Nav         : Bottom tab 6 items — Drop · Coach · Body · Stats · Level · You
-Screens     : 8 screens + 5 home states + 3 widget formats
 Language    : Tiếng Việt (UI) + English (code/comment)
-```
-
-## Screens Status
-```
-✅ COMPLETE UI + INTEGRATION:
-01 Login/Register          : Full auth flow with backend integration
-02 Home — Living Drop      : Breathing drop, quick log, streak (needs backend)
-03 Log Drink               : Drink type chips, amount stepper, backend integration ✅
-04 Profile                 : Avatar, stats, themes, daily goal
-
-✅ COMPLETE UI (needs backend):
-05 AI Coach                : Chat UI, context-aware nudges, quick replies  
-06 Stats — Wave Chart      : Weekly wave chart, AI insights cards
-07 Level & Achievements    : XP bar, avatar collection, milestone badges
-08 Smart Scan              : Camera + TFLite, scanning overlay, result card
-
-🔄 NEEDS BACKEND INTEGRATION:
-- AI Coach → Requires /coach/* API endpoints (Phase 3)
-- Smart Scan → Requires /vision/* API endpoints (Phase 1) 
-- Stats → Requires advanced analytics APIs (Phase 3)
-- Social features → Requires /friends/* APIs (Phase 2)
+Features    : 16 folder trong aquatrack_app/lib/features/ — auth · home · log_drink
+              smart_scan · coach · stats · level · friends · missions · shop
+              avatars · body_map · profile · reminders · onboarding · splash
 ```
 
 ## Admin Console (aquatrack_admin/)
 ```
 Stack   : Vite + React 18 + TypeScript · không dùng thư viện UI/chart nào
 Chạy    : cd aquatrack_admin && npm run dev  → :5173 (proxy /api → :8000)
-Seed    : cd aquatrack_backend && python scripts/seed_admin_demo.py
+Seed    : cd aquatrack_backend && python scripts/seed_admin_demo.py   (chỉ dev)
 Login   : hung.le@aquatrack.vn / Admin@12345 (super_admin) + 3 vai trò khác
+Prod    : dùng scripts/promote_admin.py --list | <email> --role super_admin
+
+⚠️ KHÔNG deploy console. Chủ dự án tự chạy local — đừng đề xuất Vercel/Netlify
+   trừ khi được yêu cầu.
 
 ✅ THẬT   : Tổng quan · Người dùng · Chi tiết người dùng · Nhật ký thao tác
 ⏳ SẮP CÓ : Gamification · Thử thách & nội dung · Báo cáo · Thông báo đẩy · Phân quyền
@@ -88,8 +81,17 @@ Login   : hung.le@aquatrack.vn / Admin@12345 (super_admin) + 3 vai trò khác
 
 Phân quyền: app/core/admin_roles.py là nguồn duy nhất. Server chặn bằng
 require_cap(), console nhận map qua /admin/me để disable nút. Sửa 1 chỗ.
-Kiểm toán : mọi thao tác nhạy cảm ghi vào bảng audit_logs, commit cùng transaction.
+Kiểm toán : mọi thao tác nhạy cảm ghi vào audit_logs, commit cùng transaction.
+            Mã đặt lại mật khẩu CỐ Ý không ghi vào log (mọi role đều audit.view).
 Chi tiết  : aquatrack_admin/README.md
+```
+
+## Script vận hành (aquatrack_backend/scripts/)
+```
+promote_admin.py        nâng/hạ quyền staff trên production · không tạo tài khoản
+backup_db.py            dump JSON toàn bộ bảng + rà soát tài khoản test trước launch
+cleanup_test_accounts.py xoá tài khoản máy sinh & chưa từng ghi nước · dry-run mặc định
+seed_admin_demo.py      dữ liệu mẫu cho console · TỪ CHỐI chạy ngoài development
 ```
 
 ## Agents
@@ -100,21 +102,16 @@ Chi tiết  : aquatrack_admin/README.md
 | FastAPI / DB / AI Coach API | `.claude/agents/backend.md` |
 | README / report / commit | `.claude/agents/docs.md` |
 
-## Skills (Matt Pocock's Engineering Best Practices)
+## Skills
 | Skill | File | Khi nào dùng |
 |---|---|---|
 | **TDD** | `.claude/skills/engineering/tdd.md` | Trước khi code feature mới · unit/widget testing |
 | **Grill-Me** | `.claude/skills/productivity/grill-me.md` | Trước implementation lớn · design review |
-| **Diagnose** | `.claude/skills/engineering/diagnose.md` | Debug issues phức tạp · performance problems |
-| **Improve AquaTrack Architecture** | `.claude/skills/engineering/improve-aquatrack-architecture.md` | Architecture review sau features · Flutter/FastAPI refactoring · coupling analysis |
-
-### Workflow với Skills:
-```
-1. Planning → /grill-me trước khi start
-2. Development → /tdd cho mỗi component
-3. Debugging → /diagnose cho issues
-4. Review → /improve-aquatrack-architecture sau features
-```
+| **Diagnose** | `.claude/skills/engineering/diagnose.md` | Debug phức tạp · performance |
+| **Improve Architecture** | `.claude/skills/engineering/improve-aquatrack-architecture.md` | Review sau feature · coupling analysis |
+| **FastAPI endpoint** | `.claude/skills/backend/fastapi_endpoint.md` | Thêm route mới |
+| **Riverpod provider** | `.claude/skills/flutter/riverpod_provider.md` | Thêm state mới |
+| **TFLite convert** | `.claude/skills/ml/tflite_convert.md` | Khi bắt đầu làm on-device |
 
 ## Rules — luôn áp dụng
 ```
@@ -123,46 +120,40 @@ OUTPUT    : Code chạy được ngay · ít giải thích · không scaffold th
 COMMENT   : Tiếng Anh trong code · tiếng Việt nếu cần giải thích dài
 DESIGN    : Luôn dùng AppColors/AppTextStyles · không hardcode màu
 KHI MƠ HỒ: Hỏi 1 câu ngắn trước · không tự đoán
+REVIEW    : Đưa Codex review feature lớn trước khi commit
+BẢO MẬT   : /aquatrack/ (bản thiết kế) và aquatrack_backend/backups/ (chứa
+            email + hash mật khẩu) PHẢI giữ untracked
 ```
 
 ## Conventions
 ```
-Git branch : feature/<ten-tieng-anh>
+Git branch : feature/<ten-tieng-anh>   (master là nhánh chính)
 Git commit : feat|fix|refactor|docs|chore: <mô tả ngắn>
 Flutter    : Riverpod · feature-based folder · snake_case file · PascalCase class
-Python     : black + isort · type hints · .env cho secrets
-Test       : emulator + thiết bị thật
+Python     : black + isort (setup.cfg đặt profile=black để 2 tool không đánh nhau)
+             type hints · .env cho secrets
+Test       : pytest -q trong aquatrack_backend · emulator + thiết bị thật cho app
+Quyết định : ghi thành ADR trong docs/adr/ (đang có 11 bản)
 ```
 
-## Current Work — Backend Expansion Plan
+## Việc còn lại trước khi nộp chợ
 ```
-📍 FOCUS: Phase 1 - Smart Scan ML Service (Week 1-2)
-Priority: Critical - Flutter app expects /vision/estimate-volume endpoint
-
-IMPLEMENTATION TARGET:
-- POST /vision/estimate-volume → Accept image uploads
-- ML integration: TensorFlow Lite / Claude Vision API  
-- Return format: {containerClass, fillLevelPercent, liquidType, confidence, estimatedVolumeMl}
-- Database: scan_history table for tracking
-
-FILES TO CREATE:
-- aquatrack_backend/app/api/v1/endpoints/vision.py
-- aquatrack_backend/app/services/vision_service.py  
-- aquatrack_backend/app/schemas/vision.py
-- aquatrack_backend/app/models/scan_history.py
+[ ] Deploy lại Railway (nút cấp mã đặt lại mật khẩu chưa có trên production)
+[ ] Mua domain (~250-350k/năm) → DKIM cho Brevo + api.<domain> trỏ về Railway
+[ ] Điền email hỗ trợ trên trang Google Play (màn hình Quên mật khẩu có nhắc tới)
 ```
 
-## Reference Links
+## Reference
 ```
-📋 Full Plan: ~/.claude/plans/starry-doodling-cocke.md
-🎯 Current Phase: Phase 1 - Smart Scan ML Service
-🗂️ Memory: ~/.claude/projects/.../memory/MEMORY.md
+📐 ADR         : docs/adr/  — 11 quyết định kiến trúc, đọc trước khi sửa vùng liên quan
+📖 Backend     : aquatrack_backend/README.md
+📖 Admin       : aquatrack_admin/README.md
+🗂️ Memory      : ~/.claude/projects/.../memory/MEMORY.md
 ```
 
 ## Checklist — paste đầu mỗi chat
 ```
-- Đang làm: [ Backend Phase 1: Smart Scan | Flutter Integration | Testing ]
-- Feature: Smart Scan ML Service (/vision/estimate-volume)
+- Đang làm: ___
 - Block ở: ___
 - Code liên quan: [paste nếu có]
 ```
