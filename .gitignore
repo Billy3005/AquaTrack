@@ -21,20 +21,26 @@ build/
 *.g.dart
 *.freezed.dart
 **/android/local.properties
-**/flutter/ephemeral/
+# Case-insensitive: matches linux/flutter/ephemeral/ and macos|ios/Flutter/ephemeral/
+**/[Ff]lutter/ephemeral/
 
 # IDE
 .idea/
 *.iml
 
-# Claude Design handoff bundle (aquatrack/) — HTML/JSX prototypes exported from
+# Claude Design handoff bundle — HTML/JSX prototypes exported from
 # claude.ai/design. Kept locally as the visual reference for aquatrack_admin/,
 # but never committed: it is not source, and it duplicates the app UI.
+# /aquatrack/ is the current export; docs/prototype/ is an older copy of the
+# same bundle that was committed by mistake (untracked 2026-08-06).
 /aquatrack/
+docs/prototype/
 
 # Backend runtime / collected data (kept on disk, not committed)
 aquatrack_backend/uploads/
 aquatrack_backend/eval_photos/
+aquatrack_backend/logs/
+*.log
 
 # ML
 *.tflite
