@@ -1,0 +1,57 @@
+# Publishes the two legally-required pages (privacy policy, account deletion)
+# to GitHub Pages.
+#
+# Deliberately NOT using Pages' built-in "/docs folder" source: docs/ also holds
+# interview-prep.md, CONTEXT.md, agent.md and the ADRs. Those are already
+# readable in a public repo, but serving them as a search-indexable website is a
+# different thing. tools/build_legal_site.py emits only docs/legal/.
+name: Publish legal pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'docs/legal/**'
+      - 'tools/build_legal_site.py'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; let a newer push win.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install markdown
+
+      # Fails the build if a [ĐIỀN ...] placeholder is still in the source, so
+      # a policy that says "fill in the support email" can never go live.
+      - run: python tools/build_legal_site.py _site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
