@@ -6,7 +6,7 @@
 AquaTrack là ứng dụng theo dõi lượng nước uống. Tài liệu này nói rõ ứng dụng
 thu thập dữ liệu gì, dùng để làm gì, gửi cho ai, và bạn xoá chúng bằng cách nào.
 
-Liên hệ: **[ĐIỀN EMAIL HỖ TRỢ]**
+Liên hệ: **giabao3052005@gmail.com**
 
 ---
 
@@ -126,8 +126,8 @@ Trong ứng dụng: **Hồ sơ → Xoá tài khoản**. Thao tác này xoá vĩn
 Việc xoá diễn ra **ngay lập tức và không thể khôi phục**. Không có giai đoạn chờ,
 không có bản sao lưu để hoàn tác.
 
-Nếu bạn đã gỡ ứng dụng, xem hướng dẫn tại **[ĐIỀN URL TRANG XOÁ TÀI KHOẢN]**
-hoặc gửi email tới **[ĐIỀN EMAIL HỖ TRỢ]**.
+Nếu bạn đã gỡ ứng dụng, xem hướng dẫn tại **https://billy3005.github.io/AquaTrack/delete-account.html**
+hoặc gửi email tới **giabao3052005@gmail.com**.
 
 **Ngoại lệ duy nhất:** nhật ký kiểm toán ghi lại thao tác của nhân viên vận hành
 được giữ lại, nhưng đã gỡ bỏ liên kết tới tài khoản của bạn. Việc này để hồ sơ
@@ -157,4 +157,4 @@ trong ứng dụng. Tiếp tục sử dụng sau khi thay đổi nghĩa là bạ
 
 ## 8. Liên hệ
 
-Mọi câu hỏi về quyền riêng tư: **[ĐIỀN EMAIL HỖ TRỢ]**
+Mọi câu hỏi về quyền riêng tư: **giabao3052005@gmail.com**
