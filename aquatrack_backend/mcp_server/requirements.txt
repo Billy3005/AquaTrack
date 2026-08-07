@@ -1,6 +1,6 @@
-# AquaTrack MCP Server dependencies.
+# Wafubi MCP Server dependencies.
 #
-# This server is a standalone MCP <-> HTTP bridge: it talks to the AquaTrack
+# This server is a standalone MCP <-> HTTP bridge: it talks to the Wafubi
 # REST API over HTTP and does NOT import the backend app, so it has no FastAPI /
 # database dependencies and avoids the backend's pinned-deps constraints.
 #

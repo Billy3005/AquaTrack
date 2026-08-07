@@ -1,4 +1,4 @@
-# AquaTrack Coach Agent
+# Wafubi Coach Agent
 
 A personal **hydration concierge**: it reasons over the user's data and *takes
 actions* on their behalf — log a drink, check progress, adjust the daily goal,
@@ -11,10 +11,10 @@ piece, so the two compose:
   You ── "hôm nay uống đủ chưa?" ──►  Coach Agent (Claude, tool-use loop)
                                               │ launches + drives via MCP (stdio)
                                               ▼
-                                      AquaTrack MCP Server
+                                      Wafubi MCP Server
                                               │ HTTP + JWT
                                               ▼
-                                      AquaTrack REST API (Railway)
+                                      Wafubi REST API (Railway)
 ```
 
 The agent connects to `../mcp_server/server.py` as an MCP client, lists its

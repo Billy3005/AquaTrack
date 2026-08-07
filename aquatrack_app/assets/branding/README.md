@@ -11,8 +11,8 @@ này, nên nó không nằm trong APK/AAB. Đây là nguồn để sinh icon và
 
 ## Thiết kế
 
-Hướng **B — "Vòng tay ôm"**, lấy từ dự án Claude Design *AquaTrack*, file
-`AquaTrack Icon.html`. Hai cánh tay khoác nhau tạo thành vòng ôm lấy giọt nước.
+Hướng **B — "Vòng tay ôm"**, lấy từ dự án Claude Design *Wafubi*, file
+`Wafubi Icon.html`. Hai cánh tay khoác nhau tạo thành vòng ôm lấy giọt nước.
 Chọn hướng này vì silhouette còn đọc được ở 29px, an toàn nhất cho cỡ nhỏ.
 
 Quy tắc từ bản thiết kế, giữ nguyên khi sửa:

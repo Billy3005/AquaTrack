@@ -83,7 +83,7 @@ class EmailVerificationService:
 
             success = await self._send_email(
                 to_email=user_email,
-                subject="Xác thực tài khoản AquaTrack của bạn",
+                subject="Xác thực tài khoản Wafubi của bạn",
                 html_content=html_content,
             )
 
@@ -102,7 +102,7 @@ class EmailVerificationService:
         <html>
         <head>
             <meta charset="UTF-8">
-            <title>Xác thực tài khoản AquaTrack</title>
+            <title>Xác thực tài khoản Wafubi</title>
             <style>
                 body {{ font-family: 'SF Pro Display', -apple-system, sans-serif; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
@@ -115,13 +115,13 @@ class EmailVerificationService:
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>🌊 Chào mừng đến với AquaTrack!</h1>
+                    <h1>🌊 Chào mừng đến với Wafubi!</h1>
                     <p>Xin chào {user_name}!</p>
                 </div>
 
                 <div class="content">
                     <h2>Xác thực tài khoản của bạn</h2>
-                    <p>Cảm ơn bạn đã đăng ký AquaTrack! Để hoàn tất quá trình đăng ký, vui lòng click vào nút bên dưới để xác thực email của bạn:</p>
+                    <p>Cảm ơn bạn đã đăng ký Wafubi! Để hoàn tất quá trình đăng ký, vui lòng click vào nút bên dưới để xác thực email của bạn:</p>
 
                     <p style="text-align: center; margin: 30px 0;">
                         <a href="{verification_link}" class="button">Xác thực tài khoản</a>
@@ -145,7 +145,7 @@ class EmailVerificationService:
 
                 <div class="footer">
                     <p>Nếu bạn không tạo tài khoản này, vui lòng bỏ qua email này.</p>
-                    <p>© 2026 AquaTrack - Ứng dụng theo dõi hydration thông minh</p>
+                    <p>© 2026 Wafubi - Ứng dụng theo dõi hydration thông minh</p>
                 </div>
             </div>
         </body>
@@ -169,7 +169,7 @@ class EmailNotificationService:
 
             success = await self._send_email(
                 to_email=user_email,
-                subject="Đặt lại mật khẩu AquaTrack",
+                subject="Đặt lại mật khẩu Wafubi",
                 html_content=html_content,
             )
 
@@ -186,7 +186,7 @@ class EmailNotificationService:
 
             success = await self._send_email(
                 to_email=user_email,
-                subject="🌊 Chào mừng bạn đến với AquaTrack!",
+                subject="🌊 Chào mừng bạn đến với Wafubi!",
                 html_content=html_content,
             )
 
@@ -213,7 +213,7 @@ class EmailNotificationService:
 
             success = await self._send_email(
                 to_email=user_email,
-                subject="💧 Nhắc nhở hydration từ AquaTrack",
+                subject="💧 Nhắc nhở hydration từ Wafubi",
                 html_content=html_content,
             )
 
@@ -230,7 +230,7 @@ class EmailNotificationService:
         <html>
         <head>
             <meta charset="UTF-8">
-            <title>Đặt lại mật khẩu AquaTrack</title>
+            <title>Đặt lại mật khẩu Wafubi</title>
             <style>
                 body {{ font-family: 'SF Pro Display', -apple-system, sans-serif; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
@@ -249,7 +249,7 @@ class EmailNotificationService:
 
                 <div class="content">
                     <h2>Yêu cầu đặt lại mật khẩu</h2>
-                    <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản AquaTrack của bạn.</p>
+                    <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản Wafubi của bạn.</p>
 
                     <p style="text-align: center; margin: 30px 0;">
                         <a href="{reset_link}" class="button">Đặt lại mật khẩu</a>
@@ -267,7 +267,7 @@ class EmailNotificationService:
 
                 <div class="footer">
                     <p>Nếu bạn không yêu cầu đặt lại mật khẩu, tài khoản của bạn vẫn an toàn.</p>
-                    <p>© 2026 AquaTrack - Bảo mật là ưu tiên hàng đầu</p>
+                    <p>© 2026 Wafubi - Bảo mật là ưu tiên hàng đầu</p>
                 </div>
             </div>
         </body>
@@ -281,7 +281,7 @@ class EmailNotificationService:
         <html>
         <head>
             <meta charset="UTF-8">
-            <title>Chào mừng đến với AquaTrack!</title>
+            <title>Chào mừng đến với Wafubi!</title>
             <style>
                 body {{ font-family: 'SF Pro Display', -apple-system, sans-serif; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
@@ -300,7 +300,7 @@ class EmailNotificationService:
 
                 <div class="content">
                     <h2>Bắt đầu hành trình hydration thông minh!</h2>
-                    <p>AquaTrack sẵn sàng giúp bạn duy trì thói quen uống nước lành mạnh với:</p>
+                    <p>Wafubi sẵn sàng giúp bạn duy trì thói quen uống nước lành mạnh với:</p>
 
                     <div class="tip">
                         <strong>🤖 AI Coach cá nhân</strong><br>
@@ -335,7 +335,7 @@ class EmailNotificationService:
 
                 <div class="footer">
                     <p>Mọi thắc mắc, vui lòng liên hệ support@aquatrack.app</p>
-                    <p>© 2026 AquaTrack - Sống khỏe mỗi ngày</p>
+                    <p>© 2026 Wafubi - Sống khỏe mỗi ngày</p>
                 </div>
             </div>
         </body>
@@ -387,13 +387,13 @@ class EmailNotificationService:
                     {"<p>Hãy duy trì thói quen tuyệt vời này! Uống nước đều đặn giúp duy trì năng lượng và sức khỏe tốt.</p>" if current_progress >= daily_goal else "<p>Hãy uống 1-2 ly nước ngay bây giờ. Chia nhỏ lượng nước còn lại trong ngày để dễ đạt mục tiêu!</p>"}
 
                     <p style="text-align: center; margin: 30px 0;">
-                        <strong>Mở AquaTrack ngay để log nước!</strong>
+                        <strong>Mở Wafubi ngay để log nước!</strong>
                     </p>
                 </div>
 
                 <div class="footer">
                     <p>Để tắt nhắc nhở email, vào Settings trong app.</p>
-                    <p>© 2026 AquaTrack - Nhắc nhở thông minh</p>
+                    <p>© 2026 Wafubi - Nhắc nhở thông minh</p>
                 </div>
             </div>
         </body>
@@ -480,7 +480,7 @@ class EmailService:
 
             # Send welcome email
             await self.notification_service.send_welcome_email(
-                user.email, user.username or "AquaTrack User"
+                user.email, user.username or "Wafubi User"
             )
 
             return True

@@ -70,7 +70,7 @@ def _generate_insights_via_claude(
             max_tokens=400,
             temperature=0.5,
             system=(
-                "Bạn là chuyên gia hydration của AquaTrack. Phân tích số liệu và "
+                "Bạn là chuyên gia hydration của Wafubi. Phân tích số liệu và "
                 "đưa lời khuyên thực tế, động viên, bằng tiếng Việt. Chỉ trả JSON."
             ),
             messages=[{"role": "user", "content": prompt}],

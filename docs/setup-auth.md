@@ -27,7 +27,7 @@ Vào [Google Cloud Console](https://console.cloud.google.com/) → tạo project
   ```
 
 **Android**:
-- Package name: `com.aquatrack.app`
+- Package name: `com.wafubi.app`
 - SHA-1 debug — lấy bằng:
   ```bash
   cd aquatrack_app/android && ./gradlew signingReport

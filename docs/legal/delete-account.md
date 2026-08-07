@@ -1,13 +1,13 @@
-# Xoá tài khoản AquaTrack
+# Xoá tài khoản Wafubi
 
-Trang này dành cho người dùng ứng dụng **AquaTrack** (`com.aquatrack.app`)
+Trang này dành cho người dùng ứng dụng **Wafubi** (`com.wafubi.app`)
 muốn xoá tài khoản và dữ liệu của mình.
 
 ---
 
 ## Cách 1 — Xoá ngay trong ứng dụng (nhanh nhất)
 
-1. Mở AquaTrack
+1. Mở Wafubi
 2. Vào tab **Hồ sơ**
 3. Kéo xuống cuối, chạm **Xoá tài khoản**
 4. Đọc kỹ phần liệt kê, gõ chữ **XOÁ** để xác nhận
@@ -69,4 +69,4 @@ vẫn còn nguyên. Chỉ dùng chức năng xoá khi bạn chắc chắn không
 ---
 
 Liên hệ: **giabao3052005@gmail.com**
-Cập nhật lần cuối: 07/08/2026
+Cập nhật lần cuối: 08/08/2026

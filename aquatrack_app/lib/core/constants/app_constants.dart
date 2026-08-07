@@ -1,4 +1,4 @@
-/// AquaTrack Business Logic Constants
+/// Wafubi Business Logic Constants
 class AppConstants {
   // Hydration coefficients (Log Drink screen)
   static const hydrationCoeff = {

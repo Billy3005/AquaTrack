@@ -1,4 +1,4 @@
-# AquaTrack Coach Agent dependencies.
+# Wafubi Coach Agent dependencies.
 #
 # One venv runs BOTH the agent and the MCP server it launches as a subprocess,
 # so it needs the agent's deps (anthropic) plus the server's (mcp, httpx). Keep

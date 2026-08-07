@@ -123,7 +123,7 @@ function Console() {
             </div>
             {!collapsed && (
               <div>
-                <div style={{ fontSize: 14.5, fontWeight: 750, color: '#fff', letterSpacing: '-0.01em' }}>AquaTrack</div>
+                <div style={{ fontSize: 14.5, fontWeight: 750, color: '#fff', letterSpacing: '-0.01em' }}>Wafubi</div>
                 <div style={{ fontSize: 10.5, color: '#6E93B4', fontWeight: 600, letterSpacing: '0.09em' }}>ADMIN CONSOLE</div>
               </div>
             )}

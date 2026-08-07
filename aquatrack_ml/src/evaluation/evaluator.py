@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AquaTrack Model Evaluator
+Wafubi Model Evaluator
 Comprehensive evaluation framework with metrics and visualization
 """
 
@@ -32,7 +32,7 @@ from data_pipeline import AquaTrackDataPipeline
 
 class AquaTrackEvaluator:
     """
-    Comprehensive evaluation framework for AquaTrack model
+    Comprehensive evaluation framework for Wafubi model
 
     Features:
     - Multi-output performance metrics
@@ -550,7 +550,7 @@ def create_evaluator(model_path: str, data_dir: str = "./data") -> AquaTrackEval
 
 if __name__ == "__main__":
     # Test evaluator setup
-    print("Testing AquaTrack Evaluator...")
+    print("Testing Wafubi Evaluator...")
 
     # Note: This will fail without a trained model, but tests architecture
     try:

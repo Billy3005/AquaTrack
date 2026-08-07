@@ -1,9 +1,9 @@
-# ⚡ QUICK START — AquaTrack
+# ⚡ QUICK START — Wafubi
 
 ## Paste vào đầu mỗi chat mới với Claude Code
 
 ```
-[CLAUDE.md loaded — AquaTrack]
+[CLAUDE.md loaded — Wafubi]
 Stack: Flutter (Riverpod) + FastAPI + TFLite
 Design: Dark navy, Living Drop, 8 screens
 Đang làm: [ Screen XX | Feature | ML | Backend ]

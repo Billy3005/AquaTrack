@@ -44,7 +44,7 @@ async def ping():
     """Health check endpoint for API v1"""
     return {
         "message": "pong",
-        "status": "AquaTrack API v1 + Water Formula Calculation! 🚀",
+        "status": "Wafubi API v1 + Water Formula Calculation! 🚀",
         "endpoints": "auth, users, intake, stats, coach, levels, vision, friends, water-profile ready",
         "features": "Full hydration tracking + AI coach + gamification + Smart Scan ML + Social Features + Water Formula",
     }

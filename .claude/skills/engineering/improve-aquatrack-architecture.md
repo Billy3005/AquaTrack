@@ -1,7 +1,7 @@
-# Improve AquaTrack Architecture
+# Improve Wafubi Architecture
 
 ## Mục tiêu
-Cải thiện kiến trúc của AquaTrack app thông qua việc phân tích và tái cấu trúc các module, interface và implementation patterns trong Flutter frontend và FastAPI backend.
+Cải thiện kiến trúc của Wafubi app thông qua việc phân tích và tái cấu trúc các module, interface và implementation patterns trong Flutter frontend và FastAPI backend.
 
 ## Nguyên tắc thiết kế chính
 
@@ -101,10 +101,10 @@ Chọn best approach và create:
 - Testing approach
 - Performance benchmarks
 
-## AquaTrack-Specific Terminology
+## Wafubi-Specific Terminology
 
 ### Flutter Terms
-- **Screen**: Top-level navigable widget (8 screens trong AquaTrack)
+- **Screen**: Top-level navigable widget (8 screens trong Wafubi)
 - **Component**: Reusable UI widgets (drop widget, chart widgets)
 - **Provider**: Riverpod state management unit
 - **Repository**: Data access abstraction layer
@@ -183,7 +183,7 @@ Tạo GitHub issue RFC với:
 /improve-aquatrack-architecture authentication-flow
 ```
 
-## Integration với AquaTrack Workflow
+## Integration với Wafubi Workflow
 
 - Chạy sau mỗi major feature completion
 - Kết hợp với `/code-review` để identify architecture issues

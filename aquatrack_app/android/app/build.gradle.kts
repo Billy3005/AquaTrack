@@ -17,7 +17,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.aquatrack.app"
+    namespace = "com.wafubi.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -33,7 +33,9 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.aquatrack.app"
+        // Locked once the app is published — Play uses this as the app's
+        // identity and it cannot be changed afterwards.
+        applicationId = "com.wafubi.app"
         // TFLite Flutter requires minSdkVersion 26
         minSdk = 26
         targetSdk = flutter.targetSdkVersion

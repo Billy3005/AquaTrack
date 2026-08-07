@@ -1,4 +1,4 @@
-# AquaTrack: An AI Hydration Concierge
+# Wafubi: An AI Hydration Concierge
 
 ### Subtitle: A personal agent that reasons over your hydration, reads the weather and your photos, and takes action so you don't have to.
 
@@ -42,7 +42,7 @@ concierge that *manages* it.
 
 ## The solution
 
-AquaTrack is a hydration app whose centrepiece is the **Coach Agent**. You speak
+Wafubi is a hydration app whose centrepiece is the **Coach Agent**. You speak
 to it in natural language and it orchestrates everything else:
 
 > **You:** *"Mình vừa uống 1 ly 300ml, Hà Nội đang nóng — hôm nay mình ổn không?"*
@@ -67,12 +67,12 @@ boundary:
 You ──►  Coach Agent (Claude tool-use loop)
               │ Model Context Protocol (stdio)
               ▼
-        AquaTrack MCP Server  ──HTTP + JWT──►  AquaTrack REST API (FastAPI, Railway)
+        Wafubi MCP Server  ──HTTP + JWT──►  Wafubi REST API (FastAPI, Railway)
               │                                       │
               └─► Open-Meteo (weather)         Postgres · Cloudflare R2 · Claude Vision
 ```
 
-**1. REST API (FastAPI).** The existing AquaTrack backend holds all business
+**1. REST API (FastAPI).** The existing Wafubi backend holds all business
 logic: hydration factors per drink type, XP and streaks, daily-goal resolution,
 JWT authentication, and Smart Scan (Claude Vision with structured outputs that
 estimates a container's capacity and fill level, then computes volume
@@ -185,7 +185,7 @@ errors, real logs) is what lets an agent be debugged at all.
 | **Deployability** | Railway + managed Postgres + Cloudflare R2, reproducible from `.env.example` |
 | **Security features** | JWT per-user isolation, confirm-before-action, no secrets in code |
 
-AquaTrack turns a habit-tracking chore into a conversation with an assistant that
+Wafubi turns a habit-tracking chore into a conversation with an assistant that
 already knows your numbers — and, more importantly, is allowed to act on them
 safely. That is the difference between an app that counts water and a concierge
 that keeps you hydrated.

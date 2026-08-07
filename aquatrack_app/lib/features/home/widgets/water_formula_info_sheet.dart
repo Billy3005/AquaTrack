@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 
-/// Public, transparent explanation of how AquaTrack derives a daily water goal.
+/// Public, transparent explanation of how Wafubi derives a daily water goal.
 /// Mirrors aquatrack_backend/aquatrack-water-formula.md exactly so the number
 /// shown on the drop is never a black box.
 void showWaterFormulaInfoSheet(BuildContext context) {
@@ -52,7 +52,7 @@ class _WaterFormulaSheet extends StatelessWidget {
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'AquaTrack — Công thức tính nước',
+                    'Wafubi — Công thức tính nước',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 17,
@@ -157,7 +157,7 @@ class _Intro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Text(
-      'AquaTrack chụp ảnh ly nước → AI đếm ml → giúp bạn sống khoẻ hơn mỗi '
+      'Wafubi chụp ảnh ly nước → AI đếm ml → giúp bạn sống khoẻ hơn mỗi '
       'ngày. Mục tiêu nước hằng ngày của bạn không phải con số ngẫu nhiên: '
       'nó được tính minh bạch từ cơ thể và lối sống của bạn theo công thức '
       'dưới đây. App cũng tự điều chỉnh nhẹ theo thời tiết và vận động.',

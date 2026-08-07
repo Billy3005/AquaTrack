@@ -1,7 +1,7 @@
-"""AquaTrack Coach Agent.
+"""Wafubi Coach Agent.
 
 A personal hydration concierge that reasons over a user's data and takes actions
-on their behalf. It connects to the AquaTrack MCP Server (``mcp_server/server.py``)
+on their behalf. It connects to the Wafubi MCP Server (``mcp_server/server.py``)
 as an MCP client over stdio, exposes those tools to Claude, and runs a tool-use
 loop: Claude decides which tools to call, the results flow back, and it keeps
 going until it has an answer or has completed an action for the user.
@@ -39,7 +39,7 @@ _MCP_SERVER = os.path.join(
     "server.py",
 )
 
-SYSTEM_PROMPT = """You are AquaTrack Coach, a personal hydration concierge for ONE user.
+SYSTEM_PROMPT = """You are Wafubi Coach, a personal hydration concierge for ONE user.
 
 You have tools to read the user's hydration data, check the weather, run a photo
 Smart Scan, log drinks, and adjust the daily goal. Use them — never guess a
@@ -138,7 +138,7 @@ async def main() -> None:
                 }
                 for t in tools
             ]
-            print(f"AquaTrack Coach ready ({MODEL}) — {len(anthropic_tools)} tools.")
+            print(f"Wafubi Coach ready ({MODEL}) — {len(anthropic_tools)} tools.")
 
             messages: list = []
 

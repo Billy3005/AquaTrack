@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AquaTrack ML Training Environment Setup
+Wafubi ML Training Environment Setup
 ASCII version for Windows compatibility
 """
 
@@ -55,7 +55,7 @@ def create_config_files():
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Training config
-    config_content = '''# AquaTrack ML Training Configuration
+    config_content = '''# Wafubi ML Training Configuration
 model:
   input_size: [224, 224, 3]
   num_container_classes: 10
@@ -91,7 +91,7 @@ paths:
 
 def main():
     """Main setup function"""
-    print("=== AquaTrack ML Training Environment Setup ===\n")
+    print("=== Wafubi ML Training Environment Setup ===\n")
 
     try:
         check_python_version()

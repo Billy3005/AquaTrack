@@ -1,4 +1,4 @@
-# AquaTrack ML Models
+# Wafubi ML Models
 
 ## aquatrack_v1.tflite
 Custom TFLite model for volume estimation from drink container photos.

@@ -1,5 +1,5 @@
 """
-Performance monitoring and health checks for AquaTrack backend
+Performance monitoring and health checks for Wafubi backend
 Includes metrics collection, health endpoints, and alert system
 """
 

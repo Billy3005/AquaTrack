@@ -6,7 +6,7 @@ Accepted (un-defers the referral piece noted in ADR-0002)
 ## Context
 "Đại Sứ Hydration" was the one Weekly Quest deferred in `quests_spec.md` / ADR-0002
 because no referral infrastructure existed, holding the Weekly Completion Bonus at
-3/3. AquaTrack already has full *in-app friend requests* (search username → request
+3/3. Wafubi already has full *in-app friend requests* (search username → request
 → accept), so "mời bạn bè" here means something different: bringing a **new person**
 onto the app, not connecting two existing users. We needed a referral model that
 counts toward a quest, resists fake-account farming, and fits the existing

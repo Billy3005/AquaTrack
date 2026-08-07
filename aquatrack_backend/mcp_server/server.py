@@ -1,7 +1,7 @@
-"""AquaTrack MCP Server.
+"""Wafubi MCP Server.
 
-Exposes the deployed AquaTrack REST API as Model Context Protocol tools so an
-agent (the AquaTrack Coach) can reason over a user's hydration data and take
+Exposes the deployed Wafubi REST API as Model Context Protocol tools so an
+agent (the Wafubi Coach) can reason over a user's hydration data and take
 actions on their behalf — log a drink, check progress, adjust the daily goal —
 without re-implementing any business logic.
 
@@ -30,7 +30,7 @@ from datetime import date
 import httpx
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("AquaTrack")
+mcp = FastMCP("Wafubi")
 
 API_BASE = os.environ.get("AQUATRACK_API_BASE_URL", "http://localhost:8000").rstrip("/")
 
@@ -47,7 +47,7 @@ def _client() -> httpx.Client:
     token = os.environ.get("AQUATRACK_USER_TOKEN", "").strip()
     if not token:
         raise ToolError(
-            "No AquaTrack user token. Set AQUATRACK_USER_TOKEN to a valid JWT "
+            "No Wafubi user token. Set AQUATRACK_USER_TOKEN to a valid JWT "
             "access token before calling tools."
         )
     return httpx.Client(
@@ -99,7 +99,7 @@ def _guard(fn):
                 f"{exc.response.text[:200]}"
             }
         except httpx.HTTPError as exc:
-            return {"error": f"Could not reach AquaTrack API: {exc}"}
+            return {"error": f"Could not reach Wafubi API: {exc}"}
 
     return wrapper
 
@@ -255,9 +255,7 @@ def analyze_drink_photo(image_path: str) -> dict:
     with _client() as client:
         resp = client.post(
             "/vision/estimate-volume",
-            files={
-                "image": (os.path.basename(image_path), image_bytes, "image/jpeg")
-            },
+            files={"image": (os.path.basename(image_path), image_bytes, "image/jpeg")},
             params={"save_to_history": True},
         )
         resp.raise_for_status()

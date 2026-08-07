@@ -1,8 +1,8 @@
-# CLAUDE.md — AquaTrack
+# CLAUDE.md — Wafubi
 
 ## Project
 ```
-App     : AquaTrack — hydration app that feels alive
+App     : Wafubi — hydration app that feels alive
 Tagline : Chụp ảnh ly nước → AI đếm ml → Sống khoẻ hơn mỗi ngày
 Stage   : Sắp nộp Google Play (app v1.0.0+1) · backend đã live trên Railway
 Stack   : Flutter (Riverpod) · FastAPI (Python 3.11) · Postgres (prod) / SQLite (dev)

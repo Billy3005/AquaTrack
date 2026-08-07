@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     """Application settings from environment variables"""
 
     # App Settings
-    PROJECT_NAME: str = "AquaTrack API"
+    PROJECT_NAME: str = "Wafubi API"
     VERSION: str = "1.0.0"
     ENVIRONMENT: str = "development"
 
@@ -104,14 +104,12 @@ class Settings(BaseSettings):
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_USE_TLS: bool = True
-    FROM_EMAIL: str = "noreply@aquatrack.app"
-    FROM_NAME: str = "AquaTrack"
+    FROM_EMAIL: str = "noreply@wafubi.app"
+    FROM_NAME: str = "Wafubi"
 
     # Frontend URLs
     FRONTEND_URL: str = "http://localhost:3000"  # Flutter web or mobile deep link base
-    APP_STORE_URL: str = (
-        "https://play.google.com/store/apps/details?id=com.aquatrack.app"
-    )
+    APP_STORE_URL: str = "https://play.google.com/store/apps/details?id=com.wafubi.app"
 
     # Security Settings (Production)
     # Left unset, this follows ENVIRONMENT: off in development (so repeated

@@ -843,7 +843,7 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
           ),
         ),
         content: Text(
-          'Bạn có chắc chắn muốn đăng xuất khỏi AquaTrack?',
+          'Bạn có chắc chắn muốn đăng xuất khỏi Wafubi?',
           style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),
         actions: [

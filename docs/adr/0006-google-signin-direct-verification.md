@@ -14,7 +14,7 @@ Chi phí thật của từng provider rất chênh lệch: Google miễn phí (~
 công); Apple cần Apple Developer Program $99/năm và chỉ có ý nghĩa khi ship
 iOS — mà App Store guideline 4.8 biến nó thành *nghĩa vụ* (đã có social login
 trên iOS thì bắt buộc có Sign in with Apple); Facebook cần app review + Data
-Use Checkup + privacy policy public, nhiều tuần thủ tục. AquaTrack hiện chỉ
+Use Checkup + privacy policy public, nhiều tuần thủ tục. Wafubi hiện chỉ
 chạy Android/Windows, chưa có Apple dev account, chưa có privacy policy.
 
 Backend đã có hệ JWT hoạt động tốt và một kiến trúc nhất quán
@@ -33,7 +33,7 @@ Backend đã có hệ JWT hoạt động tốt và một kiến trúc nhất qu�
    bằng `google-auth` → find-or-create user → trả về đúng cặp JWT hiện có.
    Firebase Auth bị loại vì nó đưa hệ identity thứ hai vào app (user tồn tại
    ở hai nơi, backend phải verify token Firebase) chỉ để tiết kiệm vài dòng
-   verify — backend của AquaTrack vẫn là chủ identity duy nhất.
+   verify — backend của Wafubi vẫn là chủ identity duy nhất.
 
 3. **Auto-link theo email đã xác minh, khóa bằng `google_sub`.** Google
    sign-in mang email trùng tài khoản password hiện có → đăng nhập thẳng vào

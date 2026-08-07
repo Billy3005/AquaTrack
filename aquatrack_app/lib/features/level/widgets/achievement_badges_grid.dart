@@ -216,7 +216,7 @@ class _AchievementBadge extends StatelessWidget {
   }
 }
 
-/// Default achievements cho AquaTrack
+/// Default achievements cho Wafubi
 class DefaultAchievements {
   static List<Achievement> getAll({
     int totalLogs = 0,

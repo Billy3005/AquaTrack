@@ -314,7 +314,7 @@ class _AvatarGridItem extends StatelessWidget {
   }
 }
 
-/// Default avatars cho AquaTrack
+/// Default avatars cho Wafubi
 class DefaultAvatars {
   static List<AvatarItem> getAll({
     int currentLevel = 1,

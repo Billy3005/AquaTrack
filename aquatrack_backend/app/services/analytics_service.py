@@ -521,7 +521,7 @@ class AnalyticsService:
                 {
                     "type": "getting_started",
                     "priority": "high",
-                    "message": "Chào mừng đến AquaTrack!",
+                    "message": "Chào mừng đến Wafubi!",
                     "action": "Bắt đầu với 1 ly nước ngay bây giờ",
                 }
             ],

@@ -56,7 +56,7 @@ Tag debug statements với unique prefixes (e.g., `[DEBUG-a4f2]`) for easy clean
 - Commit message documents root cause
 - Ask: "what architectural changes would prevent this?"
 
-## Áp dụng cho AquaTrack:
+## Áp dụng cho Wafubi:
 
 ### Flutter bugs:
 - Widget test cho UI issues

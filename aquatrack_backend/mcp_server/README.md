@@ -1,7 +1,7 @@
-# AquaTrack MCP Server
+# Wafubi MCP Server
 
 A [Model Context Protocol](https://modelcontextprotocol.io) server that exposes
-AquaTrack's hydration capabilities as agent tools. It lets the **AquaTrack Coach
+Wafubi's hydration capabilities as agent tools. It lets the **Wafubi Coach
 agent** reason over a user's data and *take actions* on their behalf — log a
 drink, check progress, adjust the daily goal, read the weather, run a Smart Scan
 — instead of being a passive chatbot.
@@ -12,7 +12,7 @@ drink, check progress, adjust the daily goal, read the weather, run a Smart Scan
 Coach Agent (Claude, tool-use loop)
         │  MCP protocol (stdio / Inspector)
         ▼
-AquaTrack MCP Server  ──HTTP + JWT──►  AquaTrack REST API (FastAPI, Railway)
+Wafubi MCP Server  ──HTTP + JWT──►  Wafubi REST API (FastAPI, Railway)
                                               │
                                        Postgres · R2 · Claude Vision
 ```

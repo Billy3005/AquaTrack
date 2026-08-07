@@ -1,1 +1,1 @@
-"""AquaTrack Coach Agent — a hydration concierge built on the MCP server."""
+"""Wafubi Coach Agent — a hydration concierge built on the MCP server."""

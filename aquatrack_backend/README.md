@@ -1,6 +1,6 @@
-# AquaTrack Backend
+# Wafubi Backend
 
-FastAPI backend cho ứng dụng theo dõi hydration AquaTrack.
+FastAPI backend cho ứng dụng theo dõi hydration Wafubi.
 
 ## Features
 

@@ -28,7 +28,7 @@ class AppService {
     }
 
     try {
-      AppLogger.info(_tag, 'Initializing AquaTrack app services...');
+      AppLogger.info(_tag, 'Initializing Wafubi app services...');
 
       // Initialize Hive for local storage
       await _initializeHive();

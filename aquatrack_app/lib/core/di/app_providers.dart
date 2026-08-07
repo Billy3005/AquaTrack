@@ -6,7 +6,7 @@ import '../network/network_client.dart' as network;
 import '../storage/secure_storage.dart';
 import '../storage/storage_service.dart';
 
-/// Core dependency injection providers for AquaTrack app
+/// Core dependency injection providers for Wafubi app
 ///
 /// This file contains all the fundamental providers that other features depend on.
 /// Organized by layer: Network → Storage → Core Services

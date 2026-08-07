@@ -194,7 +194,7 @@ class AICoachService:
                 model=settings.COACH_MODEL,  # env-configurable; default claude-haiku-4-5
                 max_tokens=200,
                 temperature=0.7,
-                system="""Bạn là AQUA AI - trợ lý hydration thông minh của app AquaTrack.
+                system="""Bạn là AQUA AI - trợ lý hydration thông minh của app Wafubi.
 
 🎯 NHIỆM VỤ:
 - Khuyến khích uống nước đều đặn bằng tiếng Việt tự nhiên
@@ -257,7 +257,7 @@ class AICoachService:
                 messages=[
                     {
                         "role": "system",
-                        "content": """Bạn là AQUA AI - trợ lý hydration thông minh của AquaTrack.
+                        "content": """Bạn là AQUA AI - trợ lý hydration thông minh của Wafubi.
 
 🎯 NHIỆM VỤ:
 - Khuyến khích uống nước đều đặn (tiếng Việt)
@@ -320,7 +320,7 @@ class AICoachService:
                 messages=[
                     {
                         "role": "system",
-                        "content": """Bạn là AQUA AI - trợ lý hydration thông minh của app AquaTrack Việt Nam.
+                        "content": """Bạn là AQUA AI - trợ lý hydration thông minh của app Wafubi Việt Nam.
 
 NHIỆM VỤ:
 - Khuyến khích người dùng uống nước đều đặn

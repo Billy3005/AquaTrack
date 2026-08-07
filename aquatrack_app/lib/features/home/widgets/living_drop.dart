@@ -4,7 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/utils/home_state.dart';
 
-/// Living Drop — Core widget của AquaTrack
+/// Living Drop — Core widget của Wafubi
 /// Animated water drop với fill level, breathing animation, 5 states
 class LivingDrop extends StatefulWidget {
   final double progress; // 0.0 → 1.0

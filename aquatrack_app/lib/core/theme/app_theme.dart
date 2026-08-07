@@ -7,7 +7,7 @@ import 'app_text_styles.dart';
 class AppTheme {
   AppTheme._();
 
-  /// Dark theme for AquaTrack
+  /// Dark theme for Wafubi
   static ThemeData get darkTheme {
     return ThemeData(
       // Base configuration

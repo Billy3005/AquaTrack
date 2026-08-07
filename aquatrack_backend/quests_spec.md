@@ -129,7 +129,7 @@ Note: A `ReminderLog` row is written each time `/friends/{id}/remind/` succeeds.
 | Field       | Value                                                        |
 | ----------- | ------------------------------------------------------------ |
 | Quest ID    | `hydration_ambassador`                                       |
-| Description | Mời 1 người bạn mới dùng AquaTrack (đã uống nước lần đầu)    |
+| Description | Mời 1 người bạn mới dùng Wafubi (đã uống nước lần đầu)    |
 | Target      | 1 Validated Referral                                         |
 | Source      | `referrals.validated_at` (count within week)                |
 | Reward      | 75 XP + 40 coin                                              |

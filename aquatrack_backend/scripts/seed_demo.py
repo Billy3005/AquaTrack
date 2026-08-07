@@ -1,7 +1,7 @@
 """Seed today's water logs for the demo user, so the video shows healthy
 progress instead of an almost-empty day.
 
-Logs a realistic morning-to-afternoon set of drinks for TODAY via the AquaTrack
+Logs a realistic morning-to-afternoon set of drinks for TODAY via the Wafubi
 REST API, using the same auth as the agent. Run it right before recording.
 
 PowerShell:

@@ -21,7 +21,7 @@ Trước khi ask questions, attempt to extract relevant information từ codebas
 ## Outcome
 Process systematically walks through interconnected design decisions, addressing dependencies giữa choices để achieve mutual clarity về tất cả aspects của proposed plan/design.
 
-## Áp dụng cho AquaTrack:
+## Áp dụng cho Wafubi:
 
 ### Before implementing new screens:
 - Grill về UX flow và edge cases
@@ -41,7 +41,7 @@ Process systematically walks through interconnected design decisions, addressing
 - Performance constraints
 - Data privacy concerns
 
-## Example Questions cho AquaTrack:
+## Example Questions cho Wafubi:
 - "How will the Smart Scan handle low-light conditions?"
 - "What happens when API calls fail during drink logging?"
 - "How will offline mode affect the Coach recommendations?"

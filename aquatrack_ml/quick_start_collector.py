@@ -157,7 +157,7 @@ def show_progress():
 
 def main():
     """Main collection interface"""
-    print("=== AquaTrack Quick Dataset Collector ===")
+    print("=== Wafubi Quick Dataset Collector ===")
     print("Simple tool to get started with data collection")
 
     while True:

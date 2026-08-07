@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// AquaTrack Design System - Color Palette
+/// Wafubi Design System - Color Palette
 /// Dark navy theme với Living Drop metaphor
 class AppColors {
   // Background

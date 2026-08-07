@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-End-to-End Test of AquaTrack ML Pipeline
+End-to-End Test of Wafubi ML Pipeline
 Test complete workflow with synthetic data
 """
 
@@ -394,7 +394,7 @@ class EndToEndTester:
         print(f"Duration: {duration:.1f} seconds")
 
         if passed_tests == total_tests:
-            print("\n🎉 ALL TESTS PASSED! AquaTrack ML pipeline is ready!")
+            print("\n🎉 ALL TESTS PASSED! Wafubi ML pipeline is ready!")
         else:
             print("\n⚠️  Some tests failed. Check individual results above.")
 
@@ -410,7 +410,7 @@ class EndToEndTester:
 
 def main():
     """Run end-to-end test"""
-    print("AquaTrack ML Pipeline End-to-End Test")
+    print("Wafubi ML Pipeline End-to-End Test")
     print("Testing complete ML workflow with synthetic data...")
 
     # Install Pillow for image handling if not available

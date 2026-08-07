@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AquaTrack Dataset Collection Tool
+Wafubi Dataset Collection Tool
 Hỗ trợ thu thập và tổ chức dataset cho training
 """
 
@@ -219,7 +219,7 @@ def main():
     collector = DatasetCollector()
 
     while True:
-        print("\n=== AquaTrack Dataset Collector ===")
+        print("\n=== Wafubi Dataset Collector ===")
         print("1. Show collection status")
         print("2. Add new sample")
         print("3. Show priorities")

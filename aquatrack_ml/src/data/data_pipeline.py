@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Data Pipeline for AquaTrack Model Training
+Data Pipeline for Wafubi Model Training
 Handles preprocessing, augmentation, and data loading
 """
 
@@ -17,7 +17,7 @@ import albumentations as A
 
 class AquaTrackDataPipeline:
     """
-    Data pipeline for AquaTrack model training
+    Data pipeline for Wafubi model training
 
     Handles:
     - Data loading from annotations
@@ -360,7 +360,7 @@ def create_data_pipeline(data_dir: str = "./data",
 
 if __name__ == "__main__":
     # Test data pipeline
-    print("Testing AquaTrack Data Pipeline...")
+    print("Testing Wafubi Data Pipeline...")
 
     try:
         pipeline = create_data_pipeline()

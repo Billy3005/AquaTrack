@@ -155,7 +155,7 @@ class _AuthHeroState extends State<AuthHero> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'AQUATRACK',
+                  'WAFUBI',
                   style: AppTextStyles.labelSmall.copyWith(
                     color: AppColors.cyanLight,
                     fontWeight: FontWeight.w600,

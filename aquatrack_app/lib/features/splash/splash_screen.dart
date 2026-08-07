@@ -178,7 +178,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
                       // App name
                       Text(
-                        'AquaTrack',
+                        'Wafubi',
                         style: AppTextStyles.displayLarge.copyWith(
                           color: AppColors.textPrimary,
                         ),

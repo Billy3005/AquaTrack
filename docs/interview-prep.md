@@ -1,4 +1,4 @@
-# AquaTrack — Interview Prep: Security & Auth Architecture
+# Wafubi — Interview Prep: Security & Auth Architecture
 
 The full version of the case-study "Security" section. Every claim here is
 grep-verifiable against the code — this doc exists so I can defend the design in
@@ -6,7 +6,7 @@ an interview instead of reciting marketing lines.
 
 ## The auth model in one sentence
 
-AquaTrack's agent is a **single-user, one-process-per-user** design (the standard
+Wafubi's agent is a **single-user, one-process-per-user** design (the standard
 Claude-Desktop MCP model): the MCP server runs locally over stdio and carries the
 acting user's JWT in its environment.
 

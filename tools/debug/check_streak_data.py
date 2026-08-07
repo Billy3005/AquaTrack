@@ -113,7 +113,7 @@ def check_flutter_app():
     print("flutter run -d windows --verbose")
 
 if __name__ == "__main__":
-    print("AquaTrack Streak Debug")
+    print("Wafubi Streak Debug")
     print("=" * 50)
 
     check_backend_data()

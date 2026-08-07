@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
-/// AquaTrack Design System - Typography
+/// Wafubi Design System - Typography
 /// Inter / SF Pro inspired với clear hierarchy
 class AppTextStyles {
   static const displayLarge = TextStyle(

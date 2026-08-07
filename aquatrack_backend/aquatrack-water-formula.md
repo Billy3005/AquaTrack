@@ -1,4 +1,4 @@
-# AquaTrack — Công thức tính lượng nước uống mỗi ngày
+# Wafubi — Công thức tính lượng nước uống mỗi ngày
 
 ## Luồng thu thập dữ liệu (5 bước)
 
@@ -21,7 +21,7 @@ total_ml = round(total_ml / 50) × 50     // làm tròn đến 50ml gần nhất
 total_ml = max(total_ml, 1500)           // tối thiểu 1.500ml
 ```
 
-> Không có thành phần khí hậu trong luồng thu thập — AquaTrack tự động điều chỉnh theo thời tiết & lịch ngày (ghi chú màn hình B5).
+> Không có thành phần khí hậu trong luồng thu thập — Wafubi tự động điều chỉnh theo thời tiết & lịch ngày (ghi chú màn hình B5).
 
 ---
 
@@ -132,11 +132,11 @@ coffee_add:
       coffee_add = coffee_cups × 120       // lợi tiểu nhẹ, bù 120ml/cốc
   else:
       coffee_add = coffee_cups × 120
-      show_note("Lợi tiểu — AquaTrack sẽ thêm 120ml/cốc")
+      show_note("Lợi tiểu — Wafubi sẽ thêm 120ml/cốc")
       // Tim mạch: giữ nguyên công thức nhưng nhắc người dùng hỏi bác sĩ
 ```
 
-> Hiển thị note dưới spinner: *"Lợi tiểu — Aquatrack sẽ thêm 120ml/cốc"*
+> Hiển thị note dưới spinner: *"Lợi tiểu — Wafubi sẽ thêm 120ml/cốc"*
 
 ### Rượu bia / ngày
 
@@ -170,7 +170,7 @@ daily_goal_cups = round(total_ml / 250)           // ví dụ: "khoảng 11 cố
 
 ### Ghi chú cuối màn hình B5
 
-> *"AquaTrack sẽ tự điều chỉnh mục tiêu theo thời tiết, vận động và lịch ngày. Bạn có thể chỉnh lại trong Hồ sơ."*
+> *"Wafubi sẽ tự điều chỉnh mục tiêu theo thời tiết, vận động và lịch ngày. Bạn có thể chỉnh lại trong Hồ sơ."*
 
 ---
 

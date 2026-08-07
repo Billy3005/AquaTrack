@@ -31,7 +31,7 @@
          only to the HTTPS backend; plain HTTP is a debug-only affordance and
          lives in src/debug/AndroidManifest.xml so it cannot ship. -->
     <application
-        android:label="AquaTrack"
+        android:label="Wafubi"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

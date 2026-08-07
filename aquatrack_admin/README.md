@@ -1,6 +1,6 @@
-# AquaTrack Admin Console
+# Wafubi Admin Console
 
-Bảng điều khiển nội bộ cho nhân sự AquaTrack: theo dõi số liệu hydration, quản lý
+Bảng điều khiển nội bộ cho nhân sự Wafubi: theo dõi số liệu hydration, quản lý
 người dùng, và nhật ký thao tác. Vite + React + TypeScript, không phụ thuộc thư
 viện UI hay charting nào ngoài React.
 

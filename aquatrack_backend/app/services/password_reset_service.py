@@ -63,13 +63,13 @@ def request_reset(db: Session, *, email: str, mailer) -> bool:
 
     sent = mailer.send(
         to=user.email,
-        subject="AquaTrack — Mã đặt lại mật khẩu",
+        subject="Wafubi — Mã đặt lại mật khẩu",
         body=(
             f"Xin chào {user.username},\n\n"
             f"Mã đặt lại mật khẩu của bạn là: {code}\n\n"
             f"Mã có hiệu lực trong {CODE_TTL_MINUTES} phút. "
             "Nếu bạn không yêu cầu, hãy bỏ qua email này.\n\n"
-            "— AquaTrack"
+            "— Wafubi"
         ),
     )
     if not sent:

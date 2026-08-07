@@ -26,7 +26,7 @@ class AppConfig {
   static const Duration tokenRefreshThreshold = Duration(minutes: 5);
 
   // App Settings
-  static const String appName = 'AquaTrack';
+  static const String appName = 'Wafubi';
   static const String appVersion = '1.0.0';
   static const bool enableLogging = true;
   static const bool enableAnalytics = false;

@@ -1,5 +1,5 @@
 """
-Security response headers for AquaTrack.
+Security response headers for Wafubi.
 
 Replaces the former middleware/security.py, whose regex-based SQL/XSS scanner
 was never wired into main.py and could not be: it matched the bare words

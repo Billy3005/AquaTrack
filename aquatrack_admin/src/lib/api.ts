@@ -1,4 +1,4 @@
-// Thin typed client over the AquaTrack REST API.
+// Thin typed client over the Wafubi REST API.
 //
 // Tokens live in localStorage. That is the pragmatic choice for a staff tool
 // that has no cookie/CSRF infrastructure on the backend, and it is the same
@@ -137,7 +137,7 @@ export const api = {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `aquatrack-users-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `wafubi-users-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   },

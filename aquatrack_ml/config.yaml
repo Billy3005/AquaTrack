@@ -1,4 +1,4 @@
-# AquaTrack ML Training Configuration
+# Wafubi ML Training Configuration
 model:
   input_size: [224, 224, 3]
   num_container_classes: 10

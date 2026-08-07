@@ -1,9 +1,9 @@
-# Chính sách quyền riêng tư — AquaTrack
+# Chính sách quyền riêng tư — Wafubi
 
-**Cập nhật lần cuối:** 07/08/2026
-**Áp dụng cho:** ứng dụng AquaTrack trên Android (`com.aquatrack.app`)
+**Cập nhật lần cuối:** 08/08/2026
+**Áp dụng cho:** ứng dụng Wafubi trên Android (`com.wafubi.app`)
 
-AquaTrack là ứng dụng theo dõi lượng nước uống. Tài liệu này nói rõ ứng dụng
+Wafubi là ứng dụng theo dõi lượng nước uống. Tài liệu này nói rõ ứng dụng
 thu thập dữ liệu gì, dùng để làm gì, gửi cho ai, và bạn xoá chúng bằng cách nào.
 
 Liên hệ: **giabao3052005@gmail.com**
@@ -142,7 +142,7 @@ Hồ sơ → Dữ liệu cơ thể. Muốn nhận bản sao dữ liệu, gửi e
 
 ## 6. Trẻ em
 
-AquaTrack không hướng tới trẻ dưới 13 tuổi và chúng tôi không cố ý thu thập dữ
+Wafubi không hướng tới trẻ dưới 13 tuổi và chúng tôi không cố ý thu thập dữ
 liệu của trẻ em. Nếu bạn là phụ huynh và phát hiện con mình đã tạo tài khoản,
 hãy liên hệ để chúng tôi xoá.
 

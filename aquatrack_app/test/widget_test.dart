@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aquatrack_app/core/theme/app_theme.dart';
 
 void main() {
-  group('AquaTrack App Tests', () {
+  group('Wafubi App Tests', () {
     testWidgets('App theme configuration works correctly', (
       WidgetTester tester,
     ) async {
@@ -53,16 +53,16 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            appBar: AppBar(title: const Text('AquaTrack Test')),
-            body: const Center(child: Text('AquaTrack is working!')),
+            appBar: AppBar(title: const Text('Wafubi Test')),
+            body: const Center(child: Text('Wafubi is working!')),
           ),
         ),
       );
 
       await tester.pump();
 
-      expect(find.text('AquaTrack Test'), findsOneWidget);
-      expect(find.text('AquaTrack is working!'), findsOneWidget);
+      expect(find.text('Wafubi Test'), findsOneWidget);
+      expect(find.text('Wafubi is working!'), findsOneWidget);
     });
   });
 }

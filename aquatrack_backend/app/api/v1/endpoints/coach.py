@@ -292,7 +292,7 @@ async def get_coaching_insights(
                 {
                     "category": "getting_started",
                     "title": "Bắt đầu hành trình!",
-                    "insight": "Chào mừng đến với AquaTrack! Hãy bắt đầu bằng việc log ly nước đầu tiên.",
+                    "insight": "Chào mừng đến với Wafubi! Hãy bắt đầu bằng việc log ly nước đầu tiên.",
                     "action": "Log nước ngay bây giờ",
                     "confidence": 1.0,
                 }

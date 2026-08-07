@@ -1,6 +1,6 @@
 {
-    "name": "aquatrack_app",
-    "short_name": "aquatrack_app",
+    "name": "Wafubi",
+    "short_name": "Wafubi",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

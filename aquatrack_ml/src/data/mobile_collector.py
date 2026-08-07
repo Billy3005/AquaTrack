@@ -150,7 +150,7 @@ def main():
     collector = MobileCollector()
 
     while True:
-        print(f"\n📱 AquaTrack Mobile Collector")
+        print(f"\n📱 Wafubi Mobile Collector")
         print("1. Quick add single image")
         print("2. Batch mode (multiple images)")
         print("3. Show progress")

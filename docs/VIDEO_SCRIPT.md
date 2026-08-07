@@ -1,4 +1,4 @@
-# AquaTrack — 5-minute demo video script
+# Wafubi — 5-minute demo video script
 
 **Target: ≤ 5:00, published to YouTube. Track: Concierge Agents.**
 
@@ -11,13 +11,13 @@ with English subtitles. Each block lists **[SCREEN]** (what to show) and
 
 ### 0:00–0:30 · Hook + problem
 
-**[SCREEN]** Open on the AquaTrack app home (the living water drop). Quick cuts of
+**[SCREEN]** Open on the Wafubi app home (the living water drop). Quick cuts of
 a person tapping repeatedly to log water, squinting at a glass to guess ml.
 
 **[VO]** "Drinking enough water is a tiny habit with a huge payoff — but every
 hydration app makes *you* do the work: guess every volume, tap to log, remember
 your goal, figure out if today's heat means drink more. That friction is why
-people quit. AquaTrack fixes it with an agent that does the work for you."
+people quit. Wafubi fixes it with an agent that does the work for you."
 
 ### 0:30–1:00 · Why an agent
 
@@ -89,7 +89,7 @@ the architecture diagram once more.
 
 **[VO]** "Because it's a concierge handling personal data: every action is scoped
 to the user by JWT, the agent never sees the credential, and it confirms before
-changing anything. It's deployed and reproducible. AquaTrack turns counting water
+changing anything. It's deployed and reproducible. Wafubi turns counting water
 into a conversation with an assistant that already knows your numbers — and is
 allowed to act on them, safely."
 

@@ -1,4 +1,4 @@
-/// User model for AquaTrack application
+/// User model for Wafubi application
 class User {
   final String id;
   final String email;

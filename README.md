@@ -1,4 +1,4 @@
-# AquaTrack — an AI hydration concierge
+# Wafubi — an AI hydration concierge
 
 > Chụp ảnh ly nước → AI đếm ml → một trợ lý biết *hành động* giúp bạn uống đủ nước mỗi ngày.
 
@@ -6,7 +6,7 @@
 
 🎥 **[Watch the 5-minute demo](https://www.youtube.com/watch?v=MvgcazEsXjw)**
 
-AquaTrack is a hydration app whose centrepiece is the **Coach Agent**: a personal
+Wafubi is a hydration app whose centrepiece is the **Coach Agent**: a personal
 concierge that reasons over your hydration data, checks the weather, reads a
 photo of your drink, and *takes actions on your behalf* — logging water,
 adjusting your daily goal — instead of being a passive chatbot.
@@ -23,7 +23,7 @@ friction is exactly why people stop using them.
 
 ## The solution — and why an agent
 
-AquaTrack removes that friction by putting a real **agent** between the user and
+Wafubi removes that friction by putting a real **agent** between the user and
 their data. You talk to the Coach in plain language; it does the rest:
 
 - *"Mình vừa uống 1 ly 300ml, hôm nay đủ chưa?"* → it **logs** the drink and tells
@@ -47,9 +47,9 @@ feel like a conversation with someone who already knows your numbers.
 flowchart TD
     U["User (Flutter app / CLI)"] -->|"natural language"| A
     A["Coach Agent<br/>Claude tool-use loop"] -->|"MCP protocol (stdio)"| M
-    M["AquaTrack MCP Server<br/>6 tools"] -->|"HTTP + JWT"| API
+    M["Wafubi MCP Server<br/>6 tools"] -->|"HTTP + JWT"| API
     M -->|"no key"| OM["Open-Meteo<br/>(weather)"]
-    API["AquaTrack REST API<br/>FastAPI"] --> PG[("Postgres<br/>Railway")]
+    API["Wafubi REST API<br/>FastAPI"] --> PG[("Postgres<br/>Railway")]
     API --> R2[("Cloudflare R2<br/>scan images")]
     API --> CV["Claude Vision<br/>(Smart Scan)"]
 ```
@@ -153,7 +153,7 @@ MCP Inspector — see [`aquatrack_backend/mcp_server/README.md`](aquatrack_backe
 
 ### 3. Admin Console (staff dashboard)
 
-A web console for the people who run AquaTrack, not for its users: hydration
+A web console for the people who run Wafubi, not for its users: hydration
 analytics, user administration, and an append-only audit trail of every
 sensitive action.
 

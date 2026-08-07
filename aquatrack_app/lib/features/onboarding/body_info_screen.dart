@@ -43,7 +43,7 @@ class _BodyInfoScreenState extends ConsumerState<BodyInfoScreen> {
     OnboardingStep(
       id: 'body',
       title: 'Đôi nét về bạn',
-      subtitle: 'Để AquaTrack tính nhu cầu nước chính xác',
+      subtitle: 'Để Wafubi tính nhu cầu nước chính xác',
     ),
     OnboardingStep(
       id: 'lifestyle',
@@ -743,7 +743,7 @@ class _BodyInfoScreenState extends ConsumerState<BodyInfoScreen> {
         children: [
           _buildFieldLabel('Tình trạng sức khỏe đặc biệt'),
           Text(
-            'Có thể chọn nhiều. AquaTrack sẽ điều chỉnh lượng nước & lời nhắc cho phù hợp.',
+            'Có thể chọn nhiều. Wafubi sẽ điều chỉnh lượng nước & lời nhắc cho phù hợp.',
             style: TextStyle(
               fontSize: 11.5,
               color: AppColors.textMuted,
@@ -949,7 +949,7 @@ class _BodyInfoScreenState extends ConsumerState<BodyInfoScreen> {
             icon: '☕',
             unit: 'cốc',
             max: 6,
-            hint: 'Lợi tiểu — AquaTrack sẽ bù thêm 120ml/cốc',
+            hint: 'Lợi tiểu — Wafubi sẽ bù thêm 120ml/cốc',
             tint: const Color(0xFFB45309),
           ),
           const SizedBox(height: 12),
@@ -1115,7 +1115,7 @@ class _BodyInfoScreenState extends ConsumerState<BodyInfoScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'AquaTrack sẽ tự điều chỉnh mục tiêu này theo thời tiết, vận động và lịch ngủ. Bạn luôn có thể chỉnh lại trong Hồ sơ.',
+                    'Wafubi sẽ tự điều chỉnh mục tiêu này theo thời tiết, vận động và lịch ngủ. Bạn luôn có thể chỉnh lại trong Hồ sơ.',
                     style: const TextStyle(
                       fontSize: 11.5,
                       color: Color(0xFFBAE6FD),

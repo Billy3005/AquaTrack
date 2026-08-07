@@ -27,7 +27,7 @@ TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{title} — AquaTrack</title>
+<title>{title} — Wafubi</title>
 <style>
   :root {{
     --bg: #ffffff; --ink: #14202b; --muted: #5c6f7d;
@@ -69,15 +69,15 @@ TEMPLATE = """<!DOCTYPE html>
 </head>
 <body>
 <div class="wrap">
-<nav><a href="./">← AquaTrack</a></nav>
+<nav><a href="./">← Wafubi</a></nav>
 {body}
-<footer>AquaTrack · <a href="./">Trang chính</a></footer>
+<footer>Wafubi · <a href="./">Trang chính</a></footer>
 </div>
 </body>
 </html>
 """
 
-INDEX_BODY = """<h1>AquaTrack</h1>
+INDEX_BODY = """<h1>Wafubi</h1>
 <p>Ứng dụng theo dõi lượng nước uống. Trang này chỉ chứa các tài liệu bắt buộc
 công khai — mã nguồn nằm trên
 <a href="https://github.com/Billy3005/AquaTrack">GitHub</a>.</p>

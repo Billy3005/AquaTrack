@@ -1,5 +1,5 @@
 """
-Enhanced Rate Limiting Middleware for AquaTrack Production
+Enhanced Rate Limiting Middleware for Wafubi Production
 Production-ready với monitoring, analytics và flexible configuration
 """
 
@@ -293,7 +293,7 @@ def get_client_identifier(request: Request) -> str:
 
 
 class RateLimitConfig:
-    """Production-ready rate limit configurations cho AquaTrack"""
+    """Production-ready rate limit configurations cho Wafubi"""
 
     # General API limits (per hour) - generous for normal usage
     GENERAL_LIMIT = 1000

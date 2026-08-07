@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AquaTrack Multi-Output CNN Model
+Wafubi Multi-Output CNN Model
 Main model architecture for container detection and volume estimation
 """
 
@@ -13,7 +13,7 @@ import numpy as np
 
 class AquaTrackModel:
     """
-    Multi-output CNN for AquaTrack Smart Scan
+    Multi-output CNN for Wafubi Smart Scan
 
     Outputs:
     - container_class: 10 categories (bottle_500, glass_small, etc.)
@@ -276,13 +276,13 @@ class AquaTrackModel:
 
 
 def create_aquatrack_model() -> AquaTrackModel:
-    """Factory function to create AquaTrack model instance"""
+    """Factory function to create Wafubi model instance"""
     return AquaTrackModel()
 
 
 if __name__ == "__main__":
     # Test model creation
-    print("Creating AquaTrack model...")
+    print("Creating Wafubi model...")
 
     model_builder = create_aquatrack_model()
     model = model_builder.create_model()

@@ -308,7 +308,7 @@ WEEKLY_QUESTS: List[QuestDef] = [
         "hydration_ambassador",
         "weekly",
         "Đại Sứ Hydration",
-        "Mời 1 người bạn mới dùng AquaTrack (đã uống nước lần đầu)",
+        "Mời 1 người bạn mới dùng Wafubi (đã uống nước lần đầu)",
         "người",
         75,
         40,

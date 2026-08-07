@@ -2,7 +2,7 @@
 
 Direct ID-token verification — no Firebase. The Flutter app obtains a Google
 ID token via the google_sign_in plugin; this service verifies its signature
-and audience, then finds-or-creates the AquaTrack user. The backend stays the
+and audience, then finds-or-creates the Wafubi user. The backend stays the
 only identity authority: callers turn the returned user into ordinary app JWTs.
 
 Identity is keyed by `google_sub` (Google's permanent subject ID). Email is
@@ -38,7 +38,7 @@ def _default_verifier(id_token: str) -> dict:
 
 
 class GoogleAuthService:
-    """Verify a Google ID token and resolve it to an AquaTrack user."""
+    """Verify a Google ID token and resolve it to a Wafubi user."""
 
     def __init__(self, verifier: Optional[Callable[[str], dict]] = None):
         self._verify = verifier or _default_verifier

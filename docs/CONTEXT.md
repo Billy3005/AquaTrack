@@ -1,9 +1,9 @@
 ---
-domain: AquaTrack Hydration App
+domain: Wafubi Hydration App
 last_updated: 2026-06-13
 ---
 
-# AquaTrack Domain Glossary
+# Wafubi Domain Glossary
 
 ## Core Concepts
 
@@ -65,9 +65,9 @@ last_updated: 2026-06-13
 
 ## Social & Referral
 
-**Friend Request** (Kết bạn) — Connecting two people who *both already use AquaTrack*: one searches the other by username, sends a request, the other accepts. Produces a Friend relationship. Distinct from a **Referral**, which brings a person who is *not yet a user* onto the app.
+**Friend Request** (Kết bạn) — Connecting two people who *both already use Wafubi*: one searches the other by username, sends a request, the other accepts. Produces a Friend relationship. Distinct from a **Referral**, which brings a person who is *not yet a user* onto the app.
 
-**Referral** (Mời bạn) — Bringing a brand-new person to install and register AquaTrack via the inviter's **Referral Code**. A Referral is one-directional (Referrer → Referred) and exists only for a person whose account is created with a Referral Code attached at sign-up. It does **not** create a Friend relationship by itself.
+**Referral** (Mời bạn) — Bringing a brand-new person to install and register Wafubi via the inviter's **Referral Code**. A Referral is one-directional (Referrer → Referred) and exists only for a person whose account is created with a Referral Code attached at sign-up. It does **not** create a Friend relationship by itself.
 
 **Referral Code** — A permanent, stable code unique to each user (one code per user, reusable indefinitely). The inviter shares it; a new user attaches it at registration. A code can never be self-applied, and is captured only at sign-up — never added to an existing account afterwards.
 
@@ -145,7 +145,7 @@ last_updated: 2026-06-13
 
 ## Authentication
 
-**Social Sign-In** (Đăng nhập liên kết) — Signing in via an external identity provider. AquaTrack supports exactly one: **Google**. Apple and Facebook are deliberately absent (not "coming soon" — see honest UI in ADR 0004): Apple Sign-In only becomes relevant (and then *mandatory*, per App Store rules) if an iOS release ships; Facebook is dropped. The backend remains the only identity authority — a social sign-in ends in the same AquaTrack session tokens as a password login.
+**Social Sign-In** (Đăng nhập liên kết) — Signing in via an external identity provider. Wafubi supports exactly one: **Google**. Apple and Facebook are deliberately absent (not "coming soon" — see honest UI in ADR 0004): Apple Sign-In only becomes relevant (and then *mandatory*, per App Store rules) if an iOS release ships; Facebook is dropped. The backend remains the only identity authority — a social sign-in ends in the same Wafubi session tokens as a password login.
 
 **Account Linking** (Liên kết tài khoản) — When a Google sign-in carries a verified email that matches an existing password account, the sign-in **auto-links** into that account (one person, one account, two doors). Linking into an account whose email was never verified disables its password (it must be reset to be used again) — this closes the pre-registration takeover hole. Google identity is keyed by Google's permanent subject ID, never by email.
 

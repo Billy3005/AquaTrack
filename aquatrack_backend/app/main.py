@@ -27,7 +27,7 @@ background_tasks = []
 async def lifespan(app: FastAPI):
     """Application lifespan management"""
     # Startup
-    print("Starting AquaTrack API...")
+    print("Starting Wafubi API...")
 
     # Initialize database
     init_db()
@@ -45,12 +45,12 @@ async def lifespan(app: FastAPI):
         background_tasks.append(cleanup_task)
         print("Email token cleanup started")
 
-    print("AquaTrack API is ready!")
+    print("Wafubi API is ready!")
 
     yield
 
     # Shutdown
-    print("Shutting down AquaTrack API...")
+    print("Shutting down Wafubi API...")
 
     # Cancel background tasks
     for task in background_tasks:
@@ -60,12 +60,12 @@ async def lifespan(app: FastAPI):
         except asyncio.CancelledError:
             pass
 
-    print("AquaTrack API shutdown complete")
+    print("Wafubi API shutdown complete")
 
 
 # FastAPI app instance
 app = FastAPI(
-    title="AquaTrack API",
+    title="Wafubi API",
     description="The hydration tracking app backend that feels alive",
     version="1.0.0",
     lifespan=lifespan,
@@ -119,7 +119,7 @@ app.include_router(api_router, prefix="/api/v1")
 async def root():
     """Health check endpoint"""
     return {
-        "message": "AquaTrack API is running! 💧",
+        "message": "Wafubi API is running! 💧",
         "version": "1.0.0",
         "status": "healthy",
         "features": "Phase 4 - Production Ready + Smart Scan + Social Features + Achievements",

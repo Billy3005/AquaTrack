@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Dataset Validator for AquaTrack
+Dataset Validator for Wafubi
 Kiểm tra chất lượng và tính hợp lệ của dataset
 """
 

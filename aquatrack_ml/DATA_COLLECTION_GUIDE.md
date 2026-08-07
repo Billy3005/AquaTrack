@@ -1,4 +1,4 @@
-# 📷 AquaTrack Dataset Collection Guide
+# 📷 Wafubi Dataset Collection Guide
 
 ## 🎯 Mục tiêu
 Thu thập **500+ ảnh** đa dạng để train model phát hiện:

@@ -1,5 +1,5 @@
 # skills/backend/fastapi_endpoint.md
-# Skill: Tạo FastAPI endpoint chuẩn AquaTrack
+# Skill: Tạo FastAPI endpoint chuẩn Wafubi
 
 ## Template đầy đủ
 ```python

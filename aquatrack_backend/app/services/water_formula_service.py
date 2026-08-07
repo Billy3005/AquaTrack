@@ -1,6 +1,6 @@
 """
 Water Formula Service - Calculate daily water intake based on user profile
-Implements the AquaTrack water calculation formula from aquatrack-water-formula.md
+Implements the Wafubi water calculation formula from aquatrack-water-formula.md
 """
 
 from dataclasses import dataclass
@@ -92,7 +92,7 @@ class WaterCalculationResult:
 
 
 class WaterFormulaService:
-    """Service to calculate daily water intake using AquaTrack formula"""
+    """Service to calculate daily water intake using Wafubi formula"""
 
     # Activity level multipliers (ml per kg)
     ACTIVITY_MULTIPLIERS = {

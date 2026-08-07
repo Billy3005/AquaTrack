@@ -3,7 +3,7 @@
 # Chạy tự động mỗi khi Claude Code khởi động session mới
 # Mục đích: nạp context dự án + hiển thị trạng thái hiện tại
 
-echo "=== AquaTrack Session Started ==="
+echo "=== Wafubi Session Started ==="
 echo ""
 
 # Hiện branch hiện tại

@@ -1,5 +1,5 @@
 # skills/flutter/riverpod_provider.md
-# Skill: Tạo Riverpod provider chuẩn cho AquaTrack
+# Skill: Tạo Riverpod provider chuẩn cho Wafubi
 
 ## Dùng khi
 Cần tạo provider mới cho một feature.

@@ -1,6 +1,6 @@
 """Referral system (ADR-0007).
 
-A Referral brings a brand-new user onto AquaTrack via the inviter's permanent
+A Referral brings a brand-new user onto Wafubi via the inviter's permanent
 Referral Code. It is distinct from an in-app Friend Request. A referral is
 created (pending) at the invited user's sign-up and *validated* on that user's
 first water log, at which point the referred user receives a one-time welcome

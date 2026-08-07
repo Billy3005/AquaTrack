@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "AquaTrack Admin Console — staff dashboard for users, hydration analytics and the audit trail.",
+  "description": "Wafubi Admin Console — staff dashboard for users, hydration analytics and the audit trail.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

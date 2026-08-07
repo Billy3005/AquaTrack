@@ -1,6 +1,6 @@
 # TDD - Test-Driven Development
 
-## Quy trình TDD cho AquaTrack
+## Quy trình TDD cho Wafubi
 
 ### Nguyên tắc cốt lõi
 Tests phải verify behavior thông qua public interfaces, không phải implementation details. Code có thể được refactor hoàn toàn nhưng tests vẫn valid nếu focus vào "what" chứ không phải "how".
@@ -41,7 +41,7 @@ Cho mỗi behavior còn lại:
 ❌ **Horizontal Slicing**: Viết all tests first, then all implementation
 ✅ **Vertical Slicing**: One test feeds one implementation cycle
 
-### Áp dụng cho AquaTrack:
+### Áp dụng cho Wafubi:
 - **Flutter widgets**: Test UI behavior thông qua widget testing
 - **Riverpod providers**: Test state management behavior
 - **API calls**: Test response handling, not HTTP details

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Create dummy TFLite model for AquaTrack testing
+Create dummy TFLite model for Wafubi testing
 Run this to generate placeholder model until real training is complete
 """
 
@@ -69,7 +69,7 @@ def convert_to_tflite(model, output_path):
     print(f"📊 Model size: {len(tflite_model) / 1024:.1f} KB")
 
 if __name__ == "__main__":
-    print("🤖 Creating dummy AquaTrack TFLite model...")
+    print("🤖 Creating dummy Wafubi TFLite model...")
 
     # Create model
     model = create_dummy_aquatrack_model()

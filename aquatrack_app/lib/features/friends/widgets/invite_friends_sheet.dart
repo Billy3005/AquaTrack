@@ -20,7 +20,7 @@ Future<void> showInviteFriendsSheet(BuildContext context) {
 }
 
 String _inviteMessage(String code) =>
-    'Mình đang dùng AquaTrack để uống nước đều mỗi ngày 💧\n'
+    'Mình đang dùng Wafubi để uống nước đều mỗi ngày 💧\n'
     'Tải app và nhập mã giới thiệu "$code" để nhận 50 xu chào mừng nhé!';
 
 class _InviteFriendsSheet extends ConsumerStatefulWidget {
@@ -224,6 +224,6 @@ class _InviteFriendsSheetState extends ConsumerState<_InviteFriendsSheet> {
 
   void _share(String code) {
     HapticFeedback.lightImpact();
-    Share.share(_inviteMessage(code), subject: 'Cùng uống nước với AquaTrack');
+    Share.share(_inviteMessage(code), subject: 'Cùng uống nước với Wafubi');
   }
 }

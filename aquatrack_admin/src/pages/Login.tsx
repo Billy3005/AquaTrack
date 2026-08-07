@@ -73,7 +73,7 @@ export function LoginScreen() {
           >
             {A.drop('#fff', 24)}
           </div>
-          <div style={{ fontSize: 19, fontWeight: 750, color: AD.ink, letterSpacing: '-0.02em' }}>AquaTrack Admin Console</div>
+          <div style={{ fontSize: 19, fontWeight: 750, color: AD.ink, letterSpacing: '-0.02em' }}>Wafubi Admin Console</div>
           <div style={{ fontSize: 12.5, color: AD.ink3, marginTop: 6, lineHeight: 1.5 }}>
             Đăng nhập bằng tài khoản nhân sự. Tài khoản người dùng thường sẽ bị từ chối.
           </div>

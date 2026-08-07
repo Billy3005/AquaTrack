@@ -1,4 +1,4 @@
-"""Rasterise the AquaTrack icon (design B) to every size Android and Play need.
+"""Rasterise the Wafubi icon (design B) to every size Android and Play need.
 
 No SVG library available and none may be installed, so the handful of shapes in
 app_icon.svg are re-drawn here with Pillow. The two non-trivial primitives —

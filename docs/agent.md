@@ -1,4 +1,4 @@
-# 💧 AquaTrack — agent.md (Product Spec)
+# 💧 Wafubi — agent.md (Product Spec)
 
 > **Tagline:** The hydration app that feels alive.
 > **Platform:** iOS + Android (Flutter)
@@ -656,5 +656,5 @@ Song song: Thu thập data ML → Train TFLite model
 
 ---
 
-*AquaTrack · Flutter + FastAPI · Custom AI · Free forever*
+*Wafubi · Flutter + FastAPI · Custom AI · Free forever*
 *Hi-Fi Prototype → Production · 2026*

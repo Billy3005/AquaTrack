@@ -49,7 +49,7 @@ RETENTION_WEEKS = 8
 # Timestamps are stored in UTC, but "hôm nay" and "giờ uống nước phổ biến" are
 # questions about the user's day, not about UTC. Every date/hour bucket in this
 # module is therefore computed in one explicit reporting timezone rather than
-# whatever the database session happens to be set to. AquaTrack is a Vietnam-only
+# whatever the database session happens to be set to. Wafubi is a Vietnam-only
 # product today; when that changes this becomes a per-user aggregation.
 REPORT_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AquaTrack Model Trainer
+Wafubi Model Trainer
 Complete training pipeline with multi-output optimization
 """
 
@@ -24,7 +24,7 @@ from data_pipeline import AquaTrackDataPipeline
 
 class AquaTrackTrainer:
     """
-    Trainer class for AquaTrack multi-output model
+    Trainer class for Wafubi multi-output model
 
     Handles:
     - Model creation and compilation
@@ -441,7 +441,7 @@ def create_trainer(data_dir: str = "./data",
 
 if __name__ == "__main__":
     # Test trainer setup
-    print("Testing AquaTrack Trainer...")
+    print("Testing Wafubi Trainer...")
 
     try:
         # Create trainer
