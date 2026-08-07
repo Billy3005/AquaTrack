@@ -17,20 +17,23 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
-    <!-- Storage permissions for local data -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <!-- No external-storage permissions: nothing in lib/ reads or writes shared
+         storage. Local data lives in Hive/SQLite inside the app sandbox and
+         Smart Scan photos go straight to the API. Declaring them anyway would
+         only add Data Safety questions at review time. -->
 
     <!-- Hydration reminders (flutter_local_notifications). Inexact scheduling,
          so no SCHEDULE_EXACT_ALARM needed (see ADR 0001). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- usesCleartextTraffic is NOT set here on purpose. The release build talks
+         only to the HTTPS backend; plain HTTP is a debug-only affordance and
+         lives in src/debug/AndroidManifest.xml so it cannot ship. -->
     <application
         android:label="AquaTrack"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true">
+        android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
             android:exported="true"
