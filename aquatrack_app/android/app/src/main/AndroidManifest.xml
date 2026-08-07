@@ -1,7 +1,18 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Camera permissions for Smart Scan feature -->
     <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- The camera plugin declares RECORD_AUDIO because it also supports video
+         recording. Smart Scan only ever calls takePicture(), and the controller
+         is built with enableAudio: false (smart_scan_screen.dart), so the
+         microphone is never touched. Left in, it would put "Microphone" on the
+         Play listing of a water-tracking app and force a Data Safety
+         declaration for a permission we do not use. -->
+    <uses-permission
+        android:name="android.permission.RECORD_AUDIO"
+        tools:node="remove" />
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
