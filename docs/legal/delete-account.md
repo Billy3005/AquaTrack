@@ -19,7 +19,7 @@ Tài khoản biến mất ngay. Không có giai đoạn chờ, không cần đ�
 
 ## Cách 2 — Đã gỡ ứng dụng rồi
 
-Gửi email tới **[ĐIỀN EMAIL HỖ TRỢ]** với:
+Gửi email tới **giabao3052005@gmail.com** với:
 
 - Tiêu đề: `Yêu cầu xoá tài khoản`
 - Nội dung: địa chỉ email bạn đã dùng để đăng ký
@@ -68,5 +68,5 @@ vẫn còn nguyên. Chỉ dùng chức năng xoá khi bạn chắc chắn không
 
 ---
 
-Liên hệ: **[ĐIỀN EMAIL HỖ TRỢ]**
+Liên hệ: **giabao3052005@gmail.com**
 Cập nhật lần cuối: 07/08/2026
