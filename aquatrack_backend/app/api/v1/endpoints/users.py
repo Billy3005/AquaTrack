@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.leveling import calculate_level_from_xp
 from app.core.security import get_current_user_id
 from app.crud import user_crud
+from app.crud.intake_log import authoritative_total_xp, lifetime_totals
 from app.schemas.user import UserPreferencesUpdate, UserResponse, UserStats, UserUpdate
 from app.services import account_deletion_service
 from app.services.avatar_service import AvatarService
@@ -127,7 +129,10 @@ async def get_user_stats(
     """
     Get user statistics summary.
 
-    Returns level, XP, streak, and volume statistics for the user.
+    Every figure here is derived on read, not taken from the counter columns on
+    `users`. Those columns are never written by the API, so trusting them made
+    the Level screen report 0 logs and 0 ml for anyone whose data came from
+    actually using the app rather than a seed script.
     """
     user = user_crud.get(db, id=current_user_id)
     if not user:
@@ -141,14 +146,17 @@ async def get_user_stats(
     if current_streak != user.current_streak:
         user_crud.update_stats(db, user_id=current_user_id, new_streak=current_streak)
 
+    total_xp = authoritative_total_xp(db, user)
+    logs_count, volume_ml = lifetime_totals(db, current_user_id)
+
     return UserStats(
-        current_level=user.current_level,
-        total_xp=user.total_xp,
+        current_level=calculate_level_from_xp(total_xp)["level"],
+        total_xp=total_xp,
         current_streak=current_streak,
         longest_streak=user.longest_streak,
-        total_logs_count=user.total_logs_count,
-        total_volume_ml=user.total_volume_ml,
-        total_volume_liters=user.total_volume_ml / 1000.0,
+        total_logs_count=logs_count,
+        total_volume_ml=volume_ml,
+        total_volume_liters=volume_ml / 1000.0,
     )
 
 

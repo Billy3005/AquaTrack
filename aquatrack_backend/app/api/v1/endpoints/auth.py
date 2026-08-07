@@ -58,9 +58,10 @@ def _auth_response(user) -> dict:
             # Level & progression
             "current_streak": user.current_streak,
             "longest_streak": user.longest_streak,
-            # Statistics for profile
-            "total_logs_count": user.total_logs_count,
-            "total_volume_ml": user.total_volume_ml,
+            # Lifetime stats are deliberately NOT here. They live on `users` as
+            # columns nothing writes to, so this payload always said 0 logs and
+            # 0 ml. GET /users/stats derives them from intake_logs — one place
+            # that can be right, instead of two where one is silently wrong.
             # Settings
             "notifications_enabled": user.notifications_enabled,
             "theme_preference": user.theme_preference,

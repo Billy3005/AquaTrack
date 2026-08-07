@@ -230,5 +230,29 @@ def authoritative_total_xp(db: Session, user) -> int:
     return int(intake_xp) + (user.total_xp or 0)
 
 
+def lifetime_totals(db: Session, user_id: str) -> tuple[int, int]:
+    """The user's lifetime (log count, total volume in ml), derived on read.
+
+    `users.total_logs_count` and `users.total_volume_ml` exist as columns but
+    nothing ever writes to them — logging water through the API leaves both at
+    zero, so any screen trusting them shows a brand-new account forever. Only
+    the seed scripts ever set them, which is why demo data looked right and
+    real accounts did not.
+
+    Volume uses `effective_volume_ml` (hydration-adjusted) to match the daily
+    summary and the leaderboard; a coffee must not count the same across
+    screens.
+    """
+    row = (
+        db.query(
+            func.count(IntakeLog.id),
+            func.coalesce(func.sum(IntakeLog.effective_volume_ml), 0),
+        )
+        .filter(IntakeLog.user_id == user_id)
+        .one()
+    )
+    return int(row[0] or 0), int(row[1] or 0)
+
+
 # Global instance
 intake_log_crud = CRUDIntakeLog(IntakeLog)
