@@ -334,7 +334,7 @@ class EmailNotificationService:
                 </div>
 
                 <div class="footer">
-                    <p>Mọi thắc mắc, vui lòng liên hệ support@aquatrack.app</p>
+                    <p>Mọi thắc mắc, vui lòng liên hệ giabao3052005@gmail.com</p>
                     <p>© 2026 Wafubi - Sống khỏe mỗi ngày</p>
                 </div>
             </div>
