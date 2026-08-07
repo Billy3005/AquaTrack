@@ -1,0 +1,41 @@
+<!--
+  AquaTrack app icon — direction B, "Vòng tay ôm".
+  Source of truth for every rasterised icon in android/ and the Play listing.
+  Imported from the Claude Design project "AquaTrack", file "AquaTrack Icon.html".
+
+  Two arms curve into a ring around a water drop. The gaps at top and bottom
+  keep the ring reading as two separate arms rather than one circle, and the
+  fists (the four discs) sit slightly proud of the stroke so the silhouette
+  survives down to ~29px.
+
+  Rules carried over from the design doc:
+   · two figures distinguished by white vs pale blue only, no third colour
+   · no lettering
+   · nothing closer than 80px to the edge at 1024
+   · no stroke thinner than 56px at 1024
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset=".5" stop-color="#0EA5E9"/>
+      <stop offset="1" stop-color="#1E3A8A"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <ellipse cx="512" cy="1010" rx="520" ry="290" fill="#0C2A6B" opacity=".3"/>
+
+  <g fill="none" stroke-linecap="round" stroke-width="98">
+    <path d="M377 802 A 320 320 0 0 0 832 512 A 320 320 0 0 0 377 222" stroke="#7DD3FC"/>
+    <path d="M647 802 A 320 320 0 0 1 192 512 A 320 320 0 0 1 647 222" stroke="#FFFFFF"/>
+  </g>
+
+  <circle cx="377" cy="222" r="58" fill="#7DD3FC"/>
+  <circle cx="377" cy="802" r="58" fill="#7DD3FC"/>
+  <circle cx="647" cy="222" r="58" fill="#FFFFFF"/>
+  <circle cx="647" cy="802" r="58" fill="#FFFFFF"/>
+
+  <path d="M512 336 C 512 336 646 480 646 574 A 134 134 0 1 1 378 574 C 378 480 512 336 512 336 Z" fill="#FFFFFF"/>
+  <path d="M448 566 A 64 64 0 0 0 512 630" fill="none" stroke="#38BDF8" stroke-width="24" stroke-linecap="round"/>
+</svg>
