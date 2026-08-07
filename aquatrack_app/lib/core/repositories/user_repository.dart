@@ -104,6 +104,23 @@ class UserRepository {
     }
   }
 
+  /// Permanently delete the signed-in account and all of its data.
+  ///
+  /// Irreversible. The server removes the account plus every row attached to
+  /// it, so there is nothing to restore afterwards and no reactivation path.
+  /// Callers must confirm with the user before calling this.
+  Future<void> deleteAccount() async {
+    AppLogger.info(_tag, 'Deleting account permanently');
+
+    try {
+      await _apiService.delete<void>('/users/account');
+      AppLogger.info(_tag, 'Account deleted');
+    } catch (e) {
+      AppLogger.error(_tag, 'Failed to delete account', e);
+      rethrow;
+    }
+  }
+
   /// Get user stats
   Future<UserStats> getUserStats() async {
     AppLogger.info(_tag, 'Fetching user stats');

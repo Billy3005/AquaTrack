@@ -5,6 +5,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.crud import user_crud
 from app.schemas.user import UserPreferencesUpdate, UserResponse, UserStats, UserUpdate
+from app.services import account_deletion_service
 from app.services.avatar_service import AvatarService
 from app.services.onboarding_service import OnboardingService
 from app.services.streak_service import StreakService
@@ -181,23 +182,31 @@ async def delete_user_account(
     current_user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)
 ):
     """
-    Delete user account permanently.
+    Delete the account and everything attached to it. Cannot be undone.
 
-    ⚠️ WARNING: This action cannot be undone.
-    All user data including logs, achievements, and progress will be deleted.
+    Really deletes — this is the in-app deletion path Google Play requires, so
+    it must not degrade to a deactivation the user has to email support about.
+    Use POST /auth/deactivate if the intent is a reversible pause.
+
+    Audit-log rows survive with their actor detached; see
+    account_deletion_service for why.
     """
-    # For safety, we'll deactivate instead of hard delete
-    # Hard delete can be implemented separately if needed
-    user = user_crud.deactivate(db, user_id=current_user_id)
+    user = user_crud.get(db, id=current_user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
+    try:
+        report = account_deletion_service.purge_user_data(db, current_user_id)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
     return {
-        "message": (
-            "Account has been deactivated. " "Contact support to permanently delete."
-        )
+        "message": "Account and all associated data have been permanently deleted.",
+        "rows_deleted": report.rows_deleted,
     }
 
 

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/providers/session.dart';
 import '../../core/repositories/auth_repository.dart';
+import '../../core/repositories/user_repository.dart';
 import '../../shared/widgets/coin_badge.dart';
 import '../avatars/avatar_collection_screen.dart';
 import '../avatars/data/avatar_catalog.dart';
@@ -14,6 +15,7 @@ import '../reminders/data/reminder_slot.dart';
 import '../reminders/providers/reminder_provider.dart';
 import '../reminders/widgets/reminder_sheets.dart';
 import 'providers/profile_provider.dart';
+import 'widgets/delete_account_dialog.dart';
 import 'edit_body_info_screen.dart';
 
 /// Profile Screen - Complete redesign matching docs/prototype/project/components/profile.jsx
@@ -95,6 +97,12 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
 
                         // Sign out
                         _buildSignOutButton(),
+                        const SizedBox(height: 10),
+
+                        // Account deletion. Google Play requires this path to
+                        // exist in-app for any app that lets you create an
+                        // account, so it cannot live behind a support email.
+                        _buildDeleteAccountButton(),
                         const SizedBox(height: 12),
                       ],
                     ),
@@ -1354,6 +1362,93 @@ class _ProfileScreenRedesignState extends ConsumerState<ProfileScreenRedesign> {
         ],
       ),
     );
+  }
+
+  Widget _buildDeleteAccountButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton(
+        onPressed: _handleDeleteAccount,
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.textSecondary,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: const Text(
+          'Xoá tài khoản',
+          style: TextStyle(
+            fontFamily: 'SF Pro Text',
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Permanent deletion, so the confirmation is deliberately heavier than the
+  /// sign-out one: it spells out what is lost and makes the user type the word
+  /// rather than tap a button they could hit by accident.
+  Future<void> _handleDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => const DeleteAccountDialog(),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            SizedBox(width: 12),
+            Text('Đang xoá tài khoản...'),
+          ],
+        ),
+        backgroundColor: AppColors.surface,
+        duration: const Duration(seconds: 30),
+      ),
+    );
+
+    try {
+      await UserRepository().deleteAccount();
+
+      // The account is gone server-side; clear the local token and every
+      // cached provider so nothing user-scoped survives on the device.
+      await AuthRepository().logout();
+      if (!mounted) return;
+      resetUserSession(ref);
+
+      ScaffoldMessenger.of(context).clearSnackBars();
+      context.go('/login');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Không xoá được tài khoản. Kiểm tra kết nối mạng rồi thử lại.',
+          ),
+          backgroundColor: AppColors.surface,
+          action: SnackBarAction(
+            label: 'Thử lại',
+            textColor: AppColors.cyan,
+            onPressed: _handleDeleteAccount,
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildSignOutButton() {
