@@ -17,11 +17,16 @@ deleting the account it incriminates.
 """
 
 import logging
+import os
+import shutil
 from dataclasses import dataclass, field
 from typing import Dict
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+
+from app.core.config import settings
+from app.services.storage_service import storage_service
 
 logger = logging.getLogger(__name__)
 
@@ -63,10 +68,29 @@ class DeletionReport:
     user_id: str
     deleted: Dict[str, int] = field(default_factory=dict)
     detached: Dict[str, int] = field(default_factory=dict)
+    files_deleted: int = 0
 
     @property
     def rows_deleted(self) -> int:
         return sum(self.deleted.values())
+
+
+def _purge_scan_images(user_id: str) -> int:
+    """Remove the user's Smart Scan photos from wherever they were written.
+
+    Deleting only the scan_history rows would leave the photographs behind —
+    the images are the most personal thing the app stores, so they have to go
+    with the account. Both backends key by user id, so a prefix delete is exact.
+    """
+    removed = storage_service.delete_prefix(f"scans/{user_id}/")
+
+    # Local-disk fallback used when R2 is not configured (see vision_service).
+    local = os.path.join(settings.UPLOAD_DIRECTORY, "scans", user_id)
+    if os.path.isdir(local):
+        removed += sum(len(files) for _, _, files in os.walk(local))
+        shutil.rmtree(local, ignore_errors=True)
+
+    return removed
 
 
 def _table_exists(db: Session, table: str) -> bool:
@@ -119,10 +143,13 @@ def purge_user_data(db: Session, user_id: str) -> DeletionReport:
     result = db.execute(text("DELETE FROM users WHERE id = :uid"), {"uid": user_id})
     report.deleted["users"] = result.rowcount
 
+    report.files_deleted = _purge_scan_images(user_id)
+
     logger.info(
-        "Account purged: user=%s rows=%d tables=%s detached=%s",
+        "Account purged: user=%s rows=%d files=%d tables=%s detached=%s",
         user_id,
         report.rows_deleted,
+        report.files_deleted,
         sorted(report.deleted),
         sorted(report.detached),
     )

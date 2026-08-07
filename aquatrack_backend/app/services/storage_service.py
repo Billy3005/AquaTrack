@@ -67,6 +67,43 @@ class StorageService:
             logger.exception("R2 upload failed for key %s", key)
             return None
 
+    def delete_prefix(self, prefix: str) -> int:
+        """Delete every object under `prefix`; return how many were removed.
+
+        Used by account deletion — scan images are keyed `scans/{user_id}/…`,
+        so removing the prefix removes exactly that user's photos. Unlike
+        upload, a failure here is re-raised: a deletion that silently leaves
+        the user's photos in the bucket would make the account-deletion
+        promise false.
+        """
+        if not self.enabled:
+            return 0
+
+        client = self._get_client()
+        removed = 0
+        token = None
+
+        while True:
+            kwargs = {"Bucket": settings.R2_BUCKET, "Prefix": prefix}
+            if token:
+                kwargs["ContinuationToken"] = token
+            page = client.list_objects_v2(**kwargs)
+
+            keys = [{"Key": o["Key"]} for o in page.get("Contents", [])]
+            if keys:
+                # delete_objects caps at 1000 per call; list_objects_v2 pages at
+                # 1000 too, so one call per page is always within the limit.
+                client.delete_objects(
+                    Bucket=settings.R2_BUCKET, Delete={"Objects": keys}
+                )
+                removed += len(keys)
+
+            if not page.get("IsTruncated"):
+                break
+            token = page.get("NextContinuationToken")
+
+        return removed
+
 
 # Global service instance
 storage_service = StorageService()

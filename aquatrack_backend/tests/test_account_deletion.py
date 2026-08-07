@@ -167,3 +167,43 @@ def test_purge_is_idempotent_for_a_missing_user(db, populated):
 
     assert report.deleted["users"] == 0
     assert db.query(User).count() == 2
+
+
+def test_purge_removes_scan_images_from_local_disk(
+    db, populated, tmp_path, monkeypatch
+):
+    """The photos have to go with the account, not just the scan_history rows.
+
+    Images are the most personal thing the app keeps, so a deletion that left
+    them in the bucket would make the in-app promise false.
+    """
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "UPLOAD_DIRECTORY", str(tmp_path))
+
+    victim_dir = tmp_path / "scans" / "u-del"
+    victim_dir.mkdir(parents=True)
+    (victim_dir / "a.jpg").write_bytes(b"jpeg")
+    (victim_dir / "b.jpg").write_bytes(b"jpeg")
+
+    other_dir = tmp_path / "scans" / "u-keep"
+    other_dir.mkdir(parents=True)
+    (other_dir / "c.jpg").write_bytes(b"jpeg")
+
+    report = account_deletion_service.purge_user_data(db, "u-del")
+    db.commit()
+
+    assert not victim_dir.exists(), "the deleted user's photos are still on disk"
+    assert report.files_deleted == 2
+    assert (other_dir / "c.jpg").exists(), "another user's photos were removed"
+
+
+def test_purge_survives_a_user_with_no_images(db, populated, tmp_path, monkeypatch):
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "UPLOAD_DIRECTORY", str(tmp_path))
+
+    report = account_deletion_service.purge_user_data(db, "u-del")
+    db.commit()
+
+    assert report.files_deleted == 0
