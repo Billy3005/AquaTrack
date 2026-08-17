@@ -1,4 +1,5 @@
 import asyncio
+import sys
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -18,6 +19,34 @@ from app.core.monitoring import (
 from app.middleware.rate_limiting import rate_limit_middleware
 from app.middleware.security_headers import security_headers_middleware
 from app.services.email_service import cleanup_expired_tokens_task
+
+
+def _force_utf8_console() -> None:
+    """Stop a log line from being able to kill a request on Windows.
+
+    The default console encoding on Windows is cp1252, which cannot encode the
+    emoji this codebase logs freely — achievement names, coach replies, email
+    templates, and a `✅ User created` in the register handler. Printing one
+    raises UnicodeEncodeError *after* the work is committed, and the `except`
+    block that tries to report it prints a traceback containing the same
+    character, throwing a second time. The result is a bare 500 for a request
+    that actually succeeded (registration, 2026-08-17).
+
+    Linux/Railway defaults to UTF-8 and never hit this, which is why it stayed
+    hidden. `errors="replace"` means a console that genuinely cannot render a
+    glyph prints "?" instead of taking the request down with it.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                # Never let logging setup be the thing that stops the app.
+                pass
+
+
+_force_utf8_console()
 
 # Background task references for cleanup
 background_tasks = []
