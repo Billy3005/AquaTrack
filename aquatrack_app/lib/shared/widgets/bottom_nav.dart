@@ -9,6 +9,8 @@ import '../../core/providers/user_stats_provider.dart';
 import '../../features/level/providers/level_data_provider.dart';
 import '../../features/level/providers/level_provider.dart';
 import '../../features/level/widgets/level_up_overlay.dart';
+import '../../features/onboarding/walkthrough_overlay.dart';
+import '../../features/onboarding/walkthrough_targets.dart';
 
 /// Bottom Navigation Wrapper.
 ///
@@ -48,6 +50,29 @@ class _BottomNavigationWrapperState
     extends ConsumerState<BottomNavigationWrapper> {
   static const tabs = BottomNavigationWrapper.tabs;
   static const moreRoutes = BottomNavigationWrapper.moreRoutes;
+
+  /// Parallel to [tabs] — the spotlight target for each tab.
+  static final _tabKeys = [
+    WalkthroughTargets.water,
+    WalkthroughTargets.coach,
+    WalkthroughTargets.missions,
+    WalkthroughTargets.friends,
+    WalkthroughTargets.profile,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // The shell mounts once per session, so this runs once. Deferred to after
+    // the frame because the tour measures the tabs it points at, and only
+    // fired on Home so the first thing a new user sees is not an overlay on
+    // top of a screen they navigated to themselves.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (GoRouterState.of(context).uri.path != '/') return;
+      WalkthroughHost.maybeShow(context, ref);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +137,7 @@ class _BottomNavigationWrapperState
                 for (int index = 0; index < tabs.length; index++)
                   Expanded(
                     child: _NavItem(
+                      key: _tabKeys[index],
                       icon: tabs[index].icon,
                       label: tabs[index].label,
                       isSelected: selectedIndex == index && !onMoreRoute,
@@ -124,6 +150,7 @@ class _BottomNavigationWrapperState
                 // "Thêm" — opens the overflow destinations
                 Expanded(
                   child: _NavItem(
+                    key: WalkthroughTargets.more,
                     icon: Icons.more_horiz,
                     label: 'Thêm',
                     isSelected: onMoreRoute,
@@ -196,6 +223,7 @@ class _NavItem extends StatelessWidget {
   final VoidCallback onTap;
 
   const _NavItem({
+    super.key,
     required this.icon,
     required this.label,
     required this.isSelected,

@@ -10,6 +10,7 @@ import '../../core/providers/user_stats_provider.dart';
 import '../../core/providers/weather_provider.dart';
 import '../../shared/widgets/coin_badge.dart';
 import '../level/providers/level_provider.dart';
+import '../onboarding/walkthrough_targets.dart';
 import 'providers/home_provider.dart';
 import 'widgets/water_formula_info_sheet.dart';
 
@@ -1162,6 +1163,7 @@ class _HomeScreenRedesignState extends ConsumerState<HomeScreenRedesign>
 
   Widget _buildSmartScanFAB() {
     return FloatingActionButton(
+      key: WalkthroughTargets.smartScan,
       onPressed: () => context.push('/smart-scan'),
       backgroundColor: AppColors.glow,
       child: Container(
