@@ -471,8 +471,22 @@ class AuthService {
   }
 
   /// Validate email format
+  /// Sanity check only — the server's Pydantic EmailStr is the real validator.
+  ///
+  /// The previous pattern was `^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$`, which rejected
+  /// two kinds of perfectly valid address and locked those users out of their
+  /// own accounts:
+  ///   - anything with `+` in the local part (Gmail plus-addressing, which the
+  ///     backend accepts and which our own Play review account uses)
+  ///   - any TLD longer than four letters — .online, .website, .digital
+  ///
+  /// It also disagreed with the three screen-level validators, so the form
+  /// accepted the address and this layer threw straight afterwards, surfacing
+  /// as "Dữ liệu đăng nhập không hợp lệ" for a correct email and password.
+  /// Client-side email validation cannot be both strict and correct; be
+  /// permissive here and let the server reject what is genuinely malformed.
   bool _isValidEmail(String email) {
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
     return emailRegex.hasMatch(email.trim());
   }
 
