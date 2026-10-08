@@ -323,8 +323,10 @@ class RateLimitConfig:
     # The per-minute limits above stop bursts but do nothing about sustained
     # use: 10 scans/minute is 14,400 scans/day from a single account. These
     # second-tier windows are what actually bounds the monthly bill.
-    VISION_DAILY_LIMIT = 120
-    AI_COACH_DAILY_LIMIT = 300
+    # At ~$0.003 per Haiku call, 30 scans + 50 coach messages caps one account
+    # at roughly $7/month; a real user logs a handful of drinks a day.
+    VISION_DAILY_LIMIT = 30
+    AI_COACH_DAILY_LIMIT = 50
     AI_DAILY_WINDOW = 86400
 
     # Search limits (per minute) - moderate

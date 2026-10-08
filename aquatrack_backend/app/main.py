@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import time
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -162,7 +163,7 @@ async def health_check():
         "status": "ok",
         "environment": settings.ENVIRONMENT,
         "version": "1.0.0",
-        "uptime_seconds": int(metrics.start_time),
+        "uptime_seconds": int(time.time() - metrics.start_time),
     }
 
 

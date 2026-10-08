@@ -194,8 +194,8 @@ class TestReportedHeaders:
         return res.headers
 
     def test_burst_tier_is_reported_not_the_daily_one(self):
-        """Vision carries a 10/min burst and a 120/day cap. After one call the
-        burst has 9 left and the daily 119, so the burst is what a well-behaved
+        """Vision carries a 10/min burst and a 30/day cap. After one call the
+        burst has 9 left and the daily 29, so the burst is what a well-behaved
         client needs to see."""
         headers = self._limits("/api/v1/vision/estimate-volume")
         assert headers["X-RateLimit-Limit"] == str(RateLimitConfig.VISION_LIMIT)
