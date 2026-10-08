@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
+
 /// Application configuration constants
 class AppConfig {
   // Private constructor to prevent instantiation
@@ -27,7 +29,6 @@ class AppConfig {
 
   // App Settings
   static const String appName = 'Wafubi';
-  static const String appVersion = '1.0.0';
   static const bool enableLogging = true;
   static const bool enableAnalytics = false;
 
@@ -49,10 +50,10 @@ class AppConfig {
   static const int maxRetries = 3;
   static const Duration retryDelay = Duration(seconds: 2);
 
-  // Development/Debug Settings
-  static const bool isDevelopment = true;
-  static const bool enableDebugLogging = true;
-  static const bool enableNetworkLogs = true;
+  // Development/Debug Settings. Network logs print request bodies (login
+  // passwords included), so both are compiled out of release builds.
+  static const bool enableDebugLogging = kDebugMode;
+  static const bool enableNetworkLogs = kDebugMode;
 
   // Environment Detection
   static bool get isDebug {

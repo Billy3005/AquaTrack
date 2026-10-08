@@ -24,9 +24,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- Location permissions for weather (geolocator) -->
+    <!-- Approximate location for the weather lookup (geolocator). No FINE:
+         the privacy policy promises approximate only, and Data safety must
+         match what the manifest requests. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <!-- No external-storage permissions: nothing in lib/ reads or writes shared
          storage. Local data lives in Hive/SQLite inside the app sandbox and

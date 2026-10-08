@@ -18,8 +18,9 @@ abstract class LocationService {
 
 /// Geolocator implementation of location service
 class GeolocatorLocationService implements LocationService {
-  // Location accuracy configuration
-  static const LocationAccuracy _defaultAccuracy = LocationAccuracy.high;
+  // City-level is all the weather lookup needs, and it is what the privacy
+  // policy promises: the manifest only grants ACCESS_COARSE_LOCATION.
+  static const LocationAccuracy _defaultAccuracy = LocationAccuracy.low;
 
   // Default placeholder city name (reverse geocoding would be needed for actual city)
   static const String _defaultCityName = 'Current Location';
