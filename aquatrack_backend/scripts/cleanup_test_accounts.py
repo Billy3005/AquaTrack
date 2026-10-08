@@ -10,11 +10,16 @@ can have a silly address — and plenty of genuine users sign up without logging
 anything on day one. Requiring both means the script only removes accounts that
 look synthetic *and* have produced nothing.
 
-Staff accounts are never touched, whatever their address.
+Staff accounts are never touched, whatever their address, and neither are the
+PROTECTED_EMAILS below.
+
+`--include-active` drops condition 2 for the pre-launch sweep, when every
+flagged account with logs has been checked by hand and is known to be junk.
 
     python scripts/cleanup_test_accounts.py                 # dry run (default)
     python scripts/cleanup_test_accounts.py --delete        # actually delete
     python scripts/cleanup_test_accounts.py --keep a@b.com  # spare one
+    python scripts/cleanup_test_accounts.py --include-active   # logged ones too
 
 BACK UP FIRST: python scripts/backup_db.py
 """
@@ -32,12 +37,19 @@ from sqlalchemy import func, select  # noqa: E402
 
 from app.core.admin_roles import STAFF_ROLES  # noqa: E402
 from app.core.database import SessionLocal, engine  # noqa: E402
-from app.models import AuditLog, IntakeLog, User  # noqa: E402
+from app.models import IntakeLog, User  # noqa: E402
+from app.services.account_deletion_service import purge_user_data  # noqa: E402
 from scripts.backup_db import describe_target  # noqa: E402
 from scripts.backup_db import SEED_DOMAINS, looks_machine_made
 
+# The login handed to Google Play under App access. It looks like a test
+# account because it is one, but Play signs in with it to review every update —
+# deleting it gets the next release rejected.
+PROTECTED_EMAILS = frozenset({"playreview@wafubitest.com"})
 
-def find_candidates(db, keep: set) -> tuple:
+
+def find_candidates(db, keep: set, include_active: bool = False) -> tuple:
+    keep = set(keep) | PROTECTED_EMAILS
     log_counts = dict(
         db.query(IntakeLog.user_id, func.count(IntakeLog.id))
         .group_by(IntakeLog.user_id)
@@ -65,7 +77,7 @@ def find_candidates(db, keep: set) -> tuple:
             continue
 
         logs = log_counts.get(user.id, 0)
-        if logs:
+        if logs and not include_active:
             # Out of scope by design, but the operator should know it exists:
             # a `test@test.com` with real logs is still junk they may want gone.
             spared.append((user, logs))
@@ -77,20 +89,15 @@ def find_candidates(db, keep: set) -> tuple:
 def delete_users(db, users: list) -> None:
     """Remove the accounts and everything hanging off them.
 
-    audit_logs.actor_id is a real foreign key, so any row where a doomed
-    account was the actor is detached rather than deleted — the log is
-    append-only and must survive the account it describes.
+    Goes through the same purge as in-app account deletion: the ORM cascades
+    on User miss friendships, challenges, scan history and the scan photos,
+    which accounts with real activity do have. Audit rows are detached, not
+    deleted — the log must survive the account it describes.
     """
     ids = [u.id for u in users]
-
-    db.query(AuditLog).filter(AuditLog.actor_id.in_(ids)).update(
-        {AuditLog.actor_id: None}, synchronize_session=False
-    )
-
-    # The ORM cascades declared on User handle the child tables; deleting
-    # through the session (not a bulk query) is what triggers them.
-    for user in users:
-        db.delete(user)
+    db.expunge_all()  # purge works in raw SQL; stale ORM rows must not flush
+    for user_id in ids:
+        purge_user_data(db, user_id)
     db.commit()
 
 
@@ -106,6 +113,11 @@ def main() -> None:
         metavar="EMAIL",
         help="Giữ lại email này dù bị đánh dấu (lặp lại được)",
     )
+    parser.add_argument(
+        "--include-active",
+        action="store_true",
+        help="Xoá cả tài khoản test đã ghi nước (chỉ dùng khi đã rà tay từng cái)",
+    )
     args = parser.parse_args()
 
     engine.echo = False
@@ -114,7 +126,9 @@ def main() -> None:
         print(f"Database: {describe_target()}\n")
 
         total = db.query(func.count(User.id)).scalar() or 0
-        candidates, seeded, spared = find_candidates(db, set(args.keep))
+        candidates, seeded, spared = find_candidates(
+            db, set(args.keep), include_active=args.include_active
+        )
 
         if seeded:
             print(
@@ -142,7 +156,7 @@ def main() -> None:
             )
             for user, logs in spared:
                 print(f"  {user.email:<44} {logs:>4} lượt ghi nước")
-            print("  Muốn xoá cả chúng thì phải xoá thủ công — script không tự làm.")
+            print("  Muốn xoá cả chúng: chạy lại với --include-active.")
 
         if not args.delete:
             print(
